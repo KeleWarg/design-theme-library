@@ -39,15 +39,15 @@ Estimated total time: **160-180 hours** (with parallelization)
 | Chunk | Name | Est. Time | Dependencies | Status |
 |-------|------|-----------|--------------|--------|
 | 1.01 | Supabase Setup | 1h | Phase 0 or skip | ✅ |
-| 1.02 | Schema - Themes & Tokens | 2h | 1.01 | ⬜ |
-| 1.03 | Schema - Typography | 2h | 1.01 | ⬜ |
-| 1.04 | Schema - Components | 2h | 1.01 | ⬜ |
-| 1.05 | Storage Buckets | 1h | 1.01 | ⬜ |
-| 1.06 | Seed Data | 2h | 1.02, 1.03, 1.04 | ⬜ |
-| 1.07 | Theme Service | 3h | 1.02 | ⬜ |
-| 1.08 | Token Service | 2h | 1.02 | ⬜ |
-| 1.09 | Typeface Service | 2h | 1.03, 1.05 | ⬜ |
-| 1.10 | Component Service | 2h | 1.04 | ⬜ |
+| 1.02 | Schema - Themes & Tokens | 2h | 1.01 | ✅ |
+| 1.03 | Schema - Typography | 2h | 1.01 | ✅ |
+| 1.04 | Schema - Components | 2h | 1.01 | ✅ |
+| 1.05 | Storage Buckets | 1h | 1.01 | ✅ |
+| 1.06 | Seed Data | 2h | 1.02, 1.03, 1.04 | ✅ |
+| 1.07 | Theme Service | 3h | 1.02 | ✅ |
+| 1.08 | Token Service | 2h | 1.02 | ✅ |
+| 1.09 | Typeface Service | 2h | 1.03, 1.05 | ✅ |
+| 1.10 | Component Service | 2h | 1.04 | ✅ |
 | 1.11 | App Shell & Routing | 3h | None | ⬜ |
 | 1.12 | Token Parser | 2h | None | ⬜ |
 
