@@ -82,56 +82,62 @@ export default function Dashboard() {
         .dashboard-stats {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: var(--spacing-md);
-          margin-bottom: var(--spacing-xl);
+          gap: var(--spacing-md, 16px);
+          margin-bottom: var(--spacing-xl, 32px);
         }
         
         .stat-card {
           display: flex;
           align-items: center;
-          gap: var(--spacing-md);
+          gap: 16px;
+          padding: var(--spacing-md, 16px);
         }
         
         .stat-icon {
           width: 48px;
           height: 48px;
-          border-radius: var(--radius-lg);
+          min-width: 48px;
+          border-radius: var(--radius-lg, 12px);
           display: flex;
           align-items: center;
           justify-content: center;
           color: white;
+          flex-shrink: 0;
         }
         
         .stat-content {
           display: flex;
           flex-direction: column;
+          gap: 2px;
         }
         
         .stat-value {
-          font-size: var(--font-size-2xl);
-          font-weight: var(--font-weight-bold);
-          line-height: var(--line-height-tight);
+          font-size: 28px;
+          font-weight: 700;
+          line-height: 1;
+          color: var(--color-foreground, #1a1a1a);
         }
         
         .stat-label {
-          font-size: var(--font-size-sm);
-          color: var(--color-muted-foreground);
+          font-size: 14px;
+          color: var(--color-muted-foreground, #6b7280);
+          line-height: 1.4;
         }
         
         .dashboard-section {
-          margin-bottom: var(--spacing-xl);
+          margin-bottom: var(--spacing-xl, 32px);
         }
         
         .dashboard-section h2 {
-          font-size: var(--font-size-lg);
-          font-weight: var(--font-weight-semibold);
-          margin: 0 0 var(--spacing-md);
+          font-size: var(--font-size-lg, 18px);
+          font-weight: 600;
+          margin: 0 0 var(--spacing-md, 16px);
         }
         
         .quick-actions {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: var(--spacing-md);
+          gap: var(--spacing-md, 16px);
         }
         
         .action-card {
@@ -140,29 +146,29 @@ export default function Dashboard() {
           align-items: flex-start;
           text-decoration: none;
           color: inherit;
-          transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
         
         .action-card:hover {
           transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
+          box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
         }
         
         .action-card svg {
-          color: var(--color-primary);
-          margin-bottom: var(--spacing-sm);
+          color: var(--color-primary, #3b82f6);
+          margin-bottom: var(--spacing-sm, 8px);
         }
         
         .action-card h3 {
-          margin: 0 0 var(--spacing-xs);
-          font-size: var(--font-size-base);
-          font-weight: var(--font-weight-semibold);
+          margin: 0 0 var(--spacing-xs, 4px);
+          font-size: 16px;
+          font-weight: 600;
         }
         
         .action-card p {
           margin: 0;
-          font-size: var(--font-size-sm);
-          color: var(--color-muted-foreground);
+          font-size: 14px;
+          color: var(--color-muted-foreground, #6b7280);
         }
       `}</style>
     </div>

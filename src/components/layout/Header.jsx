@@ -1,9 +1,12 @@
 /**
  * @chunk 1.11 - App Shell & Routing
- * Application header with logo, theme selector placeholder, and export button
+ * @chunk 2.05 - ThemeSelector (Header)
+ * 
+ * Application header with logo, theme selector, and export button
  */
 import { Link } from 'react-router-dom'
 import { Layers, Menu, Download } from 'lucide-react'
+import ThemeSelector from './ThemeSelector'
 
 export default function Header({ onMenuToggle }) {
   return (
@@ -25,10 +28,7 @@ export default function Header({ onMenuToggle }) {
       </div>
       
       <div className="header-right">
-        {/* ThemeSelector placeholder - implemented in chunk 2.05 */}
-        <div className="theme-selector-placeholder">
-          {/* Will be replaced with actual ThemeSelector */}
-        </div>
+        <ThemeSelector />
         
         <button className="btn btn-primary">
           <Download size={16} />
@@ -38,4 +38,3 @@ export default function Header({ onMenuToggle }) {
     </header>
   )
 }
-

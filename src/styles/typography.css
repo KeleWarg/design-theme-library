@@ -1,0 +1,1059 @@
+/**
+ * @chunk 2.21 - TypefaceManager
+ * Styles for typography management components
+ */
+
+/* ==========================================
+   Section Header
+   ========================================== */
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+}
+
+.section-title {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+}
+
+.section-description {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted-foreground);
+}
+
+/* ==========================================
+   Typeface Manager
+   ========================================== */
+
+.typeface-manager {
+  padding: var(--spacing-lg);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.typeface-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl);
+  color: var(--color-muted-foreground);
+}
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl);
+  color: var(--color-error);
+}
+
+/* ==========================================
+   Typeface Grid
+   ========================================== */
+
+.typeface-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* ==========================================
+   Typeface Card
+   ========================================== */
+
+.typeface-card {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.typeface-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.typeface-card.empty {
+  border-style: dashed;
+  border-color: var(--color-border);
+}
+
+.typeface-card.empty:hover {
+  border-color: var(--color-primary);
+  background: var(--color-muted);
+}
+
+/* Card Header */
+.typeface-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.typeface-role {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.typeface-role-icon {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.typeface-role-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.typeface-role-label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground);
+}
+
+.typeface-role-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.typeface-card-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* Card Content */
+.typeface-card-content {
+  padding: var(--spacing-md);
+  min-height: 100px;
+}
+
+.typeface-preview {
+  margin-bottom: var(--spacing-md);
+}
+
+.typeface-preview-text {
+  font-size: var(--font-size-2xl);
+  line-height: 1.2;
+  color: var(--color-foreground);
+}
+
+.typeface-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.typeface-family {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  color: var(--color-foreground);
+}
+
+.typeface-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.typeface-weights {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  font-family: var(--font-family-mono);
+}
+
+/* Empty State Button */
+.typeface-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  min-height: 100px;
+  padding: var(--spacing-lg);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--color-muted-foreground);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.typeface-empty-state:hover {
+  background: var(--color-muted);
+  color: var(--color-primary);
+}
+
+.typeface-empty-state span {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Card Footer */
+.typeface-card-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-muted);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+/* ==========================================
+   Modal Styles
+   ========================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  padding: var(--spacing-lg);
+  animation: fadeIn 150ms ease;
+}
+
+.modal {
+  background: var(--color-background);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 200ms ease;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-muted);
+}
+
+/* ==========================================
+   Form Styles
+   ========================================== */
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-foreground);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(101, 126, 121, 0.15);
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+  background: var(--color-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.form-group-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.form-group-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.form-group-checkbox label {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* ==========================================
+   Button Icon Variant
+   ========================================== */
+
+.btn-icon {
+  padding: var(--spacing-xs);
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
+  color: var(--color-error);
+}
+
+/* ==========================================
+   Animations
+   ========================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================
+   @chunk 2.22 - TypefaceForm Styles
+   ========================================== */
+
+/* Typeface Form */
+.typeface-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.typeface-form .modal-footer {
+  margin: var(--spacing-md) calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+/* Form Hints */
+.form-hint {
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  line-height: 1.4;
+}
+
+/* Form Checkbox */
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.form-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.form-checkbox-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-foreground);
+}
+
+/* ==========================================
+   Google Font Search
+   ========================================== */
+
+.google-font-search {
+  position: relative;
+}
+
+.google-font-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.google-font-search-icon {
+  position: absolute;
+  left: var(--spacing-sm);
+  color: var(--color-muted-foreground);
+  pointer-events: none;
+}
+
+.google-font-search-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-left: calc(var(--spacing-sm) + 20px);
+  padding-right: calc(var(--spacing-md) + 24px);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.google-font-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(101, 126, 121, 0.15);
+}
+
+.google-font-search-input::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+.google-font-search-spinner {
+  position: absolute;
+  right: var(--spacing-sm);
+  color: var(--color-muted-foreground);
+}
+
+.google-font-search-clear {
+  position: absolute;
+  right: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.google-font-search-clear:hover {
+  color: var(--color-foreground);
+  background: var(--color-muted);
+}
+
+/* Search Dropdown */
+.google-font-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--spacing-xs);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.google-font-search-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.google-font-search-result:hover,
+.google-font-search-result--selected {
+  background: var(--color-muted);
+}
+
+.google-font-search-result-family {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-foreground);
+}
+
+.google-font-search-result-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.google-font-search-empty {
+  padding: var(--spacing-md);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted-foreground);
+}
+
+/* ==========================================
+   Weight Selector
+   ========================================== */
+
+.weight-selector {
+  margin-top: var(--spacing-xs);
+}
+
+.weight-selector--disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.weight-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+}
+
+.weight-selector-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.weight-selector-divider {
+  color: var(--color-border);
+}
+
+.btn-link {
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.btn-link:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.btn-link:disabled {
+  color: var(--color-muted-foreground);
+  cursor: not-allowed;
+}
+
+.weight-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: var(--spacing-xs);
+}
+
+.weight-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.weight-chip:hover:not(:disabled):not(.weight-chip--unavailable) {
+  border-color: var(--color-primary);
+  background: var(--color-muted);
+}
+
+.weight-chip--selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.weight-chip--selected .weight-chip-value,
+.weight-chip--selected .weight-chip-label {
+  color: var(--color-primary-foreground);
+}
+
+.weight-chip--unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.weight-chip-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+}
+
+.weight-chip-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.weight-selector-hint {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+/* ==========================================
+   @chunk 2.24 - TypographyRoleEditor Styles
+   ========================================== */
+
+/* Typography Role Editor Container */
+.typography-role-editor {
+  padding: var(--spacing-lg);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.typography-role-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl);
+  color: var(--color-muted-foreground);
+}
+
+.typography-role-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl);
+  color: var(--color-muted-foreground);
+  text-align: center;
+}
+
+.typography-role-empty p {
+  margin: 0;
+}
+
+/* Typography Role List */
+.typography-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Typography Role Row */
+.typography-role-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: var(--spacing-lg);
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-background);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.typography-role-row:hover {
+  background: var(--color-muted);
+}
+
+.typography-role-row:focus {
+  outline: none;
+  background: var(--color-muted);
+}
+
+.typography-role-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* Role Info */
+.typography-role-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.typography-role-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+  font-family: var(--font-family-mono);
+}
+
+.typography-role-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+/* Role Preview */
+.typography-role-preview {
+  color: var(--color-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Role Specs */
+.typography-role-specs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.typography-role-spec {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  color: var(--color-muted-foreground);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  min-width: 60px;
+  text-align: center;
+}
+
+/* Typography Role Modal Form */
+.typography-role-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.typography-role-form .modal-footer {
+  margin: var(--spacing-md) calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+/* Preview Section */
+.typography-role-preview-section {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+.typography-role-preview-section .form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.typography-role-preview-text {
+  color: var(--color-foreground);
+  word-break: break-word;
+  transition: all var(--transition-fast);
+}
+
+/* Form Error */
+.form-error {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+/* Input with unit */
+.input-with-unit {
+  position: relative;
+}
+
+.input-with-unit input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.input-with-unit input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(101, 126, 121, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .typography-role-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  .typography-role-specs {
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================
+   @chunk 2.23 - FontUploader Styles
+   ========================================== */
+
+.font-uploader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Upload Zone */
+.font-uploader-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  background: var(--color-muted);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.font-uploader-zone:hover:not(.font-uploader-zone--uploading) {
+  border-color: var(--color-primary);
+  background: rgba(101, 126, 121, 0.05);
+}
+
+.font-uploader-zone--dragging {
+  border-color: var(--color-primary);
+  background: rgba(101, 126, 121, 0.1);
+  border-style: solid;
+}
+
+.font-uploader-zone--uploading {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.font-uploader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-muted-foreground);
+  text-align: center;
+}
+
+.font-uploader-content svg {
+  color: var(--color-primary);
+}
+
+.font-uploader-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-foreground);
+}
+
+.font-uploader-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.font-uploader-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Files List */
+.font-uploader-files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.font-uploader-files-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+}
+
+.font-uploader-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* File Item */
+.font-file-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.font-file-item:hover {
+  border-color: var(--color-primary);
+}
+
+.font-file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted-foreground);
+}
+
+.font-file-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.font-file-format {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.font-file-weight {
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground);
+}
+
+.font-file-size {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  font-family: var(--font-family-mono);
+}
+
+.font-file-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.font-file-delete:hover:not(:disabled) {
+  background: var(--color-error-light, rgba(239, 68, 68, 0.1));
+  color: var(--color-error);
+}
+
+.font-file-delete:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+/* Format Hint */
+.font-uploader-format-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(101, 126, 121, 0.05);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.font-uploader-format-hint svg {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.font-uploader-format-hint strong {
+  color: var(--color-foreground);
+}
+

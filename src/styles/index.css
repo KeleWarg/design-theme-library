@@ -1,11 +1,21 @@
 /**
  * @chunk 1.11 - App Shell & Routing
+ * @chunk 2.02 - ThemeCard Component
+ * @chunk 2.03 - CreateThemeModal
  * Main stylesheet entry point
  */
 
 /* CSS imports must come first */
 @import './variables.css';
 @import './layout.css';
+@import './typography.css';
+@import './themes-page.css';
+@import './theme-card.css';
+@import './import-wizard.css';
+@import './create-theme-modal.css';
+@import './theme-editor.css';
+@import './theme-selector.css';
+@import './theme-preview.css';
 
 @tailwind base;
 @tailwind components;

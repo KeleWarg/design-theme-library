@@ -1,0 +1,354 @@
+/**
+ * @chunk 2.21 - Typography Page Styles
+ * 
+ * Styles for the typography management page.
+ */
+
+.typography-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.typography-page .page-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.typography-page .page-header-left h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.typography-page .page-content {
+  padding: var(--spacing-lg);
+}
+
+/* Typography sections layout */
+.typography-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* Loading state */
+.typography-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  color: var(--color-muted-foreground);
+}
+
+.typography-loading .spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Error state */
+.typography-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--color-muted-foreground);
+}
+
+.typography-error h3 {
+  margin: 0;
+  color: var(--color-foreground);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.typography-error p {
+  margin: 0;
+  max-width: 400px;
+}
+
+.typography-error .btn {
+  margin-top: var(--spacing-sm);
+}
+
+/* TypefaceManager styles */
+.typeface-manager {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.typeface-manager .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+}
+
+.typeface-manager .section-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.typeface-manager .section-description {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.typeface-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl);
+  color: var(--color-muted-foreground);
+}
+
+.typeface-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* TypefaceCard styles */
+.typeface-card {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  transition: border-color 0.15s ease;
+}
+
+.typeface-card:hover {
+  border-color: var(--color-primary);
+}
+
+.typeface-card--empty {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.typeface-card--empty:hover {
+  background: var(--color-muted);
+}
+
+.typeface-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-sm);
+}
+
+.typeface-role-badge {
+  display: inline-flex;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.typeface-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.typeface-actions button {
+  padding: var(--spacing-xs);
+  background: transparent;
+  border: none;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.typeface-actions button:hover {
+  color: var(--color-foreground);
+  background: var(--color-muted);
+}
+
+.typeface-actions button.danger:hover {
+  color: var(--color-destructive);
+}
+
+.typeface-family {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.typeface-meta {
+  display: flex;
+  gap: var(--spacing-sm);
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.typeface-preview {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  font-size: 1.5rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.typeface-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  color: var(--color-muted-foreground);
+  text-align: center;
+}
+
+/* TypographyRoleEditor styles */
+.typography-role-editor {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.typography-role-editor .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-lg);
+}
+
+.typography-role-editor .section-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.typography-role-editor .section-description {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.typography-role-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl);
+  color: var(--color-muted-foreground);
+}
+
+.typography-role-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  color: var(--color-muted-foreground);
+  text-align: center;
+}
+
+.typography-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.typography-role-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 200px;
+  gap: var(--spacing-md);
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.typography-role-row:hover {
+  border-color: var(--color-primary);
+  background: var(--color-muted);
+}
+
+.typography-role-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.typography-role-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.typography-role-desc {
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.typography-role-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.typography-role-specs {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.typography-role-spec {
+  display: inline-flex;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+/* Spin animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .typography-role-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .typography-role-specs {
+    justify-content: flex-start;
+  }
+
+  .typeface-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

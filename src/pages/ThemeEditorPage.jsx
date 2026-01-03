@@ -1,73 +1,239 @@
 /**
- * @chunk 1.11 - App Shell & Routing
- * Theme editor page placeholder
+ * @chunk 2.12 - ThemeEditor Layout
+ * 
+ * Main theme editor page with three-column layout:
+ * - Category sidebar (left)
+ * - Token list (center)
+ * - Editor panel (right)
+ * - Preview panel (bottom, collapsible)
  */
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
 
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+
+import { useTheme } from '../hooks/useThemes';
+import { useThemeContext } from '../contexts';
+import { tokenService } from '../services/tokenService';
+import { 
+  EditorHeader, 
+  CategorySidebar, 
+  TokenList, 
+  TokenEditorPanel,
+  EditorSkeleton 
+} from '../components/themes/editor';
+import { ThemePreview } from '../components/themes/preview';
+import '../styles/theme-editor.css';
+
+/**
+ * Theme editor page with token management
+ */
 export default function ThemeEditorPage() {
-  const { id } = useParams()
+  const { id } = useParams();
+  const { data: theme, isLoading, error, refetch } = useTheme(id);
+  const { refreshTheme } = useThemeContext();
   
-  return (
-    <div className="page theme-editor-page">
-      <header className="page-header">
-        <div className="page-header-left">
-          <Link to="/themes" className="btn btn-ghost">
-            <ArrowLeft size={16} />
-            Back
-          </Link>
-          <h1>Edit Theme</h1>
-          <span className="theme-id">ID: {id}</span>
-        </div>
-        <button className="btn btn-primary">
-          <Save size={16} />
-          Save Changes
-        </button>
-      </header>
-      
-      <main className="page-content">
-        {/* Theme editor layout - will be implemented in Phase 2 */}
-        <div className="editor-placeholder">
-          <p>Theme editor will be implemented in Phase 2</p>
-          <p>This page will include:</p>
-          <ul>
-            <li>Token category sidebar</li>
-            <li>Token list view</li>
-            <li>Token editors (Color, Typography, Spacing, etc.)</li>
-            <li>Live preview panel</li>
-          </ul>
-        </div>
-      </main>
-      
-      <style>{`
-        .page-header-left {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-md);
-        }
-        
-        .theme-id {
-          font-size: var(--font-size-sm);
-          color: var(--color-muted-foreground);
-          padding: var(--spacing-xs) var(--spacing-sm);
-          background: var(--color-muted);
-          border-radius: var(--radius-sm);
-        }
-        
-        .editor-placeholder {
-          padding: var(--spacing-xl);
-          background: var(--color-muted);
-          border-radius: var(--radius-lg);
-          text-align: center;
-        }
-        
-        .editor-placeholder ul {
-          text-align: left;
-          max-width: 300px;
-          margin: var(--spacing-md) auto;
-        }
-      `}</style>
-    </div>
-  )
-}
+  // UI state
+  const [activeCategory, setActiveCategory] = useState('color');
+  const [selectedToken, setSelectedToken] = useState(null);
+  const [showPreview, setShowPreview] = useState(true);
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  // Local tokens state for optimistic updates
+  const [tokens, setTokens] = useState([]);
 
+  // Sync tokens from theme data
+  useEffect(() => {
+    if (theme?.tokens) {
+      setTokens(theme.tokens);
+    }
+  }, [theme?.tokens]);
+
+  // Get tokens for active category
+  const categoryTokens = tokens.filter(t => t.category === activeCategory);
+
+  /**
+   * Update a token's value
+   */
+  const handleTokenUpdate = useCallback(async (tokenId, updates) => {
+    // Optimistic update
+    setTokens(prev => prev.map(t => 
+      t.id === tokenId ? { ...t, ...updates } : t
+    ));
+    
+    // Update selected token if it's being edited
+    if (selectedToken?.id === tokenId) {
+      setSelectedToken(prev => ({ ...prev, ...updates }));
+    }
+    
+    setHasChanges(true);
+    
+    try {
+      await tokenService.updateToken(tokenId, updates);
+      // Refresh ThemeContext to update CSS variables across the app
+      await refreshTheme();
+      toast.success('Token updated');
+    } catch (err) {
+      console.error('Failed to update token:', err);
+      toast.error('Failed to update token');
+      // Revert on error
+      refetch();
+    }
+  }, [selectedToken, refetch, refreshTheme]);
+
+  /**
+   * Add a new token
+   */
+  const handleAddToken = useCallback(async (tokenData) => {
+    const newToken = {
+      name: `New ${tokenData.category} token`,
+      path: `${tokenData.category}/new-token`,
+      category: tokenData.category,
+      type: tokenData.category,
+      value: tokenData.category === 'color' ? { hex: '#000000' } : '',
+      css_variable: `--${tokenData.category}-new-token`,
+      theme_id: id
+    };
+
+    try {
+      const created = await tokenService.createToken(id, newToken);
+      setTokens(prev => [...prev, created]);
+      setSelectedToken(created);
+      setHasChanges(true);
+      toast.success('Token created');
+    } catch (err) {
+      console.error('Failed to create token:', err);
+      toast.error('Failed to create token');
+    }
+  }, [id]);
+
+  /**
+   * Delete a token
+   */
+  const handleDeleteToken = useCallback(async (tokenId) => {
+    // Optimistic update
+    setTokens(prev => prev.filter(t => t.id !== tokenId));
+    
+    if (selectedToken?.id === tokenId) {
+      setSelectedToken(null);
+    }
+    
+    setHasChanges(true);
+    
+    try {
+      await tokenService.deleteToken(tokenId);
+      toast.success('Token deleted');
+    } catch (err) {
+      console.error('Failed to delete token:', err);
+      toast.error('Failed to delete token');
+      // Revert on error
+      refetch();
+    }
+  }, [selectedToken, refetch]);
+
+  /**
+   * Select a token for editing
+   */
+  const handleSelectToken = useCallback((token) => {
+    setSelectedToken(token);
+  }, []);
+
+  /**
+   * Change active category
+   */
+  const handleCategoryChange = useCallback((category) => {
+    setActiveCategory(category);
+    setSelectedToken(null); // Clear selection when changing category
+  }, []);
+
+  /**
+   * Save all changes
+   */
+  const handleSave = useCallback(async () => {
+    // In this implementation, changes are saved immediately
+    // This handler exists for UI feedback and potential batch operations
+    setHasChanges(false);
+    toast.success('All changes saved');
+  }, []);
+
+  // Loading state
+  if (isLoading) {
+    return <EditorSkeleton />;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="theme-editor">
+        <div className="token-editor-empty">
+          <div className="token-editor-empty-content">
+            <h3>Error loading theme</h3>
+            <p>{error.message || 'Failed to load theme data'}</p>
+            <button className="btn btn-primary" onClick={refetch}>
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Theme not found
+  if (!theme) {
+    return (
+      <div className="theme-editor">
+        <div className="token-editor-empty">
+          <div className="token-editor-empty-content">
+            <h3>Theme not found</h3>
+            <p>The requested theme could not be found.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="theme-editor">
+      <EditorHeader 
+        theme={theme}
+        hasChanges={hasChanges}
+        showPreview={showPreview}
+        onTogglePreview={() => setShowPreview(!showPreview)}
+        onSave={handleSave}
+      />
+
+      <div className="editor-body">
+        <CategorySidebar
+          tokens={tokens}
+          activeCategory={activeCategory}
+          onCategoryChange={handleCategoryChange}
+        />
+
+        <div className="editor-main">
+          <TokenList
+            tokens={categoryTokens}
+            category={activeCategory}
+            selectedToken={selectedToken}
+            onSelectToken={handleSelectToken}
+            onAddToken={handleAddToken}
+            onDeleteToken={handleDeleteToken}
+          />
+
+          <TokenEditorPanel
+            token={selectedToken}
+            category={activeCategory}
+            onUpdate={(updates) => {
+              if (selectedToken) {
+                handleTokenUpdate(selectedToken.id, updates);
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {showPreview && (
+        <ThemePreview theme={{ ...theme, tokens }} />
+      )}
+    </div>
+  );
+}

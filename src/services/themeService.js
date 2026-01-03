@@ -53,7 +53,7 @@ export const themeService = {
       .select(`
         *,
         tokens(*),
-        typefaces(*),
+        typefaces(*, font_files(*)),
         typography_roles(*)
       `)
       .eq('id', id)
@@ -74,7 +74,7 @@ export const themeService = {
       .select(`
         *,
         tokens(*),
-        typefaces(*),
+        typefaces(*, font_files(*)),
         typography_roles(*)
       `)
       .eq('slug', slug)
@@ -94,7 +94,7 @@ export const themeService = {
       .select(`
         *,
         tokens(*),
-        typefaces(*),
+        typefaces(*, font_files(*)),
         typography_roles(*)
       `)
       .eq('is_default', true)

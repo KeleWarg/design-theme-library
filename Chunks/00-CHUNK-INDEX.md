@@ -59,33 +59,33 @@ Estimated total time: **160-180 hours** (with parallelization)
 
 | Chunk | Name | Est. Time | Dependencies | Status |
 |-------|------|-----------|--------------|--------|
-| 2.01 | ThemesPage Layout | 2h | 1.11, 1.07 | ⬜ |
-| 2.02 | ThemeCard | 2h | 2.01 | ⬜ |
-| 2.03 | CreateThemeModal | 2h | 2.01 | ⬜ |
-| 2.04 | ThemeContext | 3h | 1.07, 1.08 | ⬜ |
-| 2.05 | ThemeSelector | 2h | 2.04 | ⬜ |
-| 2.06 | CSS Variable Injection | 2h | 2.04 | ⬜ |
-| 2.07 | ImportWizard Shell | 2h | 2.01 | ⬜ |
-| 2.08 | UploadStep | 2.5h | 2.07, 1.12 | ⬜ |
-| 2.09 | MappingStep | 3h | 2.08 | ⬜ |
-| 2.10 | ReviewStep | 2.5h | 2.09 | ⬜ |
-| 2.11 | Import Integration | 2h | 2.10, 1.08 | ⬜ |
-| 2.12 | ThemeEditor Layout | 2h | 2.01, 1.08 | ⬜ |
-| 2.13 | CategorySidebar | 1.5h | 2.12 | ⬜ |
-| 2.14 | TokenList | 2h | 2.12 | ⬜ |
-| 2.15 | ColorEditor | 3h | 2.14 | ⬜ |
-| 2.16 | TypographyEditor | 2.5h | 2.14 | ⬜ |
-| 2.17 | SpacingEditor | 2h | 2.14 | ⬜ |
-| 2.18 | ShadowEditor | 3h | 2.14 | ⬜ |
-| 2.19 | RadiusEditor | 1.5h | 2.14 | ⬜ |
-| 2.20 | GridEditor | 2.5h | 2.14 | ⬜ |
-| 2.21 | TypefaceManager | 3h | 1.09 | ⬜ |
-| 2.22 | TypefaceForm | 2.5h | 2.21 | ⬜ |
-| 2.23 | FontUploader | 3h | 2.21, 1.05 | ⬜ |
-| 2.24 | TypographyRoleEditor | 3h | 2.21, 2.16 | ⬜ |
-| 2.25 | Font Loading System | 2h | 2.04, 2.23 | ⬜ |
-| 2.26 | TypographyPreview | 2.5h | 2.06 | ⬜ |
-| 2.27 | ThemePreview | 3h | 2.26 | ⬜ |
+| 2.01 | ThemesPage Layout | 2h | 1.11, 1.07 | ✅ |
+| 2.02 | ThemeCard | 2h | 2.01 | ✅ |
+| 2.03 | CreateThemeModal | 2h | 2.01 | ✅ |
+| 2.04 | ThemeContext | 3h | 1.07, 1.08 | ✅ |
+| 2.05 | ThemeSelector | 2h | 2.04 | ✅ |
+| 2.06 | CSS Variable Injection | 2h | 2.04 | ✅ |
+| 2.07 | ImportWizard Shell | 2h | 2.01 | ✅ |
+| 2.08 | UploadStep | 2.5h | 2.07, 1.12 | ✅ |
+| 2.09 | MappingStep | 3h | 2.08 | ✅ |
+| 2.10 | ReviewStep | 2.5h | 2.09 | ✅ |
+| 2.11 | Import Integration | 2h | 2.10, 1.08 | ✅ |
+| 2.12 | ThemeEditor Layout | 2h | 2.01, 1.08 | ✅ |
+| 2.13 | CategorySidebar | 1.5h | 2.12 | ✅ |
+| 2.14 | TokenList | 2h | 2.12 | ✅ |
+| 2.15 | ColorEditor | 3h | 2.14 | ✅ |
+| 2.16 | TypographyEditor | 2.5h | 2.14 | ✅ |
+| 2.17 | SpacingEditor | 2h | 2.14 | ✅ |
+| 2.18 | ShadowEditor | 3h | 2.14 | ✅ |
+| 2.19 | RadiusEditor | 1.5h | 2.14 | ✅ |
+| 2.20 | GridEditor | 2.5h | 2.14 | ✅ |
+| 2.21 | TypefaceManager | 3h | 1.09 | ✅ |
+| 2.22 | TypefaceForm | 2.5h | 2.21 | ✅ |
+| 2.23 | FontUploader | 3h | 2.21, 1.05 | ✅ |
+| 2.24 | TypographyRoleEditor | 3h | 2.21, 2.16 | ✅ |
+| 2.25 | Font Loading System | 2h | 2.04, 2.23 | ✅ |
+| 2.26 | TypographyPreview | 2.5h | 2.06 | ✅ |
+| 2.27 | ThemePreview | 3h | 2.26 | ✅ |
 
 **Phase 2 Total:** 62.5 hours
 
@@ -271,7 +271,7 @@ Minimum path to export:
 | Gate 1 | 1.02 + 1.07 + 1.08 | `tests/gates/gate-1.test.js` | ⬜ |
 | Gate 2 | 2.04 + 2.06 + 2.11 | `tests/gates/gate-2.test.jsx` | ⬜ |
 | Gate 3 | 2.14 + 2.15 | `tests/gates/gate-3.test.jsx` | ⬜ |
-| Gate 4 | Phase 2 complete | `tests/gates/gate-4.test.jsx` | ⬜ |
+| Gate 4 | Phase 2 complete | `tests/gates/gate-4.test.jsx` | ✅ |
 | Gate 5 | 3.11 + 3.12 | `tests/gates/gate-5.test.jsx` | ⬜ |
 | Gate 6 | Phase 3 complete | `tests/gates/gate-6.test.jsx` | ⬜ |
 | Gate 7 | 4.05 + 4.11 | `tests/gates/gate-7.test.jsx` | ⬜ |
