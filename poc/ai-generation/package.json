@@ -1,0 +1,13 @@
+{
+  "name": "ai-generation-poc",
+  "version": "1.0.0",
+  "description": "AI Generation Testing for Design System Admin - Chunk 0.05",
+  "type": "module",
+  "scripts": {
+    "test": "node test-runner.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0"
+  }
+}
+

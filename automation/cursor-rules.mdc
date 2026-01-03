@@ -1,0 +1,588 @@
+# Design System Admin v2.0 - Cursor Rules
+
+## Project Context
+You are building a design system admin tool that:
+- Imports design tokens from Figma Variables JSON
+- Provides visual editors for all token types
+- Manages React components with AI-assisted generation
+- Exports to multiple formats (CSS, JSON, Tailwind, SCSS)
+- Exports AI platform files (LLMS.txt, Cursor rules, Claude MD, MCP server)
+
+## Document Harness
+```
+├── 01-PROBLEM-STATEMENT.md      # Why we're building this
+├── 02-RESEARCH-FOUNDATION.md    # Figma format spec, engineering decisions
+├── 03-ARCHITECTURE.md           # System design, data flow, schema
+├── 04-CONFIG-REFERENCE.md       # All tunable values
+└── Chunks/
+    ├── 00-CHUNK-INDEX.md        # All chunks with dependencies + status
+    ├── Chunk0/                  # Phase 0: Validation (optional)
+    ├── Chunk1/                  # Phase 1: Foundation
+    ├── Chunk2/                  # Phase 2: Theme System
+    ├── Chunk3/                  # Phase 3: Components
+    ├── Chunk4/                  # Phase 4: Figma Import
+    ├── Chunk5/                  # Phase 5: Export
+    └── Chunk6/                  # Phase 6: Testing
+```
+
+---
+
+## Before Implementing ANY Chunk
+
+1. **Read the chunk spec** — `Chunks/ChunkX/chunk-X.YY.md`
+2. **Check dependencies** — All listed chunks must show ✅ in index
+3. **Reference architecture** — Review `03-ARCHITECTURE.md` for types and data flow
+4. **Use config values** — Never hardcode; check `04-CONFIG-REFERENCE.md`
+
+## After Completing ANY Chunk
+
+1. Update `Chunks/00-CHUNK-INDEX.md` — mark chunk as ✅
+2. Check gate trigger table (see Orchestration section)
+3. If gate triggered → ask user: "Gate X triggered. Run gate test?"
+4. If approved → run gate test, report result
+5. Confirm: `✅ CHUNK X.YY COMPLETE` with files list
+
+---
+
+## Phase Status
+```
+⬜ Phase 0: Validation (0.00 → 0.06) — Optional, skip to Phase 1 if confident
+⬜ Phase 1: Foundation (1.01 → 1.12)
+⬜ Phase 2: Theme System (2.01 → 2.27) ⭐ CORE
+⬜ Phase 3: Components (3.01 → 3.17)
+⬜ Phase 4: Figma Import (4.01 → 4.13)
+⬜ Phase 5: Export (5.01 → 5.20)
+⬜ Phase 6: Testing (6.01 → 6.07)
+```
+
+---
+
+## Orchestration
+
+**You assign chunks. Cursor tracks completion and triggers gates.**
+
+### Gate Trigger Table
+
+| After completing... | Gate triggered |
+|---------------------|----------------|
+| 0.06 | Gate 0 (manual review) |
+| 1.08 (and 1.02, 1.07 done) | Gate 1 |
+| 2.11 (and 2.04, 2.06 done) | Gate 2 |
+| 2.15 (and 2.14 done) | Gate 3 |
+| 2.27 (Phase 2 complete) | Gate 4 |
+| 3.12 (and 3.11 done) | Gate 5 |
+| 3.17 (Phase 3 complete) | Gate 6 |
+| 4.11 (and 4.05 done) | Gate 7 |
+| 5.20 (and 5.19 done) | Gate 8 |
+| 6.07 (Phase 6 complete) | Gate 9 |
+
+### Single Agent Flow
+
+You say:
+```
+Implement chunk 1.01 (Supabase Setup).
+Read the spec: Chunks/Chunk1/chunk-1.01.md
+```
+
+Cursor:
+1. Reads spec
+2. Implements files
+3. Runs chunk tests
+4. Updates 00-CHUNK-INDEX.md (1.01 → ✅)
+5. Checks gate table — no gate triggered
+6. Reports: `✅ CHUNK 1.01 COMPLETE` with file list
+
+You say:
+```
+Implement chunk 1.02.
+```
+
+...and so on. When 1.08 completes (with 1.02, 1.07 already ✅):
+
+Cursor:
+1. Updates 00-CHUNK-INDEX.md (1.08 → ✅)
+2. Checks gate table — **Gate 1 triggered**
+3. Asks: "Gate 1 is triggered (Foundation Services). Run gate test?"
+4. You approve
+5. Runs `npm test tests/gates/gate-1.test.js`
+6. Reports result: "Gate 1 PASSED" or "Gate 1 FAILED: [errors]"
+
+### Multi-Agent Flow
+
+Open 2-3 Cursor Composer tabs. Assign independent tracks:
+
+**Phase 1 — 3 Composers:**
+
+| Tab | Prompt |
+|-----|--------|
+| A | `Implement chunks 1.01 → 1.02 → 1.07 → 1.08 in order. Read each spec in Chunks/Chunk1/. Update 00-CHUNK-INDEX.md after each. Check for gate triggers.` |
+| B | `Implement chunk 1.11. Read Chunks/Chunk1/chunk-1.11.md. Update index when done.` |
+| C | `Implement chunk 1.12. Read Chunks/Chunk1/chunk-1.12.md. Update index when done.` |
+
+Tab A will trigger Gate 1 after 1.08. Tabs B and C finish independently.
+
+**Phase 2 — After Gate 1 passes:**
+
+| Tab | Prompt |
+|-----|--------|
+| A | `Implement chunks 2.01 → 2.04 → 2.05 → 2.06 in order. Read specs in Chunks/Chunk2/.` |
+| B | `Implement chunks 2.07 → 2.08 → 2.09 → 2.10 → 2.11 in order. Read specs in Chunks/Chunk2/.` |
+| C | `Implement chunks 2.12 → 2.14 → 2.15 in order. Read specs in Chunks/Chunk2/. Start after 2.01 is done.` |
+
+### Dependency Quick Reference
+
+**No dependencies (start anytime):**
+- 1.11, 1.12
+
+**Phase 1 critical path:**
+- 1.01 → 1.02 → 1.07 → 1.08 (sequential, triggers Gate 1)
+
+**Phase 2 parallel tracks:**
+- Track A: 2.01 → 2.02, 2.03, 2.04 → 2.05, 2.06
+- Track B: 2.07 → 2.08 → 2.09 → 2.10 → 2.11 (needs 1.12)
+- Track C: 2.12 → 2.14 → 2.15-2.20 (needs 2.01)
+- Track D: 2.21 → 2.22, 2.23 → 2.24, 2.25 (needs 1.09)
+
+### Copy-Paste Prompts
+
+**Start Phase 1:**
+```
+Implement chunk 1.01 (Supabase Setup).
+Read the spec: Chunks/Chunk1/chunk-1.01.md
+After completion:
+- Update Chunks/00-CHUNK-INDEX.md (mark 1.01 as ✅)
+- Check if any gate is triggered
+- Report "✅ CHUNK 1.01 COMPLETE" with file list
+```
+
+**Batch assignment:**
+```
+Implement these chunks in order: 1.01 → 1.02 → 1.07 → 1.08
+Read each spec in Chunks/Chunk1/ before implementing.
+After each chunk:
+- Update 00-CHUNK-INDEX.md with ✅
+- Check gate trigger table
+- If gate triggered, ask me before running gate test
+```
+
+---
+
+## Database Schema (Supabase)
+
+```sql
+-- Core tables
+themes (id, name, slug, description, source, figma_file_key, is_default, created_at, updated_at)
+tokens (id, theme_id, name, path, category, type, value JSONB, css_variable, metadata JSONB, sort_order)
+typefaces (id, theme_id, name, type, google_font_name, google_font_weights)
+font_files (id, typeface_id, file_name, file_path, weight, style, format)
+typography_roles (id, theme_id, role, typeface_id, weight, fallback_stack)
+components (id, name, slug, description, category, code, props JSONB, variants JSONB, linked_tokens, status)
+component_images (id, component_id, variant_name, image_path, width, height)
+component_examples (id, component_id, title, code, description, sort_order)
+```
+
+**NO RLS. NO AUTH.** Single-user tool.
+
+---
+
+## Environment Variables
+
+```bash
+# .env.local
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_CLAUDE_API_KEY=your-claude-api-key   # For AI generation (Phase 3+)
+```
+
+**Required for:**
+- Phases 1-2: Supabase only
+- Phases 3+: Claude API key needed for AI generation
+
+---
+
+## Routes
+
+```
+/                       → Dashboard
+/themes                 → ThemesPage (list all themes)
+/themes/:id             → ThemeEditorPage (edit theme + tokens)
+/themes/:id/typography  → Typography management
+/components             → ComponentsPage (list all components)
+/components/:id         → ComponentDetailPage (preview, code, props)
+/figma-import           → FigmaImportPage (receive from plugin)
+/settings               → SettingsPage (API keys, preferences)
+```
+
+---
+
+## Storage Buckets (Supabase)
+
+```
+fonts/                  # Custom font files (.woff2, .woff, .ttf)
+  └── {typeface_id}/{filename}
+component-images/       # Component screenshots/exports
+  └── {component_id}/{variant}.png
+```
+
+---
+
+## Key Types
+
+```typescript
+// Token categories
+type TokenCategory = 'color' | 'typography' | 'spacing' | 'shadow' | 'radius' | 'grid' | 'other'
+
+// Theme sources
+type ThemeSource = 'manual' | 'import' | 'figma'
+
+// Component status
+type ComponentStatus = 'draft' | 'published' | 'archived'
+
+// Export formats
+type ExportFormat = 'css' | 'json' | 'tailwind' | 'scss' | 'llms-txt' | 'cursor-rules' | 'claude-md' | 'mcp-server'
+```
+
+---
+
+## Component Workflow
+
+```
+                    ┌─────────────┐
+                    │   CREATE    │
+                    │  (manual)   │
+                    └──────┬──────┘
+                           │
+                           ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   FIGMA     │────▶│    DRAFT    │────▶│  PUBLISHED  │
+│   IMPORT    │     │             │     │             │
+└─────────────┘     └──────┬──────┘     └─────────────┘
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │  ARCHIVED   │
+                    └─────────────┘
+```
+
+**Status meanings:**
+- `draft` — Work in progress, not included in exports
+- `published` — Complete, included in all exports
+- `archived` — Hidden from UI, excluded from exports
+
+---
+
+## File Structure
+
+```
+src/
+├── components/
+│   ├── layout/         # Layout, Header, Sidebar
+│   ├── themes/         # ThemeCard, ThemeSelector
+│   ├── editor/         # TokenList, *Editor components
+│   ├── import/         # ImportWizard, UploadStep, MappingStep
+│   ├── components/     # ComponentCard, wizard/, detail/
+│   ├── export/         # ExportModal, FormatTabs
+│   ├── preview/        # ThemePreview, TypographyPreview
+│   └── ui/             # Button, Input, Modal, EmptyState
+├── contexts/
+│   └── ThemeContext.jsx
+├── hooks/
+│   ├── useCSSVariables.js
+│   └── useFontLoader.js
+├── lib/
+│   ├── supabase.js
+│   ├── storage.js
+│   └── tokenParser.js
+├── pages/
+│   ├── Dashboard.jsx
+│   ├── ThemesPage.jsx
+│   ├── ThemeEditorPage.jsx
+│   ├── ComponentsPage.jsx
+│   ├── ComponentDetailPage.jsx
+│   ├── FigmaImportPage.jsx
+│   └── SettingsPage.jsx
+├── services/
+│   ├── themeService.js
+│   ├── tokenService.js
+│   ├── typefaceService.js
+│   ├── componentService.js
+│   ├── aiService.js
+│   └── generators/
+│       ├── cssGenerator.js
+│       ├── jsonGenerator.js
+│       ├── tailwindGenerator.js
+│       └── llmsTxtGenerator.js
+└── templates/
+    └── mcp-server/
+tests/
+├── unit/               # Component unit tests
+├── integration/        # Service integration tests
+├── e2e/                # Playwright E2E tests
+├── gates/              # Gate checkpoint tests
+└── fixtures/           # Sample JSON files for testing
+    └── sample-tokens.json
+figma-plugin/           # Phase 4: Production Figma plugin
+├── manifest.json
+├── src/
+│   ├── code.ts
+│   ├── ui.tsx
+│   └── api.ts
+└── dist/
+```
+
+---
+
+## Code Standards
+
+### ALWAYS use CSS variables
+```javascript
+// ✅ CORRECT
+backgroundColor: 'var(--color-primary)'
+fontSize: 'var(--font-size-body)'
+padding: 'var(--spacing-md)'
+
+// ❌ WRONG - never hardcode
+backgroundColor: '#657E79'
+fontSize: '16px'
+padding: '16px'
+```
+
+### File naming
+- Components: `PascalCase.jsx` — `ColorEditor.jsx`
+- Services: `camelCase.js` — `themeService.js`
+- Hooks: `use*.js` — `useCSSVariables.js`
+- Tests: `*.test.jsx` — alongside component
+
+### Chunk headers
+```javascript
+/**
+ * @chunk X.YY - Chunk Name
+ */
+```
+
+### Every component needs tests
+```javascript
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import ComponentName from './ComponentName'
+
+describe('ComponentName', () => {
+  it('renders correctly', () => {
+    render(<ComponentName />)
+    expect(screen.getByText('...')).toBeInTheDocument()
+  })
+})
+```
+
+---
+
+## Token Parser Format
+
+Figma Variables JSON (DTCG format):
+```json
+{
+  "Color": {
+    "Primary": {
+      "500": {
+        "$type": "color",
+        "$value": { "hex": "#657E79", "components": [0.4, 0.5, 0.47] },
+        "$extensions": { "com.figma.variableId": "VariableID:123:456" }
+      }
+    }
+  }
+}
+```
+
+Transform to CSS variable: `Color/Primary/500` → `--color-primary-500`
+
+---
+
+## Gate Checkpoints
+
+| Gate | Trigger | What to Test |
+|------|---------|--------------|
+| Gate 0 | 0.04, 0.05, 0.06 | Manual: Validation report GO/NO-GO |
+| Gate 1 | 1.02, 1.07, 1.08 | Services return data |
+| Gate 2 | 2.04, 2.06, 2.11 | Theme context + import flow |
+| Gate 3 | 2.14, 2.15 | Token editing works |
+| Gate 4 | Phase 2 complete | Full theme system |
+| Gate 5 | 3.11, 3.12 | AI generation + detail page |
+| Gate 6 | Phase 3 complete | Component system |
+| Gate 7 | 4.05, 4.11 | Figma plugin + admin sync |
+| Gate 8 | 5.19, 5.20 | Export + download |
+| Gate 9 | Phase 6 | All E2E tests pass |
+
+**Rule:** Don't cross phase boundary without passing gate. Gate 0 is optional (skip to Phase 1 if confident).
+
+**See:** `GATE_CHECKPOINTS.md` for full test code for each gate.
+
+---
+
+## Phase 0: Validation (Optional)
+
+Skip this phase if you're confident in the approach. Otherwise, run these PoCs before building.
+
+### Purpose
+Validate risky assumptions before committing to implementation:
+- Can we extract component data from Figma?
+- Can we export images reliably?
+- Can the plugin communicate with the admin tool?
+- Does AI generation produce usable code?
+
+### File Structure
+```
+poc/
+├── figma-plugin/           # Minimal Figma plugin
+│   ├── manifest.json
+│   ├── code.js
+│   └── ui.html
+├── ai-generation/          # AI code generation tests
+│   ├── test-prompts.md
+│   ├── results.json
+│   └── samples/
+└── api-test/               # Plugin → Admin communication
+    └── test-endpoint.js
+docs/
+├── 00-validation-report.md
+└── 00-risk-register.md
+```
+
+### Chunks
+| Chunk | What to Validate |
+|-------|------------------|
+| 0.00 | Project setup, tooling works |
+| 0.01 | Figma plugin scaffold runs |
+| 0.02 | Can read component properties, variants, tokens |
+| 0.03 | Can export PNG/SVG images |
+| 0.04 | Plugin can POST to admin API |
+| 0.05 | Claude generates usable React code ≥60% |
+| 0.06 | Compile report, GO/NO-GO decision |
+
+### AI Generation Testing (Chunk 0.05)
+Test with 5 component types:
+```
+1. Button (simple)
+2. Input (with states)
+3. Card (composition)
+4. Modal (complex)
+5. Data table (advanced)
+```
+
+Score each 0-100 based on:
+- Compiles without errors (40 pts)
+- Uses correct tokens (30 pts)
+- Matches design intent (30 pts)
+
+**Pass threshold:** Average ≥ 60%
+
+### GO/NO-GO Decision (Chunk 0.06)
+| Result | Action |
+|--------|--------|
+| All criteria pass | **GO** — Start Phase 1 |
+| Minor limitations | **ADJUST** — Document workarounds, start Phase 1 |
+| Critical failures | **NO-GO** — Rethink approach |
+
+---
+
+## Common Patterns
+
+### Theme Service
+```javascript
+import { themeService } from '@/services/themeService'
+
+const themes = await themeService.getThemes()
+const theme = await themeService.createTheme({ name, slug, description })
+await themeService.setDefaultTheme(id)
+```
+
+### Token Service
+```javascript
+import { tokenService } from '@/services/tokenService'
+
+const tokens = await tokenService.getTokensByTheme(themeId) // grouped by category
+await tokenService.bulkCreateTokens(themeId, parsedTokens)
+await tokenService.updateToken(id, { value: newValue })
+```
+
+### Token Parser
+```javascript
+import { parseTokens, detectFormat } from '@/lib/tokenParser'
+
+const format = detectFormat(json) // 'figma-variables' | 'style-dictionary' | 'flat'
+const { tokens, errors, warnings, metadata } = parseTokens(json)
+```
+
+### AI Service
+```javascript
+import { aiService } from '@/services/aiService'
+
+const code = await aiService.generateComponent({
+  description: '...',
+  props: [...],
+  tokens: [...],
+})
+```
+
+---
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "react": "^18.x",
+    "react-dom": "^18.x",
+    "react-router-dom": "^6.x",
+    "@supabase/supabase-js": "^2.x",
+    "lucide-react": "latest",
+    "sonner": "latest",
+    "@monaco-editor/react": "^4.x",
+    "jszip": "^3.x",
+    "file-saver": "^2.x"
+  },
+  "devDependencies": {
+    "vite": "^5.x",
+    "@vitejs/plugin-react": "latest",
+    "tailwindcss": "^3.x",
+    "vitest": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/jest-dom": "latest",
+    "playwright": "latest",
+    "@playwright/test": "latest"
+  }
+}
+```
+
+**Install per phase:**
+- Phase 1: Core deps (react, supabase, vite, tailwind)
+- Phase 3: `@monaco-editor/react` (code editor)
+- Phase 5: `jszip`, `file-saver` (export downloads)
+
+---
+
+## Key Commands
+
+```bash
+npm run dev             # Start dev server (localhost:5173)
+npm test                # Run unit tests
+npm run test:gates      # Run gate checkpoint tests
+npm run test:e2e        # Run Playwright E2E tests
+npm run build           # Production build
+
+# Gate-specific
+npm test tests/gates/gate-1.test.js   # Run specific gate
+npx playwright test tests/e2e/        # All E2E tests
+```
+
+---
+
+## Don't
+
+- ❌ Hardcode colors, sizes, or spacing
+- ❌ Skip writing tests
+- ❌ Implement multiple chunks at once
+- ❌ Proceed with failing tests
+- ❌ Skip chunk dependencies
+- ❌ Hardcode config values — use 04-CONFIG-REFERENCE.md
+- ❌ Add RLS or auth (out of scope for v2.0)
+- ❌ Combine multiple chunks in one response

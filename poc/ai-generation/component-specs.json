@@ -1,0 +1,83 @@
+[
+  {
+    "id": 1,
+    "name": "Button",
+    "description": "A versatile button component with primary, secondary, and outline variants. Supports disabled state, loading state with spinner, and different sizes (sm, md, lg). Should handle click events and be fully accessible.",
+    "category": "buttons",
+    "complexity": "low",
+    "keyChallenge": "States (primary, secondary, disabled, loading)"
+  },
+  {
+    "id": 2,
+    "name": "Card",
+    "description": "A container component for grouping related content. Has optional header, body, and footer sections. Supports elevated and outlined variants with customizable padding.",
+    "category": "layout",
+    "complexity": "low",
+    "keyChallenge": "Layout composition with slots"
+  },
+  {
+    "id": 3,
+    "name": "Input",
+    "description": "A text input field with label, placeholder support, error state with message, helper text, and optional left/right icons. Should handle value changes and be accessible.",
+    "category": "inputs",
+    "complexity": "medium",
+    "keyChallenge": "Label, error state, icons"
+  },
+  {
+    "id": 4,
+    "name": "Avatar",
+    "description": "A circular avatar component that displays a user image with fallback to initials when no image is provided. Supports different sizes (xs, sm, md, lg, xl) and an optional status indicator.",
+    "category": "data-display",
+    "complexity": "low",
+    "keyChallenge": "Image + initials fallback"
+  },
+  {
+    "id": 5,
+    "name": "Badge",
+    "description": "A small status indicator or label component. Supports multiple color variants (default, primary, success, warning, error) and sizes. Can be rendered as a dot-only indicator.",
+    "category": "data-display",
+    "complexity": "low",
+    "keyChallenge": "Multiple color variants"
+  },
+  {
+    "id": 6,
+    "name": "Alert",
+    "description": "A message component for displaying feedback to users. Supports severity levels (info, success, warning, error) with appropriate icons. Has optional title, description, and dismiss button.",
+    "category": "feedback",
+    "complexity": "medium",
+    "keyChallenge": "Icons, dismiss, severity"
+  },
+  {
+    "id": 7,
+    "name": "Modal",
+    "description": "A dialog overlay component that displays content on top of the page. Has a backdrop, close button, header, body, and footer sections. Should trap focus and close on escape key.",
+    "category": "overlays",
+    "complexity": "high",
+    "keyChallenge": "Portal, overlay, focus trap"
+  },
+  {
+    "id": 8,
+    "name": "Dropdown",
+    "description": "A select component with a trigger button and dropdown menu. Supports single selection, keyboard navigation (arrow keys, enter, escape), and custom option rendering.",
+    "category": "inputs",
+    "complexity": "high",
+    "keyChallenge": "Position, keyboard nav"
+  },
+  {
+    "id": 9,
+    "name": "Tabs",
+    "description": "A tabbed navigation component with tab buttons and content panels. Supports controlled and uncontrolled modes, disabled tabs, and keyboard navigation between tabs.",
+    "category": "navigation",
+    "complexity": "medium",
+    "keyChallenge": "Active state, content switching"
+  },
+  {
+    "id": 10,
+    "name": "Accordion",
+    "description": "An expandable content component with multiple collapsible sections. Each section has a header that toggles visibility. Supports single-expand and multi-expand modes with smooth animation.",
+    "category": "layout",
+    "complexity": "medium",
+    "keyChallenge": "Expand/collapse animation"
+  }
+]
+

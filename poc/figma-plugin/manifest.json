@@ -1,0 +1,14 @@
+{
+  "name": "Design System Admin PoC",
+  "id": "design-system-admin-poc",
+  "api": "1.0.0",
+  "main": "dist/main.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "capabilities": ["currentuser"],
+  "permissions": ["activeusers"],
+  "networkAccess": {
+    "allowedDomains": ["*"]
+  }
+}
+
