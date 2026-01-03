@@ -97,7 +97,7 @@
   cursor: pointer;
   color: var(--color-foreground);
   font-size: var(--font-size-sm, 14px);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   transition: background 0.15s ease;
 }
 
@@ -106,7 +106,7 @@
 }
 
 .theme-preview-title {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .theme-preview-controls {
@@ -201,7 +201,7 @@
 .preview-type-label {
   display: block;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: var(--color-muted-foreground, #6b7280);
   text-transform: uppercase;
   letter-spacing: 0.05em;
