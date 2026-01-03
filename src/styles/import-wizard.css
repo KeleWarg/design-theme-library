@@ -127,8 +127,8 @@
 }
 
 .step-check {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-sm, 16px);
+  height: var(--icon-size-sm, 16px);
 }
 
 .step-label {
@@ -711,8 +711,8 @@
 }
 
 .token-preview__color-swatch {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-sm, 16px);
+  height: var(--icon-size-sm, 16px);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   flex-shrink: 0;
@@ -1016,7 +1016,7 @@
 
 .success-icon {
   color: var(--color-success);
-  animation: scaleIn 0.5s ease-out 0.2s both;
+  animation: scaleIn var(--transition-slow, 500ms) ease-out var(--transition-fast, 200ms) both;
 }
 
 .success-sparkle {
@@ -1034,7 +1034,7 @@
 .success-sparkle--right {
   bottom: 4px;
   right: -20px;
-  animation-delay: 0.3s;
+  animation-delay: var(--transition-normal, 250ms);
 }
 
 .success-sparkle--left {
@@ -1081,7 +1081,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  animation: fadeInUp 0.6s ease-out 0.3s both;
+  animation: fadeInUp 0.6s ease-out var(--transition-normal, 250ms) both;
 }
 
 .success-title {

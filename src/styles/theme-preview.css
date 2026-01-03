@@ -61,7 +61,7 @@
    Theme Preview Panel
    ======================================== */
 
-.theme-preview-panel {
+.theme-preview {
   background: var(--color-muted);
   border-top: 1px solid var(--color-border);
   flex-shrink: 0;
@@ -69,11 +69,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height var(--transition-normal, 250ms) ease;
 }
 
-.theme-preview-panel.collapsed {
-  max-height: 48px;
+.theme-preview.collapsed {
+  max-height: var(--preview-header-height, 48px);
 }
 
 .theme-preview-header {
@@ -93,7 +93,7 @@
   padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
   background: transparent;
   border: none;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md, 0.375rem);
   cursor: pointer;
   color: var(--color-foreground);
   font-size: var(--font-size-sm, 14px);
@@ -190,7 +190,7 @@
 .preview-typography-samples {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--spacing-xl, 24px);
 }
 
 .preview-typography-item {
@@ -215,18 +215,18 @@
 }
 
 .preview-typography-weights {
-  padding-top: 16px;
+  padding-top: var(--spacing-md, 16px);
   border-top: 1px solid var(--color-border, #e5e7eb);
 }
 
 .preview-typography-weights .preview-type-label {
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-sm, 12px);
 }
 
 .preview-weights-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--spacing-md, 16px);
 }
 
 .preview-weights-grid span {
@@ -280,7 +280,7 @@
 
 .preview-color-swatch-box {
   width: 100%;
-  height: 48px;
+  height: var(--input-height, 48px);
   border-radius: var(--radius-md);
   border: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
@@ -451,7 +451,7 @@
    ======================================== */
 
 @media (max-width: 768px) {
-  .theme-preview-panel {
+  .theme-preview {
     max-height: 35vh;
   }
   

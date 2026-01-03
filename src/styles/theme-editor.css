@@ -13,8 +13,8 @@
 .theme-editor {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--header-height, 64px));
-  max-height: calc(100vh - var(--header-height, 64px));
+  height: calc(100vh - var(--header-height, 60px));
+  max-height: calc(100vh - var(--header-height, 60px));
   overflow: hidden;
 }
 
@@ -250,7 +250,7 @@
 .token-search-input {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
-  padding-left: calc(var(--spacing-sm) + 16px + var(--spacing-xs));
+  padding-left: calc(var(--spacing-sm) + var(--spacing-md, 16px) + var(--spacing-xs));
   padding-right: var(--spacing-lg);
   font-size: var(--font-size-sm);
   border: 1px solid var(--color-border);
@@ -281,7 +281,7 @@
   border: none;
   border-radius: var(--radius-sm);
   color: var(--color-muted-foreground);
-  font-size: 16px;
+  font-size: var(--font-size-md, 16px);
   line-height: 1;
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
@@ -367,8 +367,8 @@
 }
 
 .token-color-swatch {
-  width: 28px;
-  height: 28px;
+  width: var(--icon-size-md, 28px);
+  height: var(--icon-size-md, 28px);
   border-radius: var(--radius-sm);
   border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: var(--shadow-sm);
@@ -460,16 +460,16 @@
 
 /* Token Preview Types */
 .token-shadow-preview {
-  width: 28px;
-  height: 28px;
+  width: var(--icon-size-md, 28px);
+  height: var(--icon-size-md, 28px);
   background: var(--color-background);
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
 }
 
 .token-radius-preview {
-  width: 28px;
-  height: 28px;
+  width: var(--icon-size-md, 28px);
+  height: var(--icon-size-md, 28px);
   background: var(--color-primary);
   border: 2px solid var(--color-primary);
 }
@@ -594,7 +594,7 @@
 }
 
 .token-editor-color-input {
-  width: 48px;
+  width: var(--icon-size-lg, 48px);
   height: 40px;
   padding: 2px;
   border: 1px solid var(--color-border);
@@ -640,7 +640,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height var(--transition-normal, 250ms) ease;
 }
 
 .theme-preview.collapsed {
@@ -815,7 +815,7 @@
 }
 
 .color-picker-input {
-  width: 48px;
+  width: var(--icon-size-lg, 48px);
   height: 40px;
   padding: 2px;
   border: 1px solid var(--color-border);
