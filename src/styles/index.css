@@ -1,0 +1,13 @@
+/**
+ * @chunk 1.11 - App Shell & Routing
+ * Main stylesheet entry point
+ */
+
+/* CSS imports must come first */
+@import './variables.css';
+@import './layout.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+

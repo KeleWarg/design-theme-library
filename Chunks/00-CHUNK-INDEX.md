@@ -38,7 +38,7 @@ Estimated total time: **160-180 hours** (with parallelization)
 
 | Chunk | Name | Est. Time | Dependencies | Status |
 |-------|------|-----------|--------------|--------|
-| 1.01 | Supabase Setup | 1h | Phase 0 or skip | ⬜ |
+| 1.01 | Supabase Setup | 1h | Phase 0 or skip | ✅ |
 | 1.02 | Schema - Themes & Tokens | 2h | 1.01 | ⬜ |
 | 1.03 | Schema - Typography | 2h | 1.01 | ⬜ |
 | 1.04 | Schema - Components | 2h | 1.01 | ⬜ |
