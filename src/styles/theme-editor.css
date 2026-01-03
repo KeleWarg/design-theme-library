@@ -647,6 +647,11 @@
   max-height: 44px;
 }
 
+/* Expanded state - larger viewport */
+.theme-preview.expanded {
+  max-height: 80vh;
+}
+
 .theme-preview-header {
   display: flex;
   align-items: center;
@@ -2164,6 +2169,10 @@
   
   .theme-preview.collapsed {
     max-height: 44px;
+
+  .theme-preview.expanded {
+    max-height: 70vh;
+  }
   }
 }
 
