@@ -102,7 +102,7 @@ export function tokenToCssValue(token) {
     default:
       if (typeof value === 'object') {
         if (value.value !== undefined) {
-          return `${value.value}${value.unit || ''}`;
+          return `${value.value}${value.unit ?? ''}`;
         }
         return JSON.stringify(value);
       }
@@ -159,7 +159,7 @@ function formatDimensionValue(value) {
   if (typeof value === 'string') return value;
   
   if (typeof value === 'object' && value.value !== undefined) {
-    return `${value.value}${value.unit || 'px'}`;
+    return `${value.value}${value.unit ?? 'px'}`;
   }
   
   return '0';
@@ -205,12 +205,13 @@ function formatSingleShadow(s) {
 
 /**
  * Format typography token value to CSS
+ * Note: Uses ?? to preserve empty string units (for unitless values like line-height)
  */
 function formatTypographyValue(value) {
   if (typeof value === 'string') return value;
   
   if (typeof value === 'object' && value.value !== undefined) {
-    return `${value.value}${value.unit || 'px'}`;
+    return `${value.value}${value.unit ?? 'px'}`;
   }
   
   // Handle font family arrays
@@ -229,7 +230,7 @@ function formatGridValue(value) {
   if (typeof value === 'number') return `${value}px`;
   
   if (typeof value === 'object' && value.value !== undefined) {
-    return `${value.value}${value.unit || 'px'}`;
+    return `${value.value}${value.unit ?? 'px'}`;
   }
   
   return String(value);
