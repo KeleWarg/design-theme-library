@@ -8,10 +8,11 @@
  * @chunk 2.20 - GridEditor
  * 
  * Token editor panel that routes to category-specific editors.
+ * Features explicit Save/Cancel buttons for changes.
  */
 
-import { useState, useEffect } from 'react';
-import { Settings, Edit3, Check, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Settings, Edit3, Check, X, Save, RotateCcw } from 'lucide-react';
 import ColorEditor from './ColorEditor';
 import TypographyEditor from './TypographyEditor';
 import SpacingEditor from './SpacingEditor';
@@ -27,17 +28,80 @@ import GridEditor from './GridEditor';
  * @param {Object} props.token - Selected token to edit
  * @param {string} props.category - Token category
  * @param {string} props.themeId - Theme ID for fetching typefaces
- * @param {Function} props.onUpdate - Update handler
+ * @param {Function} props.onUpdate - Update handler (saves to DB)
  */
 export default function TokenEditorPanel({ token, category, themeId, onUpdate }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  
+  // Pending changes state - accumulates changes until Save is clicked
+  const [pendingChanges, setPendingChanges] = useState({});
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Reset editing state when token changes
+  // Reset editing state and pending changes when token changes
   useEffect(() => {
     setIsEditingName(false);
     setEditedName(token?.name || '');
+    setPendingChanges({});
+    setHasChanges(false);
   }, [token?.id]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
+
+  /**
+   * Handle local change - accumulates changes without saving
+   * Changes are only persisted when Save is clicked
+   */
+  const handleLocalChange = useCallback((updates) => {
+    setPendingChanges(prev => ({ ...prev, ...updates }));
+    setHasChanges(true);
+  }, []);
+
+  /**
+   * Save all pending changes
+   */
+  const handleSaveChanges = useCallback(async () => {
+    if (!hasChanges || Object.keys(pendingChanges).length === 0) return;
+    
+    setIsSaving(true);
+    try {
+      await onUpdate?.(pendingChanges);
+      setPendingChanges({});
+      setHasChanges(false);
+    } catch (error) {
+      console.error('Failed to save changes:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [hasChanges, pendingChanges, onUpdate]);
+
+  /**
+   * Cancel all pending changes
+   */
+  const handleCancelChanges = useCallback(() => {
+    setPendingChanges({});
+    setHasChanges(false);
+  }, []);
+
+  /**
+   * Get the current value for display, merging original token with pending changes
+   */
+  const getDisplayToken = useCallback(() => {
+    if (!token) return null;
+    return { ...token, ...pendingChanges };
+  }, [token, pendingChanges]);
 
   // Start editing the name
   const handleStartEditName = () => {
@@ -45,10 +109,10 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
     setIsEditingName(true);
   };
 
-  // Save the edited name
+  // Save the edited name (adds to pending changes)
   const handleSaveName = () => {
     if (editedName.trim() && editedName !== token.name) {
-      onUpdate?.({ name: editedName.trim() });
+      handleLocalChange({ name: editedName.trim() });
     }
     setIsEditingName(false);
   };
@@ -80,21 +144,24 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
     );
   }
 
-  // Render category-specific editor
+  // Get the display token with pending changes merged
+  const displayToken = getDisplayToken();
+
+  // Render category-specific editor - uses handleLocalChange for pending changes
   const renderEditor = () => {
     switch (category) {
       case 'color':
-        return <ColorEditor token={token} onUpdate={onUpdate} />;
+        return <ColorEditor token={displayToken} onUpdate={handleLocalChange} />;
       case 'typography':
-        return <TypographyEditor token={token} themeId={themeId} onUpdate={onUpdate} />;
+        return <TypographyEditor token={displayToken} themeId={themeId} onUpdate={handleLocalChange} />;
       case 'spacing':
-        return <SpacingEditor token={token} onUpdate={onUpdate} />;
+        return <SpacingEditor token={displayToken} onUpdate={handleLocalChange} />;
       case 'shadow':
-        return <ShadowEditor token={token} onUpdate={onUpdate} />;
+        return <ShadowEditor token={displayToken} onUpdate={handleLocalChange} />;
       case 'radius':
-        return <RadiusEditor token={token} onUpdate={onUpdate} />;
+        return <RadiusEditor token={displayToken} onUpdate={handleLocalChange} />;
       case 'grid':
-        return <GridEditor token={token} onUpdate={onUpdate} />;
+        return <GridEditor token={displayToken} onUpdate={handleLocalChange} />;
       default:
         return renderGenericEditor();
     }
@@ -103,9 +170,9 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
   // Generic editor for categories without specialized editors yet
   const renderGenericEditor = () => {
     // Get the raw value for display
-    const displayValue = typeof token.value === 'object' 
-      ? JSON.stringify(token.value, null, 2)
-      : token.value;
+    const displayValue = typeof displayToken.value === 'object' 
+      ? JSON.stringify(displayToken.value, null, 2)
+      : displayToken.value;
 
     return (
       <div className="token-editor-content">
@@ -115,8 +182,8 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
           <input
             type="text"
             className="token-editor-input"
-            value={token.name || ''}
-            onChange={(e) => onUpdate?.({ name: e.target.value })}
+            value={displayToken.name || ''}
+            onChange={(e) => handleLocalChange({ name: e.target.value })}
           />
         </div>
 
@@ -125,7 +192,7 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
           <input
             type="text"
             className="token-editor-input"
-            value={token.css_variable || ''}
+            value={displayToken.css_variable || ''}
             disabled
             readOnly
           />
@@ -136,7 +203,7 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
           <input
             type="text"
             className="token-editor-input"
-            value={token.path || ''}
+            value={displayToken.path || ''}
             disabled
             readOnly
           />
@@ -150,10 +217,10 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
             onChange={(e) => {
               try {
                 const parsed = JSON.parse(e.target.value);
-                onUpdate?.({ value: parsed });
+                handleLocalChange({ value: parsed });
               } catch {
                 // If not valid JSON, treat as string
-                onUpdate?.({ value: e.target.value });
+                handleLocalChange({ value: e.target.value });
               }
             }}
             rows={4}
@@ -170,7 +237,7 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
   };
 
   return (
-    <div className="token-editor-panel">
+    <div className={`token-editor-panel ${hasChanges ? 'has-changes' : ''}`}>
       <div className="token-editor-header">
         {isEditingName ? (
           <div className="token-name-edit-row">
@@ -199,7 +266,7 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
           </div>
         ) : (
           <div className="token-name-display-row">
-            <h3 className="token-editor-title">{token.name}</h3>
+            <h3 className="token-editor-title">{displayToken.name}</h3>
             <button 
               className="btn btn-ghost btn-icon btn-xs token-name-edit-btn"
               onClick={handleStartEditName}
@@ -209,9 +276,37 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
             </button>
           </div>
         )}
-        <span className="token-editor-type">{token.type || category}</span>
+        <span className="token-editor-type">{displayToken.type || category}</span>
       </div>
+      
       {renderEditor()}
+      
+      {/* Save/Cancel buttons - shown when there are pending changes */}
+      {hasChanges && (
+        <div className="token-editor-actions">
+          <div className="token-editor-actions-hint">
+            You have unsaved changes
+          </div>
+          <div className="token-editor-actions-buttons">
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={handleCancelChanges}
+              disabled={isSaving}
+            >
+              <RotateCcw size={14} />
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary btn-sm"
+              onClick={handleSaveChanges}
+              disabled={isSaving}
+            >
+              <Save size={14} />
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

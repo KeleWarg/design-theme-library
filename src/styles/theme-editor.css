@@ -2227,7 +2227,7 @@
 
 .token-name-input:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--color-primary-light);
+  box-shadow: 0 0 0 2px var(--color-primary-light, #eff6ff);
 }
 
 .token-name-action {
@@ -2285,7 +2285,7 @@
 
 .editor-nav-tab.active {
   color: var(--color-primary);
-  background: var(--color-primary-light);
+  background: var(--color-primary-light, #eff6ff);
 }
 
 /* ==========================================
@@ -2312,7 +2312,7 @@
 
 .token-list-link:hover {
   color: var(--color-primary);
-  background: var(--color-primary-light);
+  background: var(--color-primary-light, #eff6ff);
 }
 
 /* ==========================================
