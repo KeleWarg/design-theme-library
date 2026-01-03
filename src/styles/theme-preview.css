@@ -65,9 +65,11 @@
   background: var(--color-muted);
   border-top: 1px solid var(--color-border);
   flex-shrink: 0;
-  max-height: 400px;
+  max-height: 40vh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  transition: max-height var(--transition-normal);
+  transition: max-height 0.3s ease;
 }
 
 .theme-preview-panel.collapsed {
@@ -78,24 +80,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-background);
+  flex-shrink: 0;
 }
 
 .theme-preview-toggle {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  gap: var(--spacing-xs, 4px);
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
   background: transparent;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 8px);
   cursor: pointer;
   color: var(--color-foreground);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  transition: background var(--transition-fast);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 500;
+  transition: background 0.15s ease;
 }
 
 .theme-preview-toggle:hover {
@@ -103,18 +106,19 @@
 }
 
 .theme-preview-title {
-  font-weight: var(--font-weight-semibold);
+  font-weight: 600;
 }
 
 .theme-preview-controls {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-sm, 8px);
 }
 
 .theme-preview-body {
   overflow-y: auto;
-  max-height: calc(400px - 48px);
+  flex: 1;
+  min-height: 0; /* Critical for flex child scrolling */
 }
 
 .theme-preview-viewport {
@@ -448,11 +452,7 @@
 
 @media (max-width: 768px) {
   .theme-preview-panel {
-    max-height: 350px;
-  }
-  
-  .theme-preview-body {
-    max-height: calc(350px - 48px);
+    max-height: 35vh;
   }
   
   .preview-button-row {
