@@ -1,11 +1,15 @@
 /**
  * @chunk 2.21 - TypefaceManager
+ * @chunk 2.23 - FontUploader integration
  * 
  * TypefaceCard displays a single typeface role slot.
  * Shows assigned typeface or empty state for unassigned roles.
+ * For custom typefaces, shows FontUploader to upload font files.
  */
 
-import { Type, Edit2, Trash2, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Type, Edit2, Trash2, Plus, Upload, ChevronDown, ChevronUp } from 'lucide-react';
+import FontUploader from './FontUploader';
 
 /**
  * Role metadata for display
@@ -40,8 +44,10 @@ const roleInfo = {
  * @param {Object|null} props.typeface - Typeface data or null if unassigned
  * @param {Function} props.onEdit - Called when edit is clicked
  * @param {Function} props.onDelete - Called when delete is clicked
+ * @param {Function} props.onUpdate - Called when typeface data changes (e.g., font upload)
  */
-export default function TypefaceCard({ role, typeface, onEdit, onDelete }) {
+export default function TypefaceCard({ role, typeface, onEdit, onDelete, onUpdate }) {
+  const [showUploader, setShowUploader] = useState(false);
   const info = roleInfo[role] || { label: role, description: '', icon: '🔤' };
   const isAssigned = !!typeface;
 
@@ -118,10 +124,42 @@ export default function TypefaceCard({ role, typeface, onEdit, onDelete }) {
         )}
       </div>
 
-      {isAssigned && typeface.font_files?.length > 0 && (
+      {/* Font files footer - show count or upload prompt for custom fonts */}
+      {isAssigned && (
         <div className="typeface-card-footer">
-          <Type size={14} />
-          <span>{typeface.font_files.length} font file{typeface.font_files.length !== 1 ? 's' : ''}</span>
+          {typeface.source_type === 'custom' ? (
+            <button
+              className="typeface-upload-toggle"
+              onClick={() => setShowUploader(!showUploader)}
+              aria-expanded={showUploader}
+            >
+              <Upload size={14} />
+              <span>
+                {typeface.font_files?.length > 0 
+                  ? `${typeface.font_files.length} font file${typeface.font_files.length !== 1 ? 's' : ''}`
+                  : 'Upload font files'
+                }
+              </span>
+              {showUploader ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          ) : typeface.font_files?.length > 0 ? (
+            <>
+              <Type size={14} />
+              <span>{typeface.font_files.length} font file{typeface.font_files.length !== 1 ? 's' : ''}</span>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {/* FontUploader for custom typefaces */}
+      {isAssigned && typeface.source_type === 'custom' && showUploader && (
+        <div className="typeface-upload-section">
+          <FontUploader
+            typefaceId={typeface.id}
+            existingFiles={typeface.font_files || []}
+            onUploadComplete={() => onUpdate?.()}
+            onFileDeleted={() => onUpdate?.()}
+          />
         </div>
       )}
     </div>

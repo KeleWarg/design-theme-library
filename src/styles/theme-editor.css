@@ -2187,3 +2187,67 @@
   }
 }
 
+
+/* ==========================================
+   Token Name Editing
+   ========================================== */
+
+.token-name-display-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.token-name-edit-btn {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.token-editor-header:hover .token-name-edit-btn,
+.token-name-edit-btn:focus {
+  opacity: 1;
+}
+
+.token-name-edit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.token-name-input {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  min-width: 150px;
+}
+
+.token-name-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.token-name-action {
+  color: var(--color-muted-foreground);
+}
+
+.token-name-action:hover {
+  color: var(--color-foreground);
+}
+
+/* ==========================================
+   Typography Font Family
+   ========================================== */
+
+.typography-font-family {
+  margin-bottom: var(--spacing-lg);
+}
+
+.typography-font-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  margin-top: var(--spacing-xs);
+}

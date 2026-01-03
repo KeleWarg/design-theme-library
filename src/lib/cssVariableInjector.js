@@ -205,13 +205,30 @@ function formatSingleShadow(s) {
 
 /**
  * Format typography token value to CSS
- * Note: Uses ?? to preserve empty string units (for unitless values like line-height)
+ * Handles unitless values (like line-height) vs values with units (like font-size)
  */
 function formatTypographyValue(value) {
   if (typeof value === 'string') return value;
   
   if (typeof value === 'object' && value.value !== undefined) {
-    return `${value.value}${value.unit ?? 'px'}`;
+    const unit = value.unit;
+    
+    // If unit is explicitly empty string, use no unit (unitless values like line-height)
+    if (unit === '') {
+      return String(value.value);
+    }
+    // If unit is specified and not empty, use it
+    if (unit) {
+      return `${value.value}${unit}`;
+    }
+    // No unit specified - check if value looks like a unitless ratio
+    // (common for line-height which is typically between 1.0-3.0)
+    const numVal = parseFloat(value.value);
+    if (!isNaN(numVal) && numVal > 0 && numVal < 10) {
+      return String(value.value);
+    }
+    // Default to px for larger values (likely font-size, etc.)
+    return `${value.value}px`;
   }
   
   // Handle font family arrays

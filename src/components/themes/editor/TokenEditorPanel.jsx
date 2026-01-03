@@ -10,7 +10,8 @@
  * Token editor panel that routes to category-specific editors.
  */
 
-import { Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Edit3, Check, X } from 'lucide-react';
 import ColorEditor from './ColorEditor';
 import TypographyEditor from './TypographyEditor';
 import SpacingEditor from './SpacingEditor';
@@ -25,9 +26,48 @@ import GridEditor from './GridEditor';
  * @param {Object} props
  * @param {Object} props.token - Selected token to edit
  * @param {string} props.category - Token category
+ * @param {string} props.themeId - Theme ID for fetching typefaces
  * @param {Function} props.onUpdate - Update handler
  */
-export default function TokenEditorPanel({ token, category, onUpdate }) {
+export default function TokenEditorPanel({ token, category, themeId, onUpdate }) {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+
+  // Reset editing state when token changes
+  useEffect(() => {
+    setIsEditingName(false);
+    setEditedName(token?.name || '');
+  }, [token?.id]);
+
+  // Start editing the name
+  const handleStartEditName = () => {
+    setEditedName(token.name || '');
+    setIsEditingName(true);
+  };
+
+  // Save the edited name
+  const handleSaveName = () => {
+    if (editedName.trim() && editedName !== token.name) {
+      onUpdate?.({ name: editedName.trim() });
+    }
+    setIsEditingName(false);
+  };
+
+  // Cancel editing
+  const handleCancelEditName = () => {
+    setEditedName(token.name || '');
+    setIsEditingName(false);
+  };
+
+  // Handle keydown in name input
+  const handleNameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSaveName();
+    } else if (e.key === 'Escape') {
+      handleCancelEditName();
+    }
+  };
+
   if (!token) {
     return (
       <div className="token-editor-panel token-editor-empty">
@@ -46,7 +86,7 @@ export default function TokenEditorPanel({ token, category, onUpdate }) {
       case 'color':
         return <ColorEditor token={token} onUpdate={onUpdate} />;
       case 'typography':
-        return <TypographyEditor token={token} onUpdate={onUpdate} />;
+        return <TypographyEditor token={token} themeId={themeId} onUpdate={onUpdate} />;
       case 'spacing':
         return <SpacingEditor token={token} onUpdate={onUpdate} />;
       case 'shadow':
@@ -132,7 +172,43 @@ export default function TokenEditorPanel({ token, category, onUpdate }) {
   return (
     <div className="token-editor-panel">
       <div className="token-editor-header">
-        <h3 className="token-editor-title">{token.name}</h3>
+        {isEditingName ? (
+          <div className="token-name-edit-row">
+            <input
+              type="text"
+              className="token-name-input"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              autoFocus
+            />
+            <button 
+              className="btn btn-ghost btn-icon btn-xs token-name-action"
+              onClick={handleSaveName}
+              title="Save name"
+            >
+              <Check size={14} />
+            </button>
+            <button 
+              className="btn btn-ghost btn-icon btn-xs token-name-action"
+              onClick={handleCancelEditName}
+              title="Cancel"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="token-name-display-row">
+            <h3 className="token-editor-title">{token.name}</h3>
+            <button 
+              className="btn btn-ghost btn-icon btn-xs token-name-edit-btn"
+              onClick={handleStartEditName}
+              title="Edit token name"
+            >
+              <Edit3 size={14} />
+            </button>
+          </div>
+        )}
         <span className="token-editor-type">{token.type || category}</span>
       </div>
       {renderEditor()}

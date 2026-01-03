@@ -222,6 +222,7 @@ export default function ThemeEditorPage() {
           <TokenEditorPanel
             token={selectedToken}
             category={activeCategory}
+            themeId={id}
             onUpdate={(updates) => {
               if (selectedToken) {
                 handleTokenUpdate(selectedToken.id, updates);

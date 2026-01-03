@@ -279,6 +279,7 @@ function dimensionToCss(value) {
 
 /**
  * Convert typography token value to CSS
+ * Handles unitless values (like line-height) vs values with units (like font-size)
  */
 function typographyToCss(value) {
   if (typeof value === 'string') {
@@ -286,7 +287,22 @@ function typographyToCss(value) {
   }
   
   if (typeof value === 'object' && value.value !== undefined) {
-    return `${value.value}${value.unit || 'px'}`;
+    // If unit is explicitly empty string, use no unit (unitless values like line-height)
+    if (value.unit === '') {
+      return String(value.value);
+    }
+    // If unit is specified and not empty, use it
+    if (value.unit) {
+      return `${value.value}${value.unit}`;
+    }
+    // No unit specified - check if value looks like a unitless ratio
+    // (common for line-height which is typically between 1.0-3.0)
+    const numVal = parseFloat(value.value);
+    if (!isNaN(numVal) && numVal > 0 && numVal < 10) {
+      return String(value.value);
+    }
+    // Default to px for larger values (likely font-size, etc.)
+    return `${value.value}px`;
   }
   
   return String(value);

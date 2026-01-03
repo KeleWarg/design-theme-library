@@ -86,6 +86,7 @@ export default function TypefaceManager({ themeId }) {
                 typeface={typeface}
                 onEdit={() => setEditingTypeface(typeface || { role })}
                 onDelete={() => typeface && handleDelete(typeface.id)}
+                onUpdate={refetch}
               />
             );
           })}
