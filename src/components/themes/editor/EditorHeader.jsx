@@ -4,8 +4,8 @@
  * Editor header component with theme name, status, save button, and preview toggle.
  */
 
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Save, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { ArrowLeft, Save, Eye, EyeOff, MoreHorizontal, Palette, Type } from 'lucide-react';
 
 /**
  * Theme editor header with navigation and controls
@@ -23,6 +23,10 @@ export default function EditorHeader({
   onTogglePreview,
   onSave 
 }) {
+  const location = useLocation();
+  const themeId = theme?.id;
+  const isTypographyPage = location.pathname.includes('/typography');
+  
   const statusColor = theme?.status === 'published' 
     ? 'var(--color-success)' 
     : 'var(--color-warning)';
@@ -55,6 +59,31 @@ export default function EditorHeader({
             )}
           </div>
         </div>
+        
+        {/* Sub-navigation tabs */}
+        {themeId && (
+          <nav className="editor-nav-tabs" aria-label="Theme editor sections">
+            <NavLink 
+              to={`/themes/${themeId}`}
+              end
+              className={({ isActive }) => 
+                `editor-nav-tab ${isActive && !isTypographyPage ? 'active' : ''}`
+              }
+            >
+              <Palette size={14} />
+              Tokens
+            </NavLink>
+            <NavLink 
+              to={`/themes/${themeId}/typography`}
+              className={({ isActive }) => 
+                `editor-nav-tab ${isActive ? 'active' : ''}`
+              }
+            >
+              <Type size={14} />
+              Typography
+            </NavLink>
+          </nav>
+        )}
       </div>
 
       <div className="editor-header-right">

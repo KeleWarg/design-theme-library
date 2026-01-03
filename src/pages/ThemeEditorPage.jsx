@@ -213,6 +213,7 @@ export default function ThemeEditorPage() {
           <TokenList
             tokens={categoryTokens}
             category={activeCategory}
+            themeId={id}
             selectedToken={selectedToken}
             onSelectToken={handleSelectToken}
             onAddToken={handleAddToken}

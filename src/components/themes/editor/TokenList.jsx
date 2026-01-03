@@ -6,7 +6,8 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Search, Type } from 'lucide-react';
 import { Button } from '../../ui';
 import TokenListItem from './TokenListItem';
 import AddTokenModal from './AddTokenModal';
@@ -16,6 +17,7 @@ import AddTokenModal from './AddTokenModal';
  * @param {Object} props
  * @param {Array} props.tokens - Tokens to display
  * @param {string} props.category - Current category
+ * @param {string} props.themeId - Theme ID for navigation links
  * @param {Object} props.selectedToken - Currently selected token
  * @param {Function} props.onSelectToken - Token selection handler
  * @param {Function} props.onAddToken - Add new token handler
@@ -24,6 +26,7 @@ import AddTokenModal from './AddTokenModal';
 export default function TokenList({ 
   tokens = [], 
   category,
+  themeId,
   selectedToken, 
   onSelectToken,
   onAddToken,
@@ -60,16 +63,28 @@ export default function TokenList({
         <h3 className="token-list-title">
           {categoryLabel} Tokens
         </h3>
-        <Button 
-          size="small" 
-          variant="ghost"
-          onClick={() => setShowAddModal(true)}
-          title="Add token"
-          aria-label={`Add ${category} token`}
-        >
-          <Plus size={16} />
-          Add
-        </Button>
+        <div className="token-list-actions">
+          {category === 'typography' && themeId && (
+            <Link 
+              to={`/themes/${themeId}/typography`}
+              className="btn btn-ghost btn-sm token-list-link"
+              title="Manage typefaces"
+            >
+              <Type size={14} />
+              Manage Fonts
+            </Link>
+          )}
+          <Button 
+            size="small" 
+            variant="ghost"
+            onClick={() => setShowAddModal(true)}
+            title="Add token"
+            aria-label={`Add ${category} token`}
+          >
+            <Plus size={16} />
+            Add
+          </Button>
+        </div>
       </div>
 
       {/* Search input */}

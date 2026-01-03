@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Input, Select } from '../../ui';
 import { cn } from '../../../lib/utils';
 import { useTypefaces } from '../../../hooks/useTypefaces';
@@ -325,9 +326,12 @@ export default function TypographyEditor({ token, themeId, onUpdate }) {
             ]}
             placeholder="Select font family"
           />
-          {fontFamilyOptions.length === 0 && (
+          {fontFamilyOptions.length === 0 && themeId && (
             <p className="typography-font-hint">
-              No typefaces configured for this theme. Add typefaces in Typography settings.
+              No typefaces configured.{' '}
+              <Link to={`/themes/${themeId}/typography`} className="typography-font-link">
+                Add typefaces →
+              </Link>
             </p>
           )}
         </div>
