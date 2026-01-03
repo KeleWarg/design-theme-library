@@ -2328,3 +2328,64 @@
 .typography-font-link:hover {
   text-decoration: underline;
 }
+
+/* ==========================================
+   Token Editor Actions (Save/Cancel)
+   ========================================== */
+
+.token-editor-panel.has-changes {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 1px var(--color-warning);
+}
+
+.token-editor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  background: var(--color-warning-light, rgba(245, 158, 11, 0.1));
+  border-top: 1px solid var(--color-warning);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.token-editor-actions-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-warning);
+  font-weight: var(--font-weight-medium);
+}
+
+.token-editor-actions-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.token-editor-actions-buttons .btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.token-editor-actions-buttons .btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.token-editor-actions-buttons .btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.token-editor-actions-buttons .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.token-editor-actions-buttons .btn-secondary {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.token-editor-actions-buttons .btn-secondary:hover:not(:disabled) {
+  background: var(--color-border);
+}
