@@ -48,8 +48,8 @@ Estimated total time: **160-180 hours** (with parallelization)
 | 1.08 | Token Service | 2h | 1.02 | ✅ |
 | 1.09 | Typeface Service | 2h | 1.03, 1.05 | ✅ |
 | 1.10 | Component Service | 2h | 1.04 | ✅ |
-| 1.11 | App Shell & Routing | 3h | None | ⬜ |
-| 1.12 | Token Parser | 2h | None | ⬜ |
+| 1.11 | App Shell & Routing | 3h | None | ✅ |
+| 1.12 | Token Parser | 2h | None | ✅ |
 
 **Phase 1 Total:** 24 hours
 
