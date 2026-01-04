@@ -14,8 +14,11 @@ import { toast } from 'sonner';
 import { componentService } from '../../../services/componentService';
 
 export default function CodeTab({ component, onSave, onChangesMade }) {
+  // Support both jsx_code (db column) and code (legacy/fallback)
+  const componentCode = component.jsx_code || component.code || '';
+  
   const [isEditing, setIsEditing] = useState(false);
-  const [editedCode, setEditedCode] = useState(component.code || '');
+  const [editedCode, setEditedCode] = useState(componentCode);
   const [hasChanges, setHasChanges] = useState(false);
   const [copied, setCopied] = useState(false);
   const [syntaxError, setSyntaxError] = useState(null);
@@ -23,16 +26,17 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
 
   // Reset when component changes
   useEffect(() => {
-    setEditedCode(component.code || '');
+    const code = component.jsx_code || component.code || '';
+    setEditedCode(code);
     setHasChanges(false);
     setIsEditing(false);
     setSyntaxError(null);
-  }, [component.code]);
+  }, [component.jsx_code, component.code]);
 
   // Track changes
   const handleCodeChange = (value) => {
     setEditedCode(value || '');
-    const changed = value !== (component.code || '');
+    const changed = value !== componentCode;
     setHasChanges(changed);
     
     if (changed && onChangesMade) {
@@ -56,14 +60,14 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
   // Enter edit mode
   const handleEdit = () => {
     setIsEditing(true);
-    setEditedCode(component.code || '');
+    setEditedCode(componentCode);
     setHasChanges(false);
     setSyntaxError(null);
   };
 
   // Cancel editing - revert changes
   const handleCancel = () => {
-    setEditedCode(component.code || '');
+    setEditedCode(componentCode);
     setHasChanges(false);
     setIsEditing(false);
     setSyntaxError(null);
@@ -81,7 +85,8 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
 
     setIsSaving(true);
     try {
-      await componentService.updateComponent(component.id, { code: editedCode });
+      // Save to jsx_code column (the actual DB column name)
+      await componentService.updateComponent(component.id, { jsx_code: editedCode });
       setHasChanges(false);
       setIsEditing(false);
       setSyntaxError(null);
@@ -99,7 +104,7 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
 
   // Copy to clipboard
   const handleCopy = async () => {
-    const codeToCopy = isEditing ? editedCode : (component.code || '');
+    const codeToCopy = isEditing ? editedCode : componentCode;
     try {
       await navigator.clipboard.writeText(codeToCopy);
       setCopied(true);
@@ -110,7 +115,7 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
     }
   };
 
-  const currentCode = isEditing ? editedCode : (component.code || '');
+  const currentCode = isEditing ? editedCode : componentCode;
   const isEmpty = !currentCode || currentCode.trim() === '';
 
   return (

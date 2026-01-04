@@ -120,14 +120,15 @@ export default function ManualCreationWizard() {
 
     setIsSubmitting(true);
     try {
+      // Prepare data - convert empty strings to null/undefined for optional fields
       const component = await componentService.createComponent({
         name: componentData.name.trim(),
-        description: componentData.description.trim(),
-        category: componentData.category,
-        props: componentData.props,
-        variants: componentData.variants,
-        linked_tokens: componentData.linked_tokens,
-        code: componentData.code,
+        description: componentData.description?.trim() || null,
+        category: componentData.category || 'other',
+        props: componentData.props || [],
+        variants: componentData.variants || [],
+        linked_tokens: componentData.linked_tokens || [],
+        code: componentData.code?.trim() || null,
         status: 'draft'
       });
       
@@ -135,7 +136,15 @@ export default function ManualCreationWizard() {
       navigate(`/components/${component.id}`);
     } catch (error) {
       console.error('Failed to create component:', error);
-      toast.error('Failed to create component');
+      // Show detailed error message
+      const errorMessage = error?.message || error?.details || 'Failed to create component';
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      toast.error(`Failed to create component: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

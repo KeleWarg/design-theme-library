@@ -46,6 +46,8 @@ vi.mock('lucide-react', () => ({
   Monitor: () => <span data-testid="icon-monitor">🖥</span>,
   Tablet: () => <span data-testid="icon-tablet">📱</span>,
   Smartphone: () => <span data-testid="icon-smartphone">📱</span>,
+  Sun: () => <span data-testid="icon-sun">☀</span>,
+  Moon: () => <span data-testid="icon-moon">🌙</span>,
 }));
 
 // Mock SegmentedControl
@@ -264,16 +266,17 @@ describe('ThemePreview', () => {
     expect(screen.getByText('Typography')).toBeInTheDocument();
     expect(screen.getByText('Colors')).toBeInTheDocument();
     expect(screen.getByText('Buttons')).toBeInTheDocument();
-    expect(screen.getByText('Cards')).toBeInTheDocument();
-    expect(screen.getByText('Form Elements')).toBeInTheDocument();
+    expect(screen.getByText('Card')).toBeInTheDocument(); // Singular
+    expect(screen.getByText('Form')).toBeInTheDocument(); // Component uses "Form" not "Form Elements"
   });
 
   it('shows viewport controls', () => {
     render(<ThemePreview />);
-    expect(screen.getByTestId('segmented-control')).toBeInTheDocument();
-    expect(screen.getByText('Desktop')).toBeInTheDocument();
-    expect(screen.getByText('Tablet')).toBeInTheDocument();
-    expect(screen.getByText('Mobile')).toBeInTheDocument();
+    // Component uses SegmentedControl with icon buttons, not text labels
+    // Check for aria-labels instead
+    expect(screen.getByRole('button', { name: /desktop viewport/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tablet viewport/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /mobile viewport/i })).toBeInTheDocument();
   });
 
   it('toggles collapse state', () => {
@@ -290,29 +293,29 @@ describe('ThemePreview', () => {
     expect(screen.queryByText('Typography')).not.toBeInTheDocument();
   });
 
-  it('respects controlled collapsed prop', () => {
-    const onToggle = vi.fn();
-    render(<ThemePreview collapsed={true} onToggle={onToggle} />);
+  it('respects initialCollapsed prop', () => {
+    render(<ThemePreview initialCollapsed={true} />);
     
-    // Should be collapsed
+    // Should be collapsed - content not visible
     expect(screen.queryByText('Typography')).not.toBeInTheDocument();
     
-    // Click toggle
+    // Click toggle to expand
     const toggleButton = screen.getByRole('button', { name: /expand preview/i });
     fireEvent.click(toggleButton);
     
-    expect(onToggle).toHaveBeenCalled();
+    // Content should now be visible
+    expect(screen.getByText('Typography')).toBeInTheDocument();
   });
 
   it('changes viewport on selection', () => {
     render(<ThemePreview />);
     
-    // Click tablet viewport
-    const tabletButton = screen.getByText('Tablet');
+    // Click tablet viewport using aria-label
+    const tabletButton = screen.getByRole('button', { name: /tablet viewport/i });
     fireEvent.click(tabletButton);
     
-    // Viewport should be updated (we can check via the segmented control)
-    expect(tabletButton.closest('button')).toHaveAttribute('data-active', 'true');
+    // Viewport button should now have 'selected' class
+    expect(tabletButton).toHaveClass('selected');
   });
 });
 

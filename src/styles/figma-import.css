@@ -611,3 +611,204 @@
   font-weight: var(--font-weight-medium);
 }
 
+/**
+ * @chunk 4.06 - ManualImportModal
+ * 
+ * Styles for manual JSON import modal.
+ */
+
+.manual-import-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.import-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.import-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-foreground);
+}
+
+.import-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.import-label-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.import-text-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+
+.import-text-btn:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.import-divider {
+  color: var(--color-border);
+  font-size: var(--font-size-xs);
+}
+
+.import-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.import-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.import-input::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+.import-textarea {
+  width: 100%;
+  min-height: 280px;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
+  line-height: 1.6;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  resize: vertical;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.import-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.import-textarea::placeholder {
+  color: var(--color-muted-foreground);
+  font-family: var(--font-family-sans);
+}
+
+.import-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-success-light, rgba(34, 197, 94, 0.1));
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+}
+
+.import-preview .preview-icon.success {
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+.import-preview .preview-names {
+  color: var(--color-foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.import-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-error-light, rgba(239, 68, 68, 0.1));
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+}
+
+.import-error svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.import-help {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted-foreground);
+}
+
+.import-help svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: var(--color-primary);
+}
+
+.import-help p {
+  margin: 0;
+  line-height: var(--line-height-normal);
+}
+
+.import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Page header buttons */
+.figma-import-page .page-header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .import-label-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+
+  .import-textarea {
+    min-height: 200px;
+  }
+
+  .import-actions {
+    flex-direction: column;
+  }
+
+  .import-actions .btn {
+    width: 100%;
+  }
+}
+

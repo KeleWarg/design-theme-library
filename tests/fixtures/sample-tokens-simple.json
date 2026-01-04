@@ -1,0 +1,15 @@
+{
+  "colors": {
+    "primary": { "value": "#3b82f6" },
+    "secondary": { "value": "#64748b" }
+  },
+  "spacing": {
+    "sm": { "value": "8px" },
+    "md": { "value": "16px" }
+  }
+}
+
+
+
+
+

@@ -1,0 +1,132 @@
+/**
+ * @chunk 2.26 - SegmentedControl Styles
+ * 
+ * Styles for the segmented control component.
+ * Provides proper spacing between buttons and visual feedback.
+ */
+
+/* ==========================================================================
+   Segmented Control Container
+   ========================================================================== */
+
+.segmented-control {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs, 4px);
+  background: var(--color-muted, #f3f4f6);
+  border-radius: var(--radius-md, 6px);
+  gap: var(--spacing-xs, 4px);
+}
+
+.segmented-control.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Segmented Option Buttons
+   ========================================================================== */
+
+.segmented-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs, 4px);
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-muted-foreground, #6b7280);
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms ease);
+  white-space: nowrap;
+}
+
+.segmented-option:hover:not(:disabled) {
+  color: var(--color-foreground, #1a1a1a);
+  background: var(--color-background, #ffffff);
+}
+
+.segmented-option:focus {
+  outline: none;
+}
+
+.segmented-option:focus-visible {
+  outline: 2px solid var(--color-primary, #657E79);
+  outline-offset: 1px;
+}
+
+.segmented-option.selected {
+  background: var(--color-background, #ffffff);
+  color: var(--color-foreground, #1a1a1a);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.segmented-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   Label Text
+   ========================================================================== */
+
+.segmented-label {
+  line-height: 1;
+}
+
+/* ==========================================================================
+   Size Variants
+   ========================================================================== */
+
+/* Small */
+.segmented-control-sm {
+  padding: 2px;
+  gap: 2px;
+}
+
+.segmented-control-sm .segmented-option {
+  padding: 2px var(--spacing-xs, 4px);
+  font-size: var(--font-size-xs, 12px);
+}
+
+/* Medium (default) */
+.segmented-control-md {
+  padding: var(--spacing-xs, 4px);
+  gap: var(--spacing-xs, 4px);
+}
+
+.segmented-control-md .segmented-option {
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  font-size: var(--font-size-sm, 14px);
+}
+
+/* Large */
+.segmented-control-lg {
+  padding: var(--spacing-xs, 4px);
+  gap: var(--spacing-xs, 4px);
+}
+
+.segmented-control-lg .segmented-option {
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  font-size: var(--font-size-base, 16px);
+}
+
+/* ==========================================================================
+   Icon-only Buttons
+   ========================================================================== */
+
+.segmented-option:has(svg):not(:has(.segmented-label)) {
+  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+}
+
+.segmented-control-sm .segmented-option:has(svg):not(:has(.segmented-label)) {
+  padding: 2px var(--spacing-xs, 4px);
+}
+
+.segmented-control-lg .segmented-option:has(svg):not(:has(.segmented-label)) {
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+}
+

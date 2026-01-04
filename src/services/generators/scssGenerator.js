@@ -305,3 +305,7 @@ function capitalizeCategory(category) {
   return categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
 }
 
+
+
+
+

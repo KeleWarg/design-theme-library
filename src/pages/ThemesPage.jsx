@@ -8,10 +8,11 @@
  */
 
 import { useState } from 'react';
-import { Plus, Palette } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useThemes } from '../hooks/useThemes';
 import { PageHeader, FilterBar, FilterButton, EmptyState, ErrorMessage } from '../components/ui';
 import { ThemeGridSkeleton } from '../components/ui/Skeleton';
+import { NoThemesEmpty } from '../components/empty-states';
 import ThemeCard from '../components/themes/ThemeCard';
 import CreateThemeModal from '../components/themes/CreateThemeModal';
 
@@ -78,23 +79,14 @@ export default function ThemesPage() {
             onRetry={refetch}
           />
         ) : themes?.length === 0 ? (
-          <EmptyState
-            icon={Palette}
-            title="No themes yet"
-            description={
-              filter === 'all' 
-                ? "Create your first theme to start building your design system."
-                : `No ${filter} themes found. Try a different filter.`
-            }
-            action={
-              filter === 'all' && (
-                <button className="btn btn-primary" onClick={handleCreateClick}>
-                  <Plus size={16} />
-                  Create Theme
-                </button>
-              )
-            }
-          />
+          filter === 'all' ? (
+            <NoThemesEmpty onCreateClick={handleCreateClick} />
+          ) : (
+            <EmptyState
+              title={`No ${filter} themes found`}
+              description="Try a different filter"
+            />
+          )
         ) : (
           <div className="theme-grid">
             {themes.map(theme => (

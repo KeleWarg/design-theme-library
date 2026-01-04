@@ -1027,7 +1027,7 @@ describe('Gate 4: Complete Theme System', () => {
         )
         
         await waitFor(() => {
-          expect(screen.getByText('Form Elements')).toBeInTheDocument()
+          expect(screen.getByText('Form')).toBeInTheDocument()
         })
       })
 

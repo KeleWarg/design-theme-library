@@ -126,7 +126,7 @@ export default function PreviewTab({ component }) {
       >
         <div className="preview-viewport-content">
           <ComponentRenderer
-            code={component.code}
+            code={component.jsx_code || component.code}
             props={propValues}
           />
         </div>

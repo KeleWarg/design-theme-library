@@ -92,7 +92,7 @@ export default function ComponentSelector({ selected, onChange }) {
             <div className="component-info">
               <span className="component-name">{component.name}</span>
               <span className="linked-count">
-                {component.linked_tokens?.length || 0} linked tokens
+                {component.linked_tokens?.length || 0} linked token{(component.linked_tokens?.length || 0) !== 1 ? 's' : ''}
               </span>
             </div>
           </label>

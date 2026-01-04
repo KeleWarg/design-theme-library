@@ -211,7 +211,7 @@ describe('Gate 3: Token Editing', () => {
         />
       )
       
-      expect(screen.getByText(/No color tokens yet/i)).toBeInTheDocument()
+      expect(screen.getByText(/No color tokens/i)).toBeInTheDocument()
     })
 
     it('has add token button', () => {

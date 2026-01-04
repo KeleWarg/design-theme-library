@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Type } from 'lucide-react';
 import { Button } from '../../ui';
+import { NoTokensEmpty, NoSearchResults } from '../../empty-states';
 import TokenListItem from './TokenListItem';
 import AddTokenModal from './AddTokenModal';
 
@@ -113,32 +114,17 @@ export default function TokenList({
 
       {/* Token list or empty state */}
       {filteredTokens.length === 0 ? (
-        <div className="token-list-empty">
-          {searchQuery ? (
-            <>
-              <p>No tokens match "{searchQuery}"</p>
-              <Button 
-                size="small" 
-                variant="ghost"
-                onClick={() => setSearchQuery('')}
-              >
-                Clear search
-              </Button>
-            </>
-          ) : (
-            <>
-              <p>No {category} tokens yet.</p>
-              <Button 
-                size="small" 
-                variant="secondary"
-                onClick={() => setShowAddModal(true)}
-              >
-                <Plus size={14} />
-                Add first token
-              </Button>
-            </>
-          )}
-        </div>
+        searchQuery ? (
+          <NoSearchResults 
+            query={searchQuery} 
+            onClear={() => setSearchQuery('')} 
+          />
+        ) : (
+          <NoTokensEmpty 
+            category={category} 
+            onAddClick={() => setShowAddModal(true)} 
+          />
+        )
       ) : (
         <ul className="token-list-items" role="listbox" aria-label={`${categoryLabel} tokens`}>
           {filteredTokens.map(token => (

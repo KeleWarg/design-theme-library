@@ -233,23 +233,28 @@ describe('projectKnowledgeGenerator', () => {
     });
 
     it('should truncate if content exceeds 2.5KB', () => {
-      // Create a very large dataset
-      const manyTokens = Array.from({ length: 100 }, (_, i) => ({
+      // Create a very large dataset that will definitely exceed 2.5KB
+      const manyTokens = Array.from({ length: 200 }, (_, i) => ({
         css_variable: `--color-token-${i}`,
         value: '#000000',
         category: 'color',
         name: `color/token/${i}`,
       }));
 
-      const manyComponents = Array.from({ length: 50 }, (_, i) => ({
+      const manyComponents = Array.from({ length: 100 }, (_, i) => ({
         id: i,
         name: `Component ${i}`,
         category: 'other',
         status: 'published',
-        description: 'A component with a long description that takes up space',
-        props: Array.from({ length: 10 }, (_, j) => ({
+        description: 'A component with a very long description that takes up a lot of space and ensures the content exceeds the 2.5KB limit',
+        props: Array.from({ length: 20 }, (_, j) => ({
           name: `prop${j}`,
           type: 'string',
+          description: 'A prop with a long description that adds to the content size',
+        })),
+        variants: Array.from({ length: 5 }, (_, k) => ({
+          name: `variant${k}`,
+          description: 'A variant with a detailed description',
         })),
       }));
 
@@ -260,7 +265,7 @@ describe('projectKnowledgeGenerator', () => {
       const result = generateProjectKnowledge(themes, manyComponents);
 
       expect(result.length).toBeLessThanOrEqual(2.5 * 1024);
-      expect(result).toContain('truncated');
+      expect(result).toContain('[Content truncated for size constraints]');
     });
 
     it('should include typography section if tokens exist', () => {

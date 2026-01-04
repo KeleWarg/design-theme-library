@@ -22,6 +22,8 @@
 @import './component-wizard.css';
 @import './figma-import.css';
 @import './export-modal.css';
+@import './error-loading.css';
+@import './segmented-control.css';
 
 @tailwind base;
 @tailwind components;

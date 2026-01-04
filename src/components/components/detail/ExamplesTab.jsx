@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { componentService } from '../../../services/componentService';
 import { Input, Textarea, Button, Modal } from '../../ui';
+import { NoExamplesEmpty } from '../../empty-states';
 import { PlusIcon, TrashIcon, EditIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -76,19 +77,7 @@ export default function ExamplesTab({ component, onUpdate }) {
       </div>
 
       {examples.length === 0 ? (
-        <div className="examples-empty-state">
-          <div className="examples-empty-icon">
-            <PlusIcon size={32} />
-          </div>
-          <h3 className="examples-empty-title">No examples yet</h3>
-          <p className="examples-empty-description">
-            Add examples to help AI understand how to use this component. Examples should show common usage patterns.
-          </p>
-          <Button size="small" onClick={() => setShowForm(true)}>
-            <PlusIcon size={16} />
-            Add First Example
-          </Button>
-        </div>
+        <NoExamplesEmpty onAddClick={() => setShowForm(true)} />
       ) : (
         <div className="examples-list">
           {examples.map(example => (

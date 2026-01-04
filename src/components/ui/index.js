@@ -6,6 +6,7 @@
  * @chunk 2.09 - MappingStep (Select component)
  * @chunk 2.15 - ColorEditor (Slider component)
  * @chunk 2.18 - ShadowEditor (ColorInput component)
+ * @chunk 6.05 - Error States & Loading
  * 
  * UI components barrel export.
  */
@@ -14,7 +15,17 @@ export { default as PageHeader } from './PageHeader';
 export { FilterBar, FilterButton } from './FilterBar';
 export { default as EmptyState } from './EmptyState';
 export { Skeleton, ThemeCardSkeleton, ThemeGridSkeleton, ComponentCardSkeleton, ComponentGridSkeleton, DetailSkeleton, ImportSkeleton } from './Skeleton';
-export { default as ErrorMessage } from './ErrorMessage';
+export { ErrorBoundary, PageErrorBoundary } from './ErrorBoundary';
+export { default as ErrorMessage, InlineError, FormError, FullPageError } from './ErrorMessage';
+export { LoadingSpinner, FullPageSpinner } from './LoadingSpinner';
+export { 
+  EditorSkeleton,
+  TokenListSkeleton,
+  TableSkeleton,
+  TextSkeleton,
+  AvatarSkeleton,
+  ListSkeleton
+} from './LoadingSkeleton';
 export { default as StatusBadge } from './StatusBadge';
 export { default as DropdownMenu } from './DropdownMenu';
 export { default as StepIndicator } from './StepIndicator';

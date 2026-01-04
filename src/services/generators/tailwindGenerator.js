@@ -57,7 +57,7 @@ module.exports = {
       case 'typography':
         if (token.path.includes('size') || token.path.includes('fontSize') || token.type === 'dimension') {
           theme.fontSize[name] = value;
-        } else if (token.path.includes('weight') || token.path.includes('fontWeight')) {
+        } else if (token.path.includes('weight') || token.path.includes('fontWeight') || token.type === 'fontWeight') {
           theme.fontWeight[name] = value;
         } else if (token.path.includes('family') || token.path.includes('fontFamily') || token.type === 'fontFamily') {
           // Font family should use actual value (array of font names)

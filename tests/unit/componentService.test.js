@@ -16,6 +16,7 @@ vi.mock('../../src/lib/supabase', () => ({
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
       ilike: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
@@ -236,19 +237,30 @@ describe('componentService', () => {
     it('creates component with generated slug', async () => {
       const mockComponent = { id: '1', name: 'My Button', slug: 'my-button', status: 'draft' };
 
-      const mockChain = {
+      // Mock chain for slug check (returns no existing component)
+      const slugCheckChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
+      // Mock chain for insert
+      const insertChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: mockComponent, error: null }),
       };
-      supabase.from.mockReturnValue(mockChain);
+
+      supabase.from
+        .mockReturnValueOnce(slugCheckChain) // First call: slug check
+        .mockReturnValueOnce(insertChain); // Second call: insert
 
       const result = await componentService.createComponent({
         name: 'My Button',
         description: 'A button component',
       });
 
-      expect(mockChain.insert).toHaveBeenCalledWith(
+      expect(insertChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'My Button',
           slug: 'my-button',
@@ -261,16 +273,27 @@ describe('componentService', () => {
     it('generates correct slug from name with special characters', async () => {
       const mockComponent = { id: '1', name: 'Button @2024!', slug: 'button-2024' };
 
-      const mockChain = {
+      // Mock chain for slug check (returns no existing component)
+      const slugCheckChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
+      // Mock chain for insert
+      const insertChain = {
         insert: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: mockComponent, error: null }),
       };
-      supabase.from.mockReturnValue(mockChain);
+
+      supabase.from
+        .mockReturnValueOnce(slugCheckChain) // First call: slug check
+        .mockReturnValueOnce(insertChain); // Second call: insert
 
       await componentService.createComponent({ name: 'Button @2024!' });
 
-      expect(mockChain.insert).toHaveBeenCalledWith(
+      expect(insertChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           slug: 'button-2024',
         })
@@ -282,17 +305,29 @@ describe('componentService', () => {
     it('updates component and returns result', async () => {
       const mockComponent = { id: '1', name: 'Updated Button', slug: 'updated-button' };
 
-      const mockChain = {
+      // Mock chain for slug check (returns no existing component)
+      const slugCheckChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        neq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
+      // Mock chain for update
+      const updateChain = {
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: mockComponent, error: null }),
       };
-      supabase.from.mockReturnValue(mockChain);
+
+      supabase.from
+        .mockReturnValueOnce(slugCheckChain) // First call: slug check
+        .mockReturnValueOnce(updateChain); // Second call: update
 
       const result = await componentService.updateComponent('1', { name: 'Updated Button' });
 
-      expect(mockChain.update).toHaveBeenCalledWith(
+      expect(updateChain.update).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Updated Button',
           slug: 'updated-button',

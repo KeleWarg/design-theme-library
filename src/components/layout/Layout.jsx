@@ -19,7 +19,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="layout">
+    <div className="layout" data-testid="app-loaded">
       <Header onMenuToggle={toggleSidebar} />
       <div className="layout-body">
         {/* Mobile overlay */}

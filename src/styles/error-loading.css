@@ -1,0 +1,210 @@
+/**
+ * @chunk 6.05 - Error States & Loading
+ * 
+ * Styles for error boundaries, error messages, loading spinners, and skeletons.
+ */
+
+/* Error Boundary */
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-xl);
+  background: var(--color-background);
+}
+
+.error-boundary-content {
+  max-width: 600px;
+  text-align: center;
+  padding: var(--spacing-2xl);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.error-boundary-icon {
+  margin: 0 auto var(--spacing-lg);
+  color: var(--color-error);
+}
+
+.error-boundary-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-foreground);
+  margin: 0 0 var(--spacing-md);
+}
+
+.error-boundary-message {
+  font-size: var(--font-size-base);
+  color: var(--color-muted-foreground);
+  margin: 0 0 var(--spacing-xl);
+  line-height: var(--line-height-relaxed);
+}
+
+.error-boundary-details {
+  margin: var(--spacing-lg) 0;
+  text-align: left;
+}
+
+.error-boundary-details-summary {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  margin-bottom: var(--spacing-sm);
+}
+
+.error-boundary-stack {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-foreground);
+  background: var(--color-muted);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-boundary-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Error Message */
+.error-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--spacing-xl);
+  gap: var(--spacing-md);
+}
+
+.error-message-icon {
+  color: var(--color-error);
+  margin-bottom: var(--spacing-sm);
+}
+
+.error-message-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+.error-message-text {
+  font-size: var(--font-size-base);
+  color: var(--color-muted-foreground);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+/* Full Page Error */
+.full-page-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height));
+  padding: var(--spacing-xl);
+}
+
+/* Loading Spinner */
+.loading-spinner-centered {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner-with-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.loading-spinner-label {
+  color: var(--color-muted-foreground);
+  font-size: var(--font-size-sm);
+}
+
+.full-page-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height));
+  padding: var(--spacing-xl);
+}
+
+/* Skeleton Base */
+.skeleton {
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeleton-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+/* Theme Grid Skeleton */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+/* Component Grid Skeleton */
+.component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+/* Editor Skeleton */
+.editor-skeleton {
+  padding: var(--spacing-lg);
+}
+
+/* Token List Skeleton */
+.token-list-skeleton {
+  padding: var(--spacing-md);
+}
+
+/* Table Skeleton */
+.table-skeleton {
+  padding: var(--spacing-md);
+}
+
+/* Text Skeleton */
+.text-skeleton {
+  padding: var(--spacing-sm) 0;
+}
+
+/* List Skeleton */
+.list-skeleton {
+  padding: var(--spacing-md);
+}
+
+
+
+
+

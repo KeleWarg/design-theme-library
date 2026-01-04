@@ -3,15 +3,17 @@
  * 
  * Page to receive and list imported components from Figma.
  * Lists all pending imports with status badges and allows reviewing/importing.
+ * Supports manual JSON import without the Figma plugin.
  */
 
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { RefreshCw, Figma } from 'lucide-react';
+import { RefreshCw, Upload } from 'lucide-react';
 import { useFigmaImport, useFigmaImports } from '../hooks/useFigmaImport';
-import { PageHeader, Button, EmptyState, ErrorMessage } from '../components/ui';
+import { PageHeader, Button, ErrorMessage } from '../components/ui';
 import { ImportSkeleton } from '../components/ui/Skeleton';
-import { ImportReviewCard } from '../components/figma-import';
+import { NoImportsEmpty } from '../components/empty-states';
+import { ImportReviewCard, ManualImportModal } from '../components/figma-import';
 import ImportListModal from '../components/figma-import/ImportListModal';
 import { formatDate } from '../lib/utils';
 import { supabase } from '../lib/supabase';
@@ -36,6 +38,7 @@ export default function FigmaImportPage() {
   
   const [reviewingImport, setReviewingImport] = useState(null);
   const [importData, setImportData] = useState(null);
+  const [showManualImport, setShowManualImport] = useState(false);
 
   // Fetch full import data when opening review modal
   const handleReview = async (importRecord) => {
@@ -148,47 +151,29 @@ export default function FigmaImportPage() {
         title="Figma Imports"
         description="Review and import components from Figma"
         action={
-          <Button 
-            variant="secondary" 
-            onClick={refetch}
-            loading={isLoading}
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </Button>
+          <div className="page-header-actions">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowManualImport(true)}
+            >
+              <Upload size={16} />
+              Import JSON
+            </Button>
+            <Button 
+              variant="secondary" 
+              onClick={refetch}
+              loading={isLoading}
+            >
+              <RefreshCw size={16} />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
       <main className="page-content">
         {!imports || imports.length === 0 ? (
-          <EmptyState
-            icon={Figma}
-            title="No pending imports"
-            description="Use the Figma plugin to export components to this admin tool. The plugin will send component data here for review and import."
-            action={
-              <div className="empty-state-instructions">
-                <p style={{ 
-                  fontSize: 'var(--font-size-sm)', 
-                  color: 'var(--color-muted-foreground)',
-                  marginTop: 'var(--spacing-md)'
-                }}>
-                  <strong>How to import:</strong>
-                </p>
-                <ol style={{ 
-                  fontSize: 'var(--font-size-sm)', 
-                  color: 'var(--color-muted-foreground)',
-                  textAlign: 'left',
-                  display: 'inline-block',
-                  marginTop: 'var(--spacing-sm)'
-                }}>
-                  <li>Open your Figma file</li>
-                  <li>Run the Design System Admin plugin</li>
-                  <li>Select components to export</li>
-                  <li>Click "Send to Admin"</li>
-                </ol>
-              </div>
-            }
-          />
+          <NoImportsEmpty />
         ) : (
           <div className="import-list">
             {imports.map(importRecord => (
@@ -215,6 +200,16 @@ export default function FigmaImportPage() {
           onImport={handleImportSelected}
         />
       )}
+
+      {/* Manual JSON Import Modal */}
+      <ManualImportModal
+        open={showManualImport}
+        onClose={() => setShowManualImport(false)}
+        onSuccess={() => {
+          setShowManualImport(false);
+          refetch();
+        }}
+      />
     </div>
   );
 }

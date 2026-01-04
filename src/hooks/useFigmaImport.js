@@ -28,29 +28,26 @@ export function useFigmaImport(importId) {
     setError(null);
     
     try {
-      // Get import record
-      const { data: importRecord, error: importError } = await supabase
-        .from('figma_imports')
-        .select('*')
-        .eq('id', importId)
-        .single();
+      // Get import record using RPC to bypass schema cache
+      const { data: imports, error: importError } = await supabase
+        .rpc('get_figma_imports');
 
       if (importError) throw importError;
+      
+      const importRecord = imports?.find(i => i.id === importId);
+      if (!importRecord) {
+        throw new Error('Import not found');
+      }
 
-      // Get components
+      // Get components using RPC
       const { data: components, error: componentsError } = await supabase
-        .from('figma_import_components')
-        .select('*')
-        .eq('import_id', importId)
-        .order('created_at', { ascending: true });
+        .rpc('get_figma_import_components', { p_import_id: importId });
 
       if (componentsError) throw componentsError;
 
-      // Get images
+      // Get images using RPC
       const { data: images, error: imagesError } = await supabase
-        .from('figma_import_images')
-        .select('*')
-        .eq('import_id', importId);
+        .rpc('get_figma_import_images', { p_import_id: importId });
 
       if (imagesError) throw imagesError;
 
@@ -98,20 +95,58 @@ export function useFigmaImports() {
     setError(null);
     
     try {
+      // Use RPC function to bypass PostgREST schema cache issues
       const { data: imports, error: importsError } = await supabase
-        .from('figma_imports')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .rpc('get_figma_imports');
 
-      if (importsError) throw importsError;
+      if (importsError) {
+        // Check if this is a schema cache error - treat as empty state
+        const errorMessage = importsError.message || '';
+        if (errorMessage.includes('schema cache') || 
+            errorMessage.includes('does not exist') ||
+            importsError.code === 'PGRST202' ||
+            importsError.code === '42883') {
+          console.warn('Figma imports table not yet in schema cache, showing empty state');
+          setData([]);
+          return;
+        }
+        
+        // Fallback to direct table query if RPC doesn't exist
+        const { data: fallbackImports, error: fallbackError } = await supabase
+          .from('figma_imports')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (fallbackError) {
+          // Also handle schema cache error from direct query
+          const fallbackMessage = fallbackError.message || '';
+          if (fallbackMessage.includes('schema cache') || 
+              fallbackMessage.includes('does not exist') ||
+              fallbackError.code === 'PGRST204') {
+            console.warn('Figma imports table not yet in schema cache, showing empty state');
+            setData([]);
+            return;
+          }
+          throw fallbackError;
+        }
+        
+        setData((fallbackImports || []).map(importRecord => ({
+          ...importRecord,
+          componentCount: importRecord.component_count || 0,
+          metadata: {
+            fileKey: importRecord.file_key,
+            fileName: importRecord.file_name,
+            exportedAt: importRecord.exported_at,
+          }
+        })));
+        return;
+      }
 
       // For each import, get component count
       const importsWithCounts = await Promise.all(
         (imports || []).map(async (importRecord) => {
-          const { count, error: countError } = await supabase
-            .from('figma_import_components')
-            .select('*', { count: 'exact', head: true })
-            .eq('import_id', importRecord.id);
+          const { data: components, error: countError } = await supabase
+            .rpc('get_figma_import_components', { p_import_id: importRecord.id });
 
           if (countError) {
             console.error('Failed to count components:', countError);
@@ -119,7 +154,7 @@ export function useFigmaImports() {
 
           return {
             ...importRecord,
-            componentCount: count || 0,
+            componentCount: components?.length || importRecord.component_count || 0,
             metadata: {
               fileKey: importRecord.file_key,
               fileName: importRecord.file_name,
@@ -132,6 +167,13 @@ export function useFigmaImports() {
       setData(importsWithCounts);
     } catch (err) {
       console.error('Failed to fetch Figma imports:', err);
+      // One final check for schema cache errors
+      const errMessage = err.message || '';
+      if (errMessage.includes('schema cache') || errMessage.includes('does not exist')) {
+        console.warn('Figma imports table not yet in schema cache, showing empty state');
+        setData([]);
+        return;
+      }
       setError(err);
     } finally {
       setIsLoading(false);
@@ -151,4 +193,8 @@ export function useFigmaImports() {
 }
 
 export default useFigmaImport;
+
+
+
+
 

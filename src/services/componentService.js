@@ -94,21 +94,40 @@ export const componentService = {
    * @returns {Promise<Object>} - Component with images and examples
    */
   async getComponent(id) {
+    // Query component without relations (relations may not exist in all setups)
     const { data, error } = await supabase
       .from('components')
-      .select(`
-        *,
-        component_images(*),
-        component_examples(*)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
     
     if (error) throw error;
     
-    // Sort examples by sort_order
-    if (data.component_examples) {
-      data.component_examples.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    // Initialize empty arrays for relations (tables may not exist)
+    data.component_images = [];
+    data.component_examples = [];
+    
+    // Try to fetch images if table exists
+    try {
+      const { data: images } = await supabase
+        .from('component_images')
+        .select('*')
+        .eq('component_id', id);
+      if (images) data.component_images = images;
+    } catch (e) {
+      // Table doesn't exist, ignore
+    }
+    
+    // Try to fetch examples if table exists
+    try {
+      const { data: examples } = await supabase
+        .from('component_examples')
+        .select('*')
+        .eq('component_id', id)
+        .order('sort_order');
+      if (examples) data.component_examples = examples;
+    } catch (e) {
+      // Table doesn't exist, ignore
     }
     
     return data;
@@ -120,21 +139,40 @@ export const componentService = {
    * @returns {Promise<Object>} - Component with images and examples
    */
   async getComponentBySlug(slug) {
+    // Query component without relations (relations may not exist in all setups)
     const { data, error } = await supabase
       .from('components')
-      .select(`
-        *,
-        component_images(*),
-        component_examples(*)
-      `)
+      .select('*')
       .eq('slug', slug)
       .single();
     
     if (error) throw error;
     
-    // Sort examples by sort_order
-    if (data.component_examples) {
-      data.component_examples.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    // Initialize empty arrays for relations (tables may not exist)
+    data.component_images = [];
+    data.component_examples = [];
+    
+    // Try to fetch images if table exists
+    try {
+      const { data: images } = await supabase
+        .from('component_images')
+        .select('*')
+        .eq('component_id', data.id);
+      if (images) data.component_images = images;
+    } catch (e) {
+      // Table doesn't exist, ignore
+    }
+    
+    // Try to fetch examples if table exists
+    try {
+      const { data: examples } = await supabase
+        .from('component_examples')
+        .select('*')
+        .eq('component_id', data.id)
+        .order('sort_order');
+      if (examples) data.component_examples = examples;
+    } catch (e) {
+      // Table doesn't exist, ignore
     }
     
     return data;
@@ -165,19 +203,61 @@ export const componentService = {
       }
     }
     
-    const slug = generateSlug(data.name);
+    // Generate unique slug - handle conflicts by appending a number
+    let slug = generateSlug(data.name);
+    let slugConflict = true;
+    let attempt = 0;
+    const maxAttempts = 100; // Prevent infinite loop
+    
+    while (slugConflict && attempt < maxAttempts) {
+      // Check if slug exists
+      const { data: existing } = await supabase
+        .from('components')
+        .select('id')
+        .eq('slug', slug)
+        .single();
+      
+      if (!existing) {
+        // Slug is available
+        slugConflict = false;
+      } else {
+        // Slug exists, try with number suffix
+        attempt++;
+        const baseSlug = generateSlug(data.name);
+        slug = `${baseSlug}-${attempt}`;
+      }
+    }
+    
+    if (attempt >= maxAttempts) {
+      throw new Error('Unable to generate unique slug after multiple attempts');
+    }
+    
+    // Prepare insert data - convert empty strings to null for optional fields
+    const insertData = {
+      name: data.name,
+      slug,
+      description: data.description && data.description.trim() ? data.description.trim() : null,
+      category: data.category || null,
+      code: data.code && data.code.trim() ? data.code.trim() : null,
+      props: data.props || [],
+      variants: data.variants || [],
+      linked_tokens: data.linked_tokens || [],
+      status: data.status || 'draft',
+      figma_id: data.figma_id || null,
+      figma_structure: data.figma_structure || null
+    };
     
     const { data: component, error } = await supabase
       .from('components')
-      .insert({ 
-        ...data, 
-        slug,
-        status: data.status || 'draft'
-      })
+      .insert(insertData)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error creating component:', error);
+      throw error;
+    }
+    
     return component;
   },
 
@@ -188,9 +268,38 @@ export const componentService = {
    * @returns {Promise<Object>} - Updated component
    */
   async updateComponent(id, updates) {
-    // Update slug if name changed
+    // Update slug if name changed - handle conflicts
     if (updates.name) {
-      updates.slug = generateSlug(updates.name);
+      let slug = generateSlug(updates.name);
+      let slugConflict = true;
+      let attempt = 0;
+      const maxAttempts = 100;
+      
+      while (slugConflict && attempt < maxAttempts) {
+        // Check if slug exists (excluding current component)
+        const { data: existing } = await supabase
+          .from('components')
+          .select('id')
+          .eq('slug', slug)
+          .neq('id', id)
+          .single();
+        
+        if (!existing) {
+          // Slug is available
+          slugConflict = false;
+        } else {
+          // Slug exists, try with number suffix
+          attempt++;
+          const baseSlug = generateSlug(updates.name);
+          slug = `${baseSlug}-${attempt}`;
+        }
+      }
+      
+      if (attempt >= maxAttempts) {
+        throw new Error('Unable to generate unique slug after multiple attempts');
+      }
+      
+      updates.slug = slug;
     }
     
     // Validate linked_tokens format (should be paths, not UUIDs)

@@ -218,8 +218,8 @@ describe('TypographyEditor', () => {
       
       render(<TypographyEditor token={letterSpacingToken} onUpdate={mockOnUpdate} />);
       
-      // Should show letter-spacing specific presets
-      expect(screen.getByRole('button', { name: '0' })).toBeInTheDocument();
+      // Should show letter-spacing specific presets (0 is displayed as "+0" for letter-spacing)
+      expect(screen.getByRole('button', { name: '+0' })).toBeInTheDocument();
     });
 
     it('detects font-weight token type', () => {

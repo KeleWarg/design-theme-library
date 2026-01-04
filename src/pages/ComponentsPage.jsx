@@ -6,11 +6,11 @@
  */
 
 import { useState } from 'react';
-import { Box } from 'lucide-react';
 import { useComponents } from '../hooks/useComponents';
 import { ComponentCard, ComponentFilters, AddComponentDropdown } from '../components/components';
-import { PageHeader, EmptyState, ErrorMessage } from '../components/ui';
+import { PageHeader, ErrorMessage } from '../components/ui';
 import { ComponentGridSkeleton } from '../components/ui/Skeleton';
+import { NoComponentsEmpty, NoSearchResults, NoFilterResults } from '../components/empty-states';
 import '../styles/components-page.css';
 
 export default function ComponentsPage() {
@@ -37,20 +37,18 @@ export default function ComponentsPage() {
       ) : error ? (
         <ErrorMessage error={error} onRetry={refresh} />
       ) : components?.length === 0 ? (
-        <EmptyState
-          icon={Box}
-          title="No components yet"
-          description={
-            filters.status !== 'all' || filters.category !== 'all' || filters.search
-              ? "No components match your filters. Try adjusting your search criteria."
-              : "Create your first component to get started building your design system."
-          }
-          action={
-            filters.status === 'all' && filters.category === 'all' && !filters.search
-              ? <AddComponentDropdown />
-              : null
-          }
-        />
+        filters.search ? (
+          <NoSearchResults 
+            query={filters.search} 
+            onClear={() => setFilters({ ...filters, search: '' })} 
+          />
+        ) : filters.status !== 'all' || filters.category !== 'all' ? (
+          <NoFilterResults 
+            onClear={() => setFilters({ status: 'all', category: 'all', search: '' })} 
+          />
+        ) : (
+          <NoComponentsEmpty />
+        )
       ) : (
         <div className="component-grid">
           {components.map(component => (

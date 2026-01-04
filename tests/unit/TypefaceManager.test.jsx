@@ -356,10 +356,13 @@ describe('TypefaceManager', () => {
     // Click Add Typeface button
     fireEvent.click(screen.getByRole('button', { name: /Add Typeface/ }));
 
-    // Modal should open - check for modal-specific content
+    // Modal should open - check for modal title and form fields
     await waitFor(() => {
-      expect(screen.getByText('Font Family')).toBeInTheDocument();
-      expect(screen.getByLabelText('Role')).toBeInTheDocument();
+      // Modal title is "Add Typeface"
+      expect(screen.getByText('Add Typeface')).toBeInTheDocument();
+      // Form should have Role and Source fields
+      expect(screen.getByText('Role')).toBeInTheDocument();
+      expect(screen.getByText('Source')).toBeInTheDocument();
     });
   });
 });

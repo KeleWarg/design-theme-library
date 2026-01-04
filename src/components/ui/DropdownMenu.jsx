@@ -41,15 +41,17 @@ function DropdownMenu({ trigger, children, align = 'right' }) {
     }
   }, [isOpen]);
   
+  const handleTriggerClick = (e) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
   return (
     <DropdownContext.Provider value={{ isOpen, setIsOpen }}>
       <div className="dropdown-menu" ref={menuRef}>
         <div 
           className="dropdown-trigger"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(!isOpen);
-          }}
+          onClickCapture={handleTriggerClick}
         >
           {trigger}
         </div>

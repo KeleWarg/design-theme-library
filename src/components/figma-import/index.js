@@ -7,4 +7,5 @@
 export { default as ImportReviewCard } from './ImportReviewCard';
 export { default as ImportReviewModal } from './ImportReviewModal';
 export { default as ImportListModal } from './ImportListModal';
+export { default as ManualImportModal } from './ManualImportModal';
 

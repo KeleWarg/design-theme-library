@@ -162,8 +162,9 @@ describe('ComponentSelector', () => {
     it('toggles component selection on checkbox click', () => {
       render(<ComponentSelector selected={[]} onChange={mockOnChange} />);
       
-      const checkbox = screen.getByLabelText(/PrimaryButton/i).querySelector('input[type="checkbox"]');
-      fireEvent.click(checkbox);
+      // Click on the component item (label) containing PrimaryButton
+      const componentItem = screen.getByText('PrimaryButton').closest('label');
+      fireEvent.click(componentItem);
       
       expect(mockOnChange).toHaveBeenCalledWith(['1']);
     });
@@ -171,8 +172,9 @@ describe('ComponentSelector', () => {
     it('deselects component when already selected', () => {
       render(<ComponentSelector selected={['1', '2']} onChange={mockOnChange} />);
       
-      const checkbox = screen.getByLabelText(/PrimaryButton/i).querySelector('input[type="checkbox"]');
-      fireEvent.click(checkbox);
+      // Click on the component item (label) containing PrimaryButton
+      const componentItem = screen.getByText('PrimaryButton').closest('label');
+      fireEvent.click(componentItem);
       
       expect(mockOnChange).toHaveBeenCalledWith(['2']);
     });
@@ -180,11 +182,10 @@ describe('ComponentSelector', () => {
     it('shows selected components as checked', () => {
       render(<ComponentSelector selected={['1', '3']} onChange={mockOnChange} />);
       
-      const primaryButtonCheckbox = screen.getByLabelText(/PrimaryButton/i).querySelector('input[type="checkbox"]');
-      const cardCheckbox = screen.getByLabelText(/Card/i).querySelector('input[type="checkbox"]');
-      
-      expect(primaryButtonCheckbox).toBeChecked();
-      expect(cardCheckbox).toBeChecked();
+      const checkboxes = screen.getAllByRole('checkbox');
+      // PrimaryButton is first (index 0), Card is third (index 2)
+      expect(checkboxes[0]).toBeChecked();
+      expect(checkboxes[2]).toBeChecked();
     });
   });
 
@@ -261,4 +262,6 @@ describe('ComponentSelector', () => {
     });
   });
 });
+
+
 
