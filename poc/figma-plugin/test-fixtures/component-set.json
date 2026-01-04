@@ -1,0 +1,85 @@
+{
+  "id": "component-set-1",
+  "name": "Button Variants",
+  "description": "Button component with size and state variants",
+  "type": "COMPONENT_SET",
+  "properties": [
+    {
+      "name": "size",
+      "type": "VARIANT",
+      "defaultValue": "medium",
+      "variantOptions": ["small", "medium", "large"]
+    },
+    {
+      "name": "state",
+      "type": "VARIANT",
+      "defaultValue": "default",
+      "variantOptions": ["default", "hover", "active", "disabled"]
+    }
+  ],
+  "variants": [
+    {
+      "id": "variant-1",
+      "name": "small/default",
+      "properties": {
+        "size": "small",
+        "state": "default"
+      }
+    },
+    {
+      "id": "variant-2",
+      "name": "medium/hover",
+      "properties": {
+        "size": "medium",
+        "state": "hover"
+      }
+    },
+    {
+      "id": "variant-3",
+      "name": "large/active",
+      "properties": {
+        "size": "large",
+        "state": "active"
+      }
+    }
+  ],
+  "boundVariables": [
+    {
+      "nodeId": "component-set-1",
+      "nodeName": "Button Variants",
+      "property": "fills",
+      "variableId": "var-primary",
+      "variableName": "Primary",
+      "collectionName": "Colors"
+    }
+  ],
+  "structure": {
+    "id": "component-set-1",
+    "name": "Button Variants",
+    "type": "COMPONENT_SET",
+    "children": [
+      {
+        "id": "variant-1",
+        "name": "small/default",
+        "type": "COMPONENT",
+        "width": 100,
+        "height": 32
+      },
+      {
+        "id": "variant-2",
+        "name": "medium/hover",
+        "type": "COMPONENT",
+        "width": 120,
+        "height": 40
+      },
+      {
+        "id": "variant-3",
+        "name": "large/active",
+        "type": "COMPONENT",
+        "width": 140,
+        "height": 48
+      }
+    ]
+  }
+}
+

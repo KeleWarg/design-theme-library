@@ -1,0 +1,52 @@
+{
+  "id": "component-2",
+  "name": "Card",
+  "description": "Card component using design tokens",
+  "type": "COMPONENT",
+  "properties": [],
+  "variants": [],
+  "boundVariables": [
+    {
+      "nodeId": "component-2",
+      "nodeName": "Card",
+      "property": "fills",
+      "variableId": "var-bg-surface",
+      "variableName": "Surface",
+      "collectionName": "Colors"
+    },
+    {
+      "nodeId": "component-2",
+      "nodeName": "Card",
+      "property": "cornerRadius",
+      "variableId": "var-radius-md",
+      "variableName": "Medium",
+      "collectionName": "Radius"
+    },
+    {
+      "nodeId": "text-2",
+      "nodeName": "Title",
+      "property": "fills",
+      "variableId": "var-text-primary",
+      "variableName": "Primary",
+      "collectionName": "Colors"
+    }
+  ],
+  "structure": {
+    "id": "component-2",
+    "name": "Card",
+    "type": "COMPONENT",
+    "width": 300,
+    "height": 200,
+    "cornerRadius": 8,
+    "children": [
+      {
+        "id": "text-2",
+        "name": "Title",
+        "type": "TEXT",
+        "width": 200,
+        "height": 24
+      }
+    ]
+  }
+}
+

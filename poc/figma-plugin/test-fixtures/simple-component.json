@@ -1,0 +1,32 @@
+{
+  "id": "component-1",
+  "name": "Button",
+  "description": "A simple button component",
+  "type": "COMPONENT",
+  "properties": [
+    {
+      "name": "label",
+      "type": "TEXT",
+      "defaultValue": "Click me"
+    }
+  ],
+  "variants": [],
+  "boundVariables": [],
+  "structure": {
+    "id": "component-1",
+    "name": "Button",
+    "type": "COMPONENT",
+    "width": 120,
+    "height": 40,
+    "children": [
+      {
+        "id": "text-1",
+        "name": "Label",
+        "type": "TEXT",
+        "width": 80,
+        "height": 20
+      }
+    ]
+  }
+}
+

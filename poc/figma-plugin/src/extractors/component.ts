@@ -1,12 +1,14 @@
 /**
- * @chunk 0.02 - Figma Plugin PoC - Component Extraction
+ * @chunk 0.02, 4.02 - Figma Plugin PoC - Component Extraction + ComponentExtractor Module
  * 
  * Extracts component properties, variants, and bound variables from Figma components.
  * This module validates Figma API capabilities for the design system admin tool.
+ * 
+ * Chunk 4.02: Production-ready extractor with simplified interface.
  */
 
 // ============================================================================
-// Types
+// Types (Legacy - from chunk 0.02)
 // ============================================================================
 
 export interface ExtractedProperty {
@@ -474,6 +476,234 @@ export function getExtractionCapabilities(): Record<string, boolean> {
     canReadLayoutProperties: true,
     canReadStyleProperties: true,
   };
+}
+
+// ============================================================================
+// Chunk 4.02 - Production ComponentExtractor (matches spec interface)
+// ============================================================================
+
+import type {
+  ExtractedComponent as SpecExtractedComponent,
+  ExtractedProperty as SpecExtractedProperty,
+  ExtractedVariant as SpecExtractedVariant,
+  SimplifiedNode as SpecSimplifiedNode,
+  BoundVariable as SpecBoundVariable,
+} from '../types/component';
+
+/**
+ * Extract component metadata from a Figma component node (Chunk 4.02 spec interface)
+ */
+export async function extractComponentSpec(
+  node: ComponentNode | ComponentSetNode
+): Promise<SpecExtractedComponent> {
+  return {
+    id: node.id,
+    name: node.name,
+    description: node.description || '',
+    type: node.type as 'COMPONENT' | 'COMPONENT_SET',
+    properties: extractPropertiesSpec(node),
+    variants: node.type === 'COMPONENT_SET' ? extractVariantsSpec(node) : [],
+    structure: simplifyStructureSpec(node),
+    boundVariables: extractBoundVariablesSpec(node),
+  };
+}
+
+/**
+ * Extract component properties (Chunk 4.02 spec)
+ */
+function extractPropertiesSpec(node: ComponentNode | ComponentSetNode): SpecExtractedProperty[] {
+  const props: SpecExtractedProperty[] = [];
+  
+  if ('componentPropertyDefinitions' in node) {
+    const defs = node.componentPropertyDefinitions;
+    
+    for (const [key, def] of Object.entries(defs || {})) {
+      props.push({
+        name: key,
+        type: def.type,
+        defaultValue: def.defaultValue,
+        options: def.type === 'VARIANT' ? def.variantOptions : undefined,
+      });
+    }
+  }
+  
+  return props;
+}
+
+/**
+ * Extract variants from ComponentSet (Chunk 4.02 spec)
+ */
+function extractVariantsSpec(node: ComponentSetNode): SpecExtractedVariant[] {
+  return node.children
+    .filter(child => child.type === 'COMPONENT')
+    .map(child => {
+      // Prefer variantProperties if available (more reliable)
+      let props: Record<string, string> = {};
+      if ('variantProperties' in child && child.variantProperties) {
+        props = { ...child.variantProperties };
+      } else {
+        // Fall back to parsing the name
+        props = parseVariantName(child.name);
+      }
+      
+      return {
+        name: child.name,
+        props,
+        nodeId: child.id,
+      };
+    });
+}
+
+/**
+ * Simplify node structure (Chunk 4.02 spec)
+ */
+function simplifyStructureSpec(node: SceneNode, depth = 0): SpecSimplifiedNode {
+  const MAX_DEPTH = 5;
+  
+  const simplified: SpecSimplifiedNode = {
+    name: node.name,
+    type: node.type,
+  };
+
+  if ('layoutMode' in node && node.layoutMode !== 'NONE') {
+    simplified.layoutMode = node.layoutMode;
+    simplified.padding = {
+      top: node.paddingTop,
+      right: node.paddingRight,
+      bottom: node.paddingBottom,
+      left: node.paddingLeft,
+    };
+    simplified.gap = node.itemSpacing;
+  }
+
+  if ('children' in node && depth < MAX_DEPTH) {
+    simplified.children = node.children.map(child => 
+      simplifyStructureSpec(child, depth + 1)
+    );
+  }
+
+  return simplified;
+}
+
+/**
+ * Extract bound variables recursively (Chunk 4.02 spec)
+ */
+function extractBoundVariablesSpec(node: SceneNode): SpecBoundVariable[] {
+  const variables: SpecBoundVariable[] = [];
+  
+  function traverse(n: SceneNode, path: string = '') {
+    if ('boundVariables' in n) {
+      for (const [field, binding] of Object.entries(n.boundVariables || {})) {
+        if (binding) {
+          // Handle both single binding and array of bindings
+          const bindings = Array.isArray(binding) ? binding : [binding];
+          
+          for (const b of bindings) {
+            if (b && 'id' in b) {
+              try {
+                const variable = figma.variables.getVariableById(b.id);
+                if (variable) {
+                  const collection = figma.variables.getVariableCollectionById(
+                    variable.variableCollectionId
+                  );
+                  
+                  variables.push({
+                    nodePath: path || n.name,
+                    field,
+                    variableId: b.id,
+                    variableName: variable.name,
+                    collectionName: collection?.name || '',
+                  });
+                }
+              } catch (e) {
+                // Variable might not exist, skip it
+                console.warn(`Could not get variable ${b.id}:`, e);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    if ('children' in n) {
+      for (const child of n.children) {
+        traverse(child, path ? `${path}/${child.name}` : child.name);
+      }
+    }
+  }
+  
+  traverse(node);
+  return variables;
+}
+
+/**
+ * Parse variant name like "State=Default, Size=Medium" (Chunk 4.02 spec)
+ */
+function parseVariantName(name: string): Record<string, string> {
+  const props: Record<string, string> = {};
+  const parts = name.split(', ');
+  
+  for (const part of parts) {
+    const [key, value] = part.split('=');
+    if (key && value) {
+      props[key.trim()] = value.trim();
+    }
+  }
+  
+  return props;
+}
+
+/**
+ * Scan entire document for all components (for ComponentsTab)
+ */
+export async function scanDocumentComponents(): Promise<Array<{
+  id: string;
+  name: string;
+  type: string;
+  variantCount: number;
+}>> {
+  const components: Array<{
+    id: string;
+    name: string;
+    type: string;
+    variantCount: number;
+  }> = [];
+
+  function traverse(node: SceneNode) {
+    if (node.type === 'COMPONENT') {
+      components.push({
+        id: node.id,
+        name: node.name,
+        type: 'COMPONENT',
+        variantCount: 0,
+      });
+    } else if (node.type === 'COMPONENT_SET') {
+      const variantCount = node.children.filter(c => c.type === 'COMPONENT').length;
+      components.push({
+        id: node.id,
+        name: node.name,
+        type: 'COMPONENT_SET',
+        variantCount,
+      });
+    }
+
+    if ('children' in node) {
+      for (const child of node.children) {
+        traverse(child);
+      }
+    }
+  }
+
+  // Traverse all pages
+  for (const page of figma.root.children) {
+    if (page.type === 'PAGE') {
+      for (const child of page.children) {
+        traverse(child);
+      }
+    }
+  }
+
+  return components;
 }
 
 

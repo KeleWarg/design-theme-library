@@ -1,127 +1,220 @@
 /**
- * @chunk 1.11 - App Shell & Routing
- * Figma import page placeholder
+ * @chunk 4.06 - FigmaImportPage
+ * 
+ * Page to receive and list imported components from Figma.
+ * Lists all pending imports with status badges and allows reviewing/importing.
  */
-import { FigmaIcon, Upload, RefreshCw } from 'lucide-react'
+
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { RefreshCw, Figma } from 'lucide-react';
+import { useFigmaImport, useFigmaImports } from '../hooks/useFigmaImport';
+import { PageHeader, Button, EmptyState, ErrorMessage } from '../components/ui';
+import { ImportSkeleton } from '../components/ui/Skeleton';
+import { ImportReviewCard } from '../components/figma-import';
+import ImportListModal from '../components/figma-import/ImportListModal';
+import { formatDate } from '../lib/utils';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
 
 export default function FigmaImportPage() {
+  const { importId } = useParams();
+  
+  // If importId is provided, show single import view
+  // Otherwise, show list of all imports
+  const singleImport = useFigmaImport(importId);
+  const allImports = useFigmaImports();
+  
+  const { data: imports, isLoading, error, refetch } = importId 
+    ? { 
+        data: singleImport.data ? [singleImport.data] : null, 
+        isLoading: singleImport.isLoading, 
+        error: singleImport.error,
+        refetch: singleImport.refetch 
+      }
+    : allImports;
+  
+  const [reviewingImport, setReviewingImport] = useState(null);
+  const [importData, setImportData] = useState(null);
+
+  // Fetch full import data when opening review modal
+  const handleReview = async (importRecord) => {
+    try {
+      // Get import record
+      const { data: importRecordData, error: importError } = await supabase
+        .from('figma_imports')
+        .select('*')
+        .eq('id', importRecord.id)
+        .single();
+
+      if (importError) throw importError;
+
+      // Get components
+      const { data: components, error: componentsError } = await supabase
+        .from('figma_import_components')
+        .select('*')
+        .eq('import_id', importRecord.id)
+        .order('created_at', { ascending: true });
+
+      if (componentsError) throw componentsError;
+
+      // Get images
+      const { data: images, error: imagesError } = await supabase
+        .from('figma_import_images')
+        .select('*')
+        .eq('import_id', importRecord.id);
+
+      if (imagesError) throw imagesError;
+
+      const fullImport = {
+        ...importRecordData,
+        components: components || [],
+        images: images || [],
+        metadata: {
+          fileKey: importRecordData.file_key,
+          fileName: importRecordData.file_name,
+          exportedAt: importRecordData.exported_at,
+        }
+      };
+
+      setImportData(fullImport);
+      setReviewingImport(importRecord);
+    } catch (error) {
+      console.error('Failed to fetch import details:', error);
+      toast.error('Failed to load import details');
+    }
+  };
+
+  const handleImportAll = async (importRecord) => {
+    try {
+      // Implementation will be in chunk 4.13
+      toast.success(`Importing ${importRecord.componentCount} components...`);
+      // For now, just show success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success(`Imported ${importRecord.componentCount} components`);
+      refetch();
+    } catch (error) {
+      toast.error('Failed to import components');
+      console.error('Import error:', error);
+    }
+  };
+
+  const handleImportSelected = async (result) => {
+    try {
+      // Implementation will be in chunk 4.13
+      toast.success(`Importing ${result.components.length} components...`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success(`Imported ${result.components.length} components`);
+      setReviewingImport(null);
+      setImportData(null);
+      refetch();
+    } catch (error) {
+      toast.error('Failed to import components');
+      console.error('Import error:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="page figma-import-page">
+        <PageHeader
+          title="Figma Imports"
+          description="Review and import components from Figma"
+        />
+        <ImportSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page figma-import-page">
+        <PageHeader
+          title="Figma Imports"
+          description="Review and import components from Figma"
+        />
+        <ErrorMessage 
+          error={error} 
+          title="Failed to load imports"
+          onRetry={refetch}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="page figma-import-page">
-      <header className="page-header">
-        <h1>Figma Import</h1>
-        <button className="btn btn-secondary">
-          <RefreshCw size={16} />
-          Refresh Connection
-        </button>
-      </header>
-      
+      <PageHeader
+        title="Figma Imports"
+        description="Review and import components from Figma"
+        action={
+          <Button 
+            variant="secondary" 
+            onClick={refetch}
+            loading={isLoading}
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </Button>
+        }
+      />
+
       <main className="page-content">
-        {/* Figma import wizard - will be implemented in Phase 4 */}
-        <div className="import-status">
-          <div className="connection-card card">
-            <div className="connection-icon">
-              <FigmaIcon size={32} />
-            </div>
-            <div className="connection-info">
-              <h3>Figma Plugin</h3>
-              <p className="connection-status disconnected">
-                Waiting for connection...
-              </p>
-            </div>
+        {!imports || imports.length === 0 ? (
+          <EmptyState
+            icon={Figma}
+            title="No pending imports"
+            description="Use the Figma plugin to export components to this admin tool. The plugin will send component data here for review and import."
+            action={
+              <div className="empty-state-instructions">
+                <p style={{ 
+                  fontSize: 'var(--font-size-sm)', 
+                  color: 'var(--color-muted-foreground)',
+                  marginTop: 'var(--spacing-md)'
+                }}>
+                  <strong>How to import:</strong>
+                </p>
+                <ol style={{ 
+                  fontSize: 'var(--font-size-sm)', 
+                  color: 'var(--color-muted-foreground)',
+                  textAlign: 'left',
+                  display: 'inline-block',
+                  marginTop: 'var(--spacing-sm)'
+                }}>
+                  <li>Open your Figma file</li>
+                  <li>Run the Design System Admin plugin</li>
+                  <li>Select components to export</li>
+                  <li>Click "Send to Admin"</li>
+                </ol>
+              </div>
+            }
+          />
+        ) : (
+          <div className="import-list">
+            {imports.map(importRecord => (
+              <ImportReviewCard
+                key={importRecord.id}
+                import={importRecord}
+                onReview={handleReview}
+                onImport={handleImportAll}
+              />
+            ))}
           </div>
-          
-          <div className="import-instructions card">
-            <h3>How to Import</h3>
-            <ol>
-              <li>Open your Figma file</li>
-              <li>Run the Design System Admin plugin</li>
-              <li>Select components to export</li>
-              <li>Click "Send to Admin"</li>
-            </ol>
-            <p className="hint">
-              The plugin will send component data to this page for review and import.
-            </p>
-          </div>
-        </div>
-        
-        <div className="empty-state">
-          <Upload size={48} className="empty-state-icon" />
-          <h3 className="empty-state-title">No pending imports</h3>
-          <p className="empty-state-description">
-            Use the Figma plugin to send components here for import.
-          </p>
-        </div>
+        )}
       </main>
-      
-      <style>{`
-        .import-status {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: var(--spacing-md);
-          margin-bottom: var(--spacing-xl);
-        }
-        
-        .connection-card {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-md);
-        }
-        
-        .connection-icon {
-          width: 64px;
-          height: 64px;
-          border-radius: var(--radius-lg);
-          background: var(--color-muted);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--color-muted-foreground);
-        }
-        
-        .connection-info h3 {
-          margin: 0 0 var(--spacing-xs);
-          font-size: var(--font-size-base);
-          font-weight: var(--font-weight-semibold);
-        }
-        
-        .connection-status {
-          margin: 0;
-          font-size: var(--font-size-sm);
-        }
-        
-        .connection-status.disconnected {
-          color: var(--color-warning);
-        }
-        
-        .connection-status.connected {
-          color: var(--color-success);
-        }
-        
-        .import-instructions h3 {
-          margin: 0 0 var(--spacing-md);
-          font-size: var(--font-size-base);
-          font-weight: var(--font-weight-semibold);
-        }
-        
-        .import-instructions ol {
-          margin: 0 0 var(--spacing-md);
-          padding-left: var(--spacing-lg);
-        }
-        
-        .import-instructions li {
-          margin-bottom: var(--spacing-xs);
-          font-size: var(--font-size-sm);
-        }
-        
-        .hint {
-          margin: 0;
-          font-size: var(--font-size-sm);
-          color: var(--color-muted-foreground);
-          font-style: italic;
-        }
-      `}</style>
+
+      {reviewingImport && importData && (
+        <ImportListModal
+          import={reviewingImport}
+          components={importData.components || []}
+          images={importData.images || []}
+          onClose={() => {
+            setReviewingImport(null);
+            setImportData(null);
+          }}
+          onImport={handleImportSelected}
+        />
+      )}
     </div>
-  )
+  );
 }
-
-

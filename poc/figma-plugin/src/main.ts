@@ -6,19 +6,23 @@
  */
 
 import { 
-  extractSelectedComponents, 
+  extractSelectedComponents,
+  extractComponent,
   getExtractionCapabilities,
+  scanDocumentComponents,
   type ExtractionResult 
 } from './extractors/component';
 
 import {
   ImageExporter,
+  exportComponentImages,
   type ExportOptions,
   type ExportBenchmark,
 } from './extractors/images';
 
 import {
   apiClient,
+  ComponentExportClient,
   type APIResponseMessage,
   type APIErrorMessage,
 } from './api/client';
@@ -106,6 +110,134 @@ figma.ui.onmessage = async (msg: PluginMessage) => {
         });
       }
       break;
+
+    case 'scan-components':
+      try {
+        const components = await scanDocumentComponents();
+        figma.ui.postMessage({
+          type: 'components-scanned',
+          data: { components }
+        });
+        figma.notify(`Found ${components.length} component${components.length !== 1 ? 's' : ''}`);
+      } catch (error) {
+        figma.ui.postMessage({
+          type: 'components-scanned',
+          data: { components: [], error: error instanceof Error ? error.message : String(error) }
+        });
+        figma.notify(`Scan failed: ${error instanceof Error ? error.message : String(error)}`, { error: true });
+      }
+      break;
+
+    case 'export-components': {
+      const { componentIds, apiUrl } = msg.payload as { 
+        componentIds: string[]; 
+        apiUrl: string;
+      };
+
+      if (!componentIds || componentIds.length === 0) {
+        figma.ui.postMessage({
+          type: 'export-error',
+          payload: { error: 'No components selected' }
+        });
+        break;
+      }
+
+      if (!apiUrl) {
+        figma.ui.postMessage({
+          type: 'export-error',
+          payload: { error: 'API URL is required' }
+        });
+        break;
+      }
+
+      try {
+        const extractedComponents = [];
+        const allImages = [];
+
+        // Extract each component and its images
+        for (let i = 0; i < componentIds.length; i++) {
+          const componentId = componentIds[i];
+          const node = figma.getNodeById(componentId);
+
+          if (!node || (node.type !== 'COMPONENT' && node.type !== 'COMPONENT_SET')) {
+            console.warn(`Skipping invalid component: ${componentId}`);
+            continue;
+          }
+
+          // Extract component data
+          const extractionResult = await extractComponent(node);
+          if (!extractionResult.success || !extractionResult.component) {
+            console.warn(`Failed to extract component ${componentId}:`, extractionResult.error);
+            continue;
+          }
+
+          extractedComponents.push(extractionResult.component);
+
+          // Export component images
+          try {
+            const images = await exportComponentImages(node as ComponentNode | ComponentSetNode);
+            allImages.push(...images);
+          } catch (err) {
+            console.warn(`Failed to export images for ${componentId}:`, err);
+          }
+
+          // Send progress update
+          const progress = ((i + 1) / componentIds.length) * 100;
+          figma.ui.postMessage({
+            type: 'export-progress',
+            data: { progress: Math.round(progress) }
+          });
+        }
+
+        if (extractedComponents.length === 0) {
+          figma.ui.postMessage({
+            type: 'export-error',
+            payload: { error: 'No components could be extracted' }
+          });
+          break;
+        }
+
+        // Send to API using ComponentExportClient
+        const exportClient = new ComponentExportClient({ apiUrl });
+        const result = await exportClient.sendComponents(
+          apiUrl,
+          extractedComponents,
+          allImages,
+          {
+            fileKey: figma.fileKey || '',
+            fileName: figma.root.name,
+            figmaFileId: figma.fileKey,
+            figmaFileName: figma.root.name,
+          }
+        );
+
+        if (result.success) {
+          figma.ui.postMessage({
+            type: 'export-complete',
+            data: { 
+              success: true,
+              importId: result.importId,
+              componentCount: extractedComponents.length,
+              imageCount: allImages.length
+            }
+          });
+          figma.notify(`Exported ${extractedComponents.length} component${extractedComponents.length !== 1 ? 's' : ''} successfully`);
+        } else {
+          figma.ui.postMessage({
+            type: 'export-error',
+            payload: { error: result.error || 'Export failed' }
+          });
+          figma.notify('Export failed', { error: true });
+        }
+      } catch (err) {
+        figma.ui.postMessage({
+          type: 'export-error',
+          payload: { error: err instanceof Error ? err.message : 'Export failed' }
+        });
+        figma.notify(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`, { error: true });
+      }
+      break;
+    }
 
     case 'get-capabilities':
       figma.ui.postMessage({

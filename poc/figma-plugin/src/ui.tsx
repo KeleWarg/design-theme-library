@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { uiFetchHandler, runConnectionTests } from './api/ui-fetch';
+import ComponentsTab from './ui/ComponentsTab';
 
 // Types
 interface PageInfo {
@@ -136,7 +137,7 @@ interface PluginState {
   capabilities: Capabilities | null;
   extractionResults: ExtractionResult[] | null;
   isExtracting: boolean;
-  activeTab: 'status' | 'extraction' | 'results' | 'export' | 'api';
+  activeTab: 'status' | 'extraction' | 'results' | 'export' | 'api' | 'components';
   imageExport: ImageExportState;
   api: APIState;
 }
@@ -1274,7 +1275,7 @@ Access-Control-Allow-Headers: Content-Type`}
 
       {/* Tabs */}
       <div style={styles.tabs}>
-        {(['status', 'extraction', 'export', 'api', 'results'] as const).map(tab => (
+        {(['status', 'extraction', 'export', 'api', 'results', 'components'] as const).map(tab => (
           <button
             key={tab}
             style={{
@@ -1294,6 +1295,7 @@ Access-Control-Allow-Headers: Content-Type`}
       {state.activeTab === 'export' && renderExportTab()}
       {state.activeTab === 'api' && renderApiTab()}
       {state.activeTab === 'results' && renderResultsTab()}
+      {state.activeTab === 'components' && <ComponentsTab />}
     </div>
   );
 }

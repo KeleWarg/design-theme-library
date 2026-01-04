@@ -1,10 +1,18 @@
 /**
- * @chunk 0.03 - Figma Plugin PoC - Image Export
+ * @chunk 0.03, 4.03 - Figma Plugin PoC - Image Export + ImageExporter Module
  * 
  * ImageExporter module for extracting images from Figma nodes.
  * Handles PNG, SVG, and JPG exports with configurable scale factors.
  * Converts Uint8Array output to base64 for transmission.
+ * 
+ * Chunk 4.03: Production-ready exportComponentImages function for component extraction.
  */
+
+// ============================================================================
+// Imports
+// ============================================================================
+
+import { ExportedImage } from '../types/images';
 
 // ============================================================================
 // Types
@@ -413,6 +421,147 @@ export const ImageExporter = {
   DEFAULT_EXPORT_OPTIONS,
   MAX_DIMENSION,
 };
+
+// ============================================================================
+// Chunk 4.03: Component Image Export
+// ============================================================================
+
+/**
+ * @chunk 4.03 - Export images from component nodes
+ * 
+ * Exports all image and vector nodes within a component, plus a preview of the component itself.
+ * Returns base64 encoded images with metadata for storage and deduplication.
+ */
+export interface ComponentImageExportOptions {
+  scale?: number; // 1, 2, or 3 (default: 2)
+  format?: 'PNG' | 'SVG'; // Auto-determined for vectors
+  includePreview?: boolean; // Export component preview (default: true)
+}
+
+/**
+ * Export all images from a component node
+ */
+export async function exportComponentImages(
+  node: ComponentNode | ComponentSetNode,
+  options: ComponentImageExportOptions = {}
+): Promise<ExportedImage[]> {
+  const { scale = 2, includePreview = true } = options;
+  const images: ExportedImage[] = [];
+  
+  // Find all image/vector nodes within the component
+  const imageNodes = findImageNodes(node);
+
+  // Export individual image/vector nodes
+  for (const imageNode of imageNodes) {
+    try {
+      const image = await exportNodeAsImage(imageNode, { scale });
+      if (image) {
+        images.push(image);
+      }
+    } catch (error) {
+      console.warn(`Failed to export image from ${imageNode.name}:`, error);
+    }
+  }
+
+  // Export the component itself as a preview (2x scale)
+  if (includePreview) {
+    try {
+      const preview = await exportNodeAsImage(node, { scale: 2, format: 'PNG' });
+      if (preview) {
+        preview.nodeName = `${node.name}_preview`;
+        images.unshift(preview); // Put preview first
+      }
+    } catch (error) {
+      console.warn('Failed to export component preview:', error);
+    }
+  }
+
+  return images;
+}
+
+/**
+ * Find all image and vector nodes within a component tree
+ */
+function findImageNodes(node: SceneNode): SceneNode[] {
+  const nodes: SceneNode[] = [];
+
+  function traverse(n: SceneNode) {
+    // Check if this node has image fills
+    if ('fills' in n) {
+      const fills = n.fills as readonly Paint[];
+      if (Array.isArray(fills) && fills.some(f => f.type === 'IMAGE')) {
+        nodes.push(n);
+      }
+    }
+
+    // Check for vector nodes (icons)
+    if (n.type === 'VECTOR' || n.type === 'STAR' || n.type === 'POLYGON') {
+      nodes.push(n);
+    }
+
+    // Traverse children
+    if ('children' in n) {
+      for (const child of n.children) {
+        traverse(child);
+      }
+    }
+  }
+
+  traverse(node);
+  return nodes;
+}
+
+/**
+ * Export a single node as an ExportedImage
+ */
+async function exportNodeAsImage(
+  node: SceneNode,
+  options: { scale?: number; format?: 'PNG' | 'SVG' } = {}
+): Promise<ExportedImage | null> {
+  const { scale = 2, format } = options;
+
+  // Determine best format - use SVG for vectors
+  let exportFormat: 'PNG' | 'SVG' = format || 'PNG';
+  if (!format && (node.type === 'VECTOR' || node.type === 'STAR' || node.type === 'POLYGON')) {
+    exportFormat = 'SVG';
+  }
+
+  const settings: ExportSettings = exportFormat === 'SVG'
+    ? { format: 'SVG' }
+    : { format: 'PNG', constraint: { type: 'SCALE', value: scale } };
+
+  try {
+    const bytes = await node.exportAsync(settings);
+    const base64 = uint8ArrayToBase64(bytes);
+    const hash = await generateHash(bytes);
+
+    return {
+      nodeId: node.id,
+      nodeName: node.name,
+      data: base64,
+      format: exportFormat,
+      width: Math.round(('width' in node ? node.width : 0) * (exportFormat === 'PNG' ? scale : 1)),
+      height: Math.round(('height' in node ? node.height : 0) * (exportFormat === 'PNG' ? scale : 1)),
+      hash,
+    };
+  } catch (error) {
+    console.warn(`Failed to export node ${node.name}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Generate a simple hash for image deduplication
+ */
+async function generateHash(bytes: Uint8Array): Promise<string> {
+  // Simple hash for deduplication
+  let hash = 0;
+  for (let i = 0; i < bytes.length; i++) {
+    hash = ((hash << 5) - hash) + bytes[i];
+    hash = hash & hash;
+  }
+  return hash.toString(16);
+}
 
 export default ImageExporter;
 

@@ -5,6 +5,8 @@
  * Since the plugin main thread has no fetch access, this uses message passing to the UI.
  */
 
+import type { ExportPayload, ExportResult, ExportOptions } from '../types/api';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -243,4 +245,185 @@ export class PluginAPIClient {
 // Singleton instance for easy access
 export const apiClient = new PluginAPIClient();
 
+// ============================================================================
+// ComponentExportClient - Specialized Export Client (Chunk 4.04)
+// ============================================================================
+
+/**
+ * @chunk 4.04 - PluginAPIClient
+ * 
+ * Specialized client for exporting components to the Admin Tool API.
+ * Handles chunking, progress callbacks, retry logic, and authentication.
+ */
+export class ComponentExportClient {
+  private apiUrl: string;
+  private authToken?: string;
+  private maxRetries: number;
+  private retryDelay: number;
+
+  constructor(options: ExportOptions) {
+    this.apiUrl = options.apiUrl.replace(/\/$/, '');
+    this.authToken = options.authToken;
+    this.maxRetries = options.maxRetries ?? 3;
+    this.retryDelay = options.retryDelay ?? 1000;
+  }
+
+  /**
+   * Export components to the Admin Tool API
+   * Handles chunking for large payloads and provides progress updates
+   */
+  async exportComponents(
+    payload: ExportPayload,
+    onProgress?: (progress: number) => void
+  ): Promise<ExportResult> {
+    const chunks = this.chunkPayload(payload);
+    let importId: string | null = null;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const response = await this.sendChunkWithRetry(chunks[i], importId);
+      importId = response.importId;
+      
+      if (onProgress) {
+        onProgress(((i + 1) / chunks.length) * 100);
+      }
+    }
+
+    return {
+      success: true,
+      importId: importId!,
+      status: 'pending',
+    };
+  }
+
+  /**
+   * Convenience method matching user requirements
+   * sendComponents(apiUrl, components, images)
+   */
+  async sendComponents(
+    apiUrl: string,
+    components: ExportPayload['components'],
+    images: ExportPayload['images'],
+    metadata?: Partial<ExportPayload['metadata']>
+  ): Promise<ExportResult> {
+    const payload: ExportPayload = {
+      components,
+      images,
+      metadata: {
+        fileKey: metadata?.fileKey ?? '',
+        fileName: metadata?.fileName ?? '',
+        exportedAt: metadata?.exportedAt ?? new Date().toISOString(),
+        figmaFileId: metadata?.figmaFileId,
+        figmaFileName: metadata?.figmaFileName,
+      },
+    };
+
+    return this.exportComponents(payload);
+  }
+
+  /**
+   * Chunk payload if it exceeds size limits
+   */
+  private chunkPayload(payload: ExportPayload): ExportPayload[] {
+    const payloadSize = JSON.stringify(payload).length;
+    
+    // If small enough, return as-is (1MB threshold)
+    if (payloadSize < 1_000_000) {
+      return [payload];
+    }
+
+    // Otherwise, split by component
+    const chunks: ExportPayload[] = [];
+    const COMPONENTS_PER_CHUNK = 5;
+
+    for (let i = 0; i < payload.components.length; i += COMPONENTS_PER_CHUNK) {
+      const componentSlice = payload.components.slice(i, i + COMPONENTS_PER_CHUNK);
+      const componentIds = new Set(componentSlice.map(c => c.id));
+      
+      // Include only images for these components
+      const imageSlice = payload.images.filter(img => {
+        // Extract component ID from nodeId (format: "componentId/variantId" or just "componentId")
+        const componentId = img.nodeId.split('/')[0];
+        return componentIds.has(componentId);
+      });
+
+      chunks.push({
+        components: componentSlice,
+        images: imageSlice,
+        metadata: payload.metadata,
+      });
+    }
+
+    return chunks;
+  }
+
+  /**
+   * Send a chunk with retry logic
+   */
+  private async sendChunkWithRetry(
+    chunk: ExportPayload,
+    existingImportId: string | null,
+    attempt: number = 1
+  ): Promise<{ importId: string; status?: 'pending' | 'complete' }> {
+    try {
+      return await this.sendChunk(chunk, existingImportId);
+    } catch (error) {
+      // Retry on network errors or 5xx status codes
+      const shouldRetry = 
+        attempt < this.maxRetries &&
+        (error instanceof TypeError || // Network error
+         (error instanceof Error && error.message.includes('5'))); // 5xx error
+
+      if (shouldRetry) {
+        // Exponential backoff
+        const delay = this.retryDelay * Math.pow(2, attempt - 1);
+        await this.sleep(delay);
+        return this.sendChunkWithRetry(chunk, existingImportId, attempt + 1);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Send a single chunk to the API
+   */
+  private async sendChunk(
+    chunk: ExportPayload,
+    existingImportId: string | null
+  ): Promise<{ importId: string; status?: 'pending' | 'complete' }> {
+    const endpoint = existingImportId
+      ? `${this.apiUrl}/api/figma-import/${existingImportId}/chunk`
+      : `${this.apiUrl}/api/figma-import`;
+
+    // Build headers with authentication if provided
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+
+    // Use the generic API client to send the request
+    const response = await apiClient.post<{ importId: string; status?: 'pending' | 'complete' }>(
+      endpoint,
+      chunk,
+      headers
+    );
+
+    if (!response.success || !response.data) {
+      const errorMessage = response.error || `API error ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Sleep utility for retry delays
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
 

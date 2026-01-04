@@ -13,7 +13,7 @@
 export { default as PageHeader } from './PageHeader';
 export { FilterBar, FilterButton } from './FilterBar';
 export { default as EmptyState } from './EmptyState';
-export { Skeleton, ThemeCardSkeleton, ThemeGridSkeleton, ComponentCardSkeleton, ComponentGridSkeleton, DetailSkeleton } from './Skeleton';
+export { Skeleton, ThemeCardSkeleton, ThemeGridSkeleton, ComponentCardSkeleton, ComponentGridSkeleton, DetailSkeleton, ImportSkeleton } from './Skeleton';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as StatusBadge } from './StatusBadge';
 export { default as DropdownMenu } from './DropdownMenu';

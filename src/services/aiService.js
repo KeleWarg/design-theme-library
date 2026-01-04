@@ -157,6 +157,52 @@ export const aiService = {
   },
 
   /**
+   * Generate component with custom prompt (for Figma imports)
+   * @param {string} prompt - Custom prompt string
+   * @returns {Promise<Object>} Generated component with code and props
+   */
+  async generateWithCustomPrompt(prompt) {
+    const apiKey = getApiKey();
+    
+    if (!apiKey) {
+      throw new Error('Claude API key not configured. Please add your API key in Settings.');
+    }
+
+    try {
+      const response = await fetch(CLAUDE_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: AI_CONFIG.model,
+          max_tokens: AI_CONFIG.maxTokens,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error?.message || `API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.content?.[0]?.text || '';
+      
+      return parseGeneratedComponent(content);
+    } catch (error) {
+      console.error('AI generation failed:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Validate generated code
    * @param {string} code - Component code to validate
    * @returns {Object} Validation result with isValid and errors

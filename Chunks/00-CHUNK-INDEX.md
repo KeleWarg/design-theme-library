@@ -121,19 +121,19 @@ Estimated total time: **160-180 hours** (with parallelization)
 
 | Chunk | Name | Est. Time | Dependencies | Status |
 |-------|------|-----------|--------------|--------|
-| 4.01 | Plugin UI | 2h | 0.02 | ⬜ |
-| 4.02 | ComponentExtractor | 3h | 0.02 | ⬜ |
-| 4.03 | ImageExporter | 3h | 0.03 | ⬜ |
-| 4.04 | PluginAPIClient | 2h | 0.04 | ⬜ |
-| 4.05 | Plugin Integration Test | 2h | 4.01-4.04 | ⬜ |
-| 4.06 | FigmaImportPage | 2h | 1.11, 1.10 | ⬜ |
-| 4.07 | ImportReviewCard | 2h | 4.06 | ⬜ |
-| 4.08 | ImportReviewModal | 2h | 4.07 | ⬜ |
-| 4.09 | FigmaStructureView | 2.5h | 4.08 | ⬜ |
-| 4.10 | ImageManager | 2.5h | 4.08, 1.05 | ⬜ |
-| 4.11 | Import API Endpoint | 2h | 4.04, 1.10 | ⬜ |
-| 4.12 | Figma Prompt Builder | 3h | 3.11, 4.02 | ⬜ |
-| 4.13 | Generate from Figma | 2h | 4.12, 4.08 | ⬜ |
+| 4.01 | Plugin UI | 2h | 0.02 | ✅ |
+| 4.02 | ComponentExtractor | 3h | 0.02 | ✅ |
+| 4.03 | ImageExporter | 3h | 0.03 | ✅ |
+| 4.04 | PluginAPIClient | 2h | 0.04 | ✅ |
+| 4.05 | Plugin Integration Test | 2h | 4.01-4.04 | ✅ |
+| 4.06 | FigmaImportPage | 2h | 1.11, 1.10 | ✅ |
+| 4.07 | ImportReviewCard | 2h | 4.06 | ✅ |
+| 4.08 | ImportReviewModal | 2h | 4.07 | ✅ |
+| 4.09 | FigmaStructureView | 2.5h | 4.08 | ✅ |
+| 4.10 | ImageManager | 2.5h | 4.08, 1.05 | ✅ |
+| 4.11 | Import API Endpoint | 2h | 4.04, 1.10 | ✅ |
+| 4.12 | Figma Prompt Builder | 3h | 3.11, 4.02 | ✅ |
+| 4.13 | Generate from Figma | 2h | 4.12, 4.08 | ✅ |
 
 **Phase 4 Total:** 30 hours
 

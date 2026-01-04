@@ -1,0 +1,52 @@
+{
+  "id": "component-3",
+  "name": "Icon Button",
+  "description": "Button with icon and image",
+  "type": "COMPONENT",
+  "properties": [
+    {
+      "name": "icon",
+      "type": "INSTANCE_SWAP",
+      "defaultValue": "icon-heart"
+    }
+  ],
+  "variants": [],
+  "boundVariables": [],
+  "structure": {
+    "id": "component-3",
+    "name": "Icon Button",
+    "type": "COMPONENT",
+    "width": 48,
+    "height": 48,
+    "children": [
+      {
+        "id": "vector-1",
+        "name": "Icon",
+        "type": "VECTOR",
+        "width": 24,
+        "height": 24
+      },
+      {
+        "id": "image-1",
+        "name": "Background",
+        "type": "RECTANGLE",
+        "width": 48,
+        "height": 48,
+        "fills": "IMAGE"
+      }
+    ]
+  },
+  "imageNodes": [
+    {
+      "id": "vector-1",
+      "name": "Icon",
+      "type": "VECTOR"
+    },
+    {
+      "id": "image-1",
+      "name": "Background",
+      "type": "RECTANGLE"
+    }
+  ]
+}
+

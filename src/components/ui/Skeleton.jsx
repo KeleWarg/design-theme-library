@@ -110,5 +110,33 @@ export function DetailSkeleton() {
   );
 }
 
+/**
+ * @chunk 4.06 - FigmaImportPage
+ * Skeleton for import list loading
+ */
+export function ImportSkeleton() {
+  return (
+    <div className="import-skeleton">
+      <div className="import-skeleton-header">
+        <Skeleton width={200} height={24} />
+        <Skeleton width={300} height={16} style={{ marginTop: 8 }} />
+      </div>
+      <div className="import-skeleton-list">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="import-skeleton-card">
+            <Skeleton width={60} height={60} style={{ borderRadius: 'var(--radius-md)' }} />
+            <div className="import-skeleton-content">
+              <Skeleton width="60%" height={18} />
+              <Skeleton width="40%" height={14} style={{ marginTop: 8 }} />
+              <Skeleton width="30%" height={12} style={{ marginTop: 12 }} />
+            </div>
+            <Skeleton width={80} height={32} style={{ borderRadius: 'var(--radius-md)' }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default Skeleton;
 
