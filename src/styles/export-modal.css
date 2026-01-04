@@ -1,0 +1,253 @@
+/**
+ * @chunk 5.01 - ExportModal Shell
+ * 
+ * Styles for ExportModal and related components
+ */
+
+.export-modal {
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+  min-height: 500px;
+}
+
+/* Sidebar */
+.export-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-muted);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Main content area */
+.export-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Format tabs */
+.format-tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.format-tab {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.format-tab:hover {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.format-tab.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* Format content */
+.format-content {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 100px;
+}
+
+.format-placeholder {
+  color: var(--color-muted-foreground);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--spacing-lg);
+}
+
+/* Export preview */
+.export-preview {
+  flex: 1;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+
+.preview-title {
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.preview-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+}
+
+.preview-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted-foreground);
+}
+
+.preview-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-foreground);
+}
+
+/* Footer */
+.export-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-muted);
+}
+
+/* Selector stubs */
+.export-theme-selector,
+.export-component-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selector-header h4 {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+}
+
+.selector-placeholder {
+  color: var(--color-muted-foreground);
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-sm);
+  font-style: italic;
+}
+
+/* Export result dialog */
+.export-result-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.export-summary {
+  padding: var(--spacing-sm) 0;
+}
+
+.export-summary p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground);
+}
+
+.file-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  background: var(--color-muted);
+}
+
+.file-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.dir-name {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+  margin-bottom: var(--spacing-xs);
+  padding-left: var(--spacing-xs);
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  transition: background var(--transition-fast);
+}
+
+.file-item:hover {
+  background: var(--color-muted);
+}
+
+.file-path {
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
+  color: var(--color-foreground);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-copy-btn {
+  flex-shrink: 0;
+  padding: var(--spacing-xs);
+  min-width: auto;
+}
+
+.download-progress {
+  height: 4px;
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+

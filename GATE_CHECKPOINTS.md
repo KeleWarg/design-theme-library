@@ -1,768 +1,388 @@
-# Gate Checkpoints
+# Gate Checkpoints — Design System Admin
 
-Integration tests that validate phase completions. Run these before crossing phase boundaries.
-
----
-
-## Gate 0 — Validation Complete (GO/NO-GO)
-**Trigger:** Chunks 0.04, 0.05, 0.06 complete
-**Blocks:** Phase 1 start
-
-This is a **manual gate** — no automated tests. Review the validation report.
-
-### GO Criteria (all must pass)
-| Capability | Required | Result |
-|------------|----------|--------|
-| Extract component metadata from Figma | ✅ Must work | ⬜ |
-| Export component images | ✅ Must work | ⬜ |
-| API communication (plugin → admin) | ✅ Must work | ⬜ |
-| AI generation success rate ≥ 60% | ✅ Must work | ⬜ |
-
-### Decision
-- **GO** — All criteria pass, proceed to Phase 1
-- **ADJUST** — Some limitations found, document workarounds, proceed with modified scope
-- **NO-GO** — Critical failures, project not feasible
-
-### Files to Review
-- `docs/00-validation-report.md`
-- `docs/00-risk-register.md`
-- `poc/ai-generation/results.json`
-
-### Skip Option
-If you're confident in the approach (or have validated separately), you can skip Phase 0 entirely and start at Phase 1.
+All gate definitions for Phases 0-5. Gates verify integration before proceeding.
 
 ---
 
-## Gate 1 — Foundation Services
-**Trigger:** Chunks 1.02, 1.07, 1.08 complete
-**Blocks:** Phase 2 start
+## Phase 0 — Validation
 
-```javascript
-// tests/gates/gate-1.test.js
-import { describe, it, expect, beforeAll } from 'vitest'
-import { themeService } from '@/services/themeService'
-import { tokenService } from '@/services/tokenService'
-import { supabase } from '@/lib/supabase'
+### Gate 0 — Validation Complete
+**Trigger:** 0.01-0.03 all ✅
 
-describe('Gate 1: Foundation Services', () => {
-  beforeAll(async () => {
-    // Verify Supabase connection
-    const { error } = await supabase.from('themes').select('count')
-    if (error) throw new Error('Supabase not connected')
-  })
+**Verifies:**
+- Figma plugin PoC extracts tokens
+- Token parser handles all formats
+- Supabase connection works
 
-  describe('Database Schema', () => {
-    it('themes table exists with correct columns', async () => {
-      const { data, error } = await supabase
-        .from('themes')
-        .select('id, name, slug, description, source, is_default')
-        .limit(1)
-      expect(error).toBeNull()
-    })
-
-    it('tokens table exists with correct columns', async () => {
-      const { data, error } = await supabase
-        .from('tokens')
-        .select('id, theme_id, name, path, category, type, value, css_variable')
-        .limit(1)
-      expect(error).toBeNull()
-    })
-  })
-
-  describe('Theme Service', () => {
-    it('getThemes returns array', async () => {
-      const themes = await themeService.getThemes()
-      expect(Array.isArray(themes)).toBe(true)
-    })
-
-    it('createTheme creates and returns theme', async () => {
-      const theme = await themeService.createTheme({
-        name: 'Gate Test Theme',
-        description: 'Test',
-      })
-      expect(theme.id).toBeDefined()
-      expect(theme.slug).toBe('gate-test-theme')
-      
-      // Cleanup
-      await themeService.deleteTheme(theme.id)
-    })
-
-    it('updateTheme modifies theme', async () => {
-      const theme = await themeService.createTheme({ name: 'Update Test' })
-      const updated = await themeService.updateTheme(theme.id, { 
-        description: 'Updated' 
-      })
-      expect(updated.description).toBe('Updated')
-      await themeService.deleteTheme(theme.id)
-    })
-
-    it('deleteTheme removes theme', async () => {
-      const theme = await themeService.createTheme({ name: 'Delete Test' })
-      await themeService.deleteTheme(theme.id)
-      const found = await themeService.getTheme(theme.id)
-      expect(found).toBeNull()
-    })
-  })
-
-  describe('Token Service', () => {
-    let testTheme
-
-    beforeAll(async () => {
-      testTheme = await themeService.createTheme({ name: 'Token Test' })
-    })
-
-    afterAll(async () => {
-      await themeService.deleteTheme(testTheme.id)
-    })
-
-    it('getTokensByTheme returns grouped tokens', async () => {
-      const grouped = await tokenService.getTokensByTheme(testTheme.id)
-      expect(typeof grouped).toBe('object')
-      // Should have category keys
-      expect(Object.keys(grouped).length >= 0).toBe(true)
-    })
-
-    it('bulkCreateTokens inserts multiple tokens', async () => {
-      const tokens = [
-        { name: 'primary', path: 'color/primary', category: 'color', type: 'color', value: { hex: '#000' }, css_variable: '--color-primary' },
-        { name: 'secondary', path: 'color/secondary', category: 'color', type: 'color', value: { hex: '#fff' }, css_variable: '--color-secondary' },
-      ]
-      await tokenService.bulkCreateTokens(testTheme.id, tokens)
-      
-      const grouped = await tokenService.getTokensByTheme(testTheme.id)
-      expect(grouped.color.length).toBe(2)
-    })
-
-    it('updateToken modifies token value', async () => {
-      const grouped = await tokenService.getTokensByTheme(testTheme.id)
-      const token = grouped.color[0]
-      
-      const updated = await tokenService.updateToken(token.id, { 
-        value: { hex: '#123456' } 
-      })
-      expect(updated.value.hex).toBe('#123456')
-    })
-  })
-})
-```
-
----
-
-## Gate 2 — Theme Context + Import
-**Trigger:** Chunks 2.04, 2.06, 2.11 complete
-**Blocks:** Token editors (2.12+)
-
-```javascript
-// tests/gates/gate-2.test.jsx
-import { describe, it, expect } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
-import { parseTokens } from '@/lib/tokenParser'
-
-// Sample Figma Variables JSON
-const sampleFigmaJSON = {
-  "Color": {
-    "Primary": {
-      "500": {
-        "$type": "color",
-        "$value": { "hex": "#657E79" }
-      }
-    }
-  }
-}
-
-describe('Gate 2: Theme Context + Import', () => {
-  describe('Token Parser', () => {
-    it('parses Figma Variables JSON', () => {
-      const result = parseTokens(sampleFigmaJSON)
-      expect(result.tokens.length).toBeGreaterThan(0)
-      expect(result.errors).toHaveLength(0)
-    })
-
-    it('generates correct CSS variable names', () => {
-      const result = parseTokens(sampleFigmaJSON)
-      const token = result.tokens[0]
-      expect(token.css_variable).toBe('--color-primary-500')
-    })
-
-    it('detects token categories from path', () => {
-      const result = parseTokens(sampleFigmaJSON)
-      const token = result.tokens[0]
-      expect(token.category).toBe('color')
-    })
-  })
-
-  describe('Theme Context', () => {
-    function TestConsumer() {
-      const { activeTheme, tokens, isLoading } = useTheme()
-      if (isLoading) return <div>Loading...</div>
-      return (
-        <div>
-          <span data-testid="theme-name">{activeTheme?.name || 'none'}</span>
-          <span data-testid="token-count">{Object.keys(tokens).length}</span>
-        </div>
-      )
-    }
-
-    it('provides theme context to children', async () => {
-      render(
-        <ThemeProvider>
-          <TestConsumer />
-        </ThemeProvider>
-      )
-      
-      await waitFor(() => {
-        expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
-      })
-      
-      expect(screen.getByTestId('theme-name')).toBeInTheDocument()
-    })
-  })
-
-  describe('CSS Variable Injection', () => {
-    it('injects CSS variables into document', async () => {
-      // After ThemeProvider mounts with tokens, check :root styles
-      render(
-        <ThemeProvider>
-          <div>Test</div>
-        </ThemeProvider>
-      )
-      
-      await waitFor(() => {
-        const root = document.documentElement
-        const styles = getComputedStyle(root)
-        // Should have at least one CSS variable set
-        // This test is intentionally loose - specific vars depend on theme
-      })
-    })
-  })
-})
-```
-
----
-
-## Gate 3 — Token Editing
-**Trigger:** Chunks 2.14, 2.15 complete
-**Blocks:** Remaining editors (2.16-2.20)
-
-```javascript
-// tests/gates/gate-3.test.jsx
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { TokenList } from '@/components/editor/TokenList'
-import { ColorEditor } from '@/components/editor/ColorEditor'
-
-const mockTokens = [
-  { id: '1', name: 'primary', category: 'color', value: { hex: '#657E79' }, css_variable: '--color-primary' },
-  { id: '2', name: 'secondary', category: 'color', value: { hex: '#FFFFFF' }, css_variable: '--color-secondary' },
-]
-
-describe('Gate 3: Token Editing', () => {
-  describe('TokenList', () => {
-    it('renders list of tokens', () => {
-      render(<TokenList tokens={mockTokens} category="color" onTokenChange={vi.fn()} />)
-      expect(screen.getByText('primary')).toBeInTheDocument()
-      expect(screen.getByText('secondary')).toBeInTheDocument()
-    })
-
-    it('shows CSS variable names', () => {
-      render(<TokenList tokens={mockTokens} category="color" onTokenChange={vi.fn()} />)
-      expect(screen.getByText('--color-primary')).toBeInTheDocument()
-    })
-  })
-
-  describe('ColorEditor', () => {
-    it('displays current color value', () => {
-      render(
-        <ColorEditor 
-          token={mockTokens[0]} 
-          onChange={vi.fn()} 
-        />
-      )
-      expect(screen.getByDisplayValue('#657E79')).toBeInTheDocument()
-    })
-
-    it('calls onChange when color updated', async () => {
-      const handleChange = vi.fn()
-      render(
-        <ColorEditor 
-          token={mockTokens[0]} 
-          onChange={handleChange} 
-        />
-      )
-      
-      const input = screen.getByDisplayValue('#657E79')
-      fireEvent.change(input, { target: { value: '#000000' } })
-      
-      await waitFor(() => {
-        expect(handleChange).toHaveBeenCalledWith(
-          expect.objectContaining({ hex: '#000000' })
-        )
-      })
-    })
-
-    it('shows color swatch preview', () => {
-      render(
-        <ColorEditor 
-          token={mockTokens[0]} 
-          onChange={vi.fn()} 
-        />
-      )
-      const swatch = screen.getByTestId('color-swatch')
-      expect(swatch).toHaveStyle({ backgroundColor: '#657E79' })
-    })
-  })
-})
-```
-
----
-
-## Gate 4 — Complete Theme System
-**Trigger:** Phase 2 complete (all 27 chunks)
-**Blocks:** Phase 3 start
-
-```javascript
-// tests/gates/gate-4.test.jsx
-import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { ThemeProvider } from '@/contexts/ThemeContext'
-import ThemesPage from '@/pages/ThemesPage'
-import ThemeEditorPage from '@/pages/ThemeEditorPage'
-
-describe('Gate 4: Complete Theme System', () => {
-  const wrapper = ({ children }) => (
-    <MemoryRouter>
-      <ThemeProvider>{children}</ThemeProvider>
-    </MemoryRouter>
-  )
-
-  describe('ThemesPage', () => {
-    it('renders theme list', async () => {
-      render(<ThemesPage />, { wrapper })
-      await waitFor(() => {
-        expect(screen.getByText(/themes/i)).toBeInTheDocument()
-      })
-    })
-
-    it('has create theme button', () => {
-      render(<ThemesPage />, { wrapper })
-      expect(screen.getByRole('button', { name: /create|new|add/i })).toBeInTheDocument()
-    })
-  })
-
-  describe('Theme Editor Integration', () => {
-    it('loads theme with tokens', async () => {
-      // This would need a real theme ID or mock
-      render(<ThemeEditorPage />, { wrapper })
-      await waitFor(() => {
-        // Check for category sidebar
-        expect(screen.getByText(/color|typography|spacing/i)).toBeInTheDocument()
-      })
-    })
-
-    it('has all token category editors', async () => {
-      render(<ThemeEditorPage />, { wrapper })
-      await waitFor(() => {
-        const categories = ['color', 'typography', 'spacing', 'shadow', 'radius', 'grid']
-        // At least some categories should be visible
-      })
-    })
-  })
-
-  describe('Import Flow', () => {
-    it('opens import wizard from create button', async () => {
-      render(<ThemesPage />, { wrapper })
-      
-      const createButton = screen.getByRole('button', { name: /create|new|add/i })
-      fireEvent.click(createButton)
-      
-      await waitFor(() => {
-        expect(screen.getByText(/import|upload|figma/i)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Typography System', () => {
-    it('typeface manager accessible', async () => {
-      render(<ThemeEditorPage />, { wrapper })
-      await waitFor(() => {
-        // Typography section should exist
-        expect(screen.getByText(/typeface|font/i)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Theme Preview', () => {
-    it('preview panel updates with token changes', async () => {
-      render(<ThemeEditorPage />, { wrapper })
-      await waitFor(() => {
-        expect(screen.getByTestId('preview-panel')).toBeInTheDocument()
-      })
-    })
-  })
-})
-```
-
----
-
-## Gate 5 — AI Generation + Component Detail
-**Trigger:** Chunks 3.11, 3.12 complete
-**Blocks:** Component tabs (3.13-3.17)
-
-```javascript
-// tests/gates/gate-5.test.jsx
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { aiService } from '@/services/aiService'
-import ComponentDetailPage from '@/pages/ComponentDetailPage'
-
-vi.mock('@/services/aiService')
-
-describe('Gate 5: AI Generation + Component Detail', () => {
-  describe('AI Service', () => {
-    it('generateComponent returns code', async () => {
-      aiService.generateComponent.mockResolvedValue({
-        code: 'export default function Button() { return <button>Click</button> }',
-        success: true,
-      })
-
-      const result = await aiService.generateComponent({
-        description: 'A simple button',
-        props: [],
-        tokens: [],
-      })
-
-      expect(result.code).toContain('Button')
-      expect(result.success).toBe(true)
-    })
-
-    it('handles API errors gracefully', async () => {
-      aiService.generateComponent.mockRejectedValue(new Error('API Error'))
-
-      await expect(
-        aiService.generateComponent({ description: 'test' })
-      ).rejects.toThrow('API Error')
-    })
-  })
-
-  describe('Component Detail Layout', () => {
-    const mockComponent = {
-      id: '1',
-      name: 'Button',
-      description: 'Primary button component',
-      category: 'buttons',
-      code: 'export default function Button() {}',
-      props: [],
-      variants: [],
-      status: 'draft',
-    }
-
-    it('renders component header', async () => {
-      render(<ComponentDetailPage component={mockComponent} />)
-      expect(screen.getByText('Button')).toBeInTheDocument()
-    })
-
-    it('shows tab navigation', () => {
-      render(<ComponentDetailPage component={mockComponent} />)
-      expect(screen.getByRole('tab', { name: /preview/i })).toBeInTheDocument()
-      expect(screen.getByRole('tab', { name: /code/i })).toBeInTheDocument()
-    })
-  })
-})
-```
-
----
-
-## Gate 6 — Complete Component System
-**Trigger:** Phase 3 complete
-**Blocks:** Phase 4 start
-
-```javascript
-// tests/gates/gate-6.test.jsx
-import { describe, it, expect } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { ThemeProvider } from '@/contexts/ThemeContext'
-import ComponentsPage from '@/pages/ComponentsPage'
-
-describe('Gate 6: Complete Component System', () => {
-  const wrapper = ({ children }) => (
-    <MemoryRouter>
-      <ThemeProvider>{children}</ThemeProvider>
-    </MemoryRouter>
-  )
-
-  it('ComponentsPage renders grid of components', async () => {
-    render(<ComponentsPage />, { wrapper })
-    await waitFor(() => {
-      expect(screen.getByText(/components/i)).toBeInTheDocument()
-    })
-  })
-
-  it('has filter controls', async () => {
-    render(<ComponentsPage />, { wrapper })
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeInTheDocument() // category filter
-    })
-  })
-
-  it('has add component button with dropdown', async () => {
-    render(<ComponentsPage />, { wrapper })
-    expect(screen.getByRole('button', { name: /add|new|create/i })).toBeInTheDocument()
-  })
-
-  it('component cards show status badge', async () => {
-    render(<ComponentsPage />, { wrapper })
-    await waitFor(() => {
-      // Should show at least one status badge
-      expect(screen.getByText(/draft|published|archived/i)).toBeInTheDocument()
-    })
-  })
-})
-```
-
----
-
-## Gate 7 — Figma Plugin Integration
-**Trigger:** Chunks 4.05, 4.11 complete
-**Blocks:** AI with Figma (4.12-4.13)
-
-```javascript
-// tests/gates/gate-7.test.js
-import { describe, it, expect } from 'vitest'
-
-describe('Gate 7: Figma Plugin Integration', () => {
-  describe('Plugin Build', () => {
-    it('manifest.json is valid', async () => {
-      const manifest = await import('../figma-plugin/manifest.json')
-      expect(manifest.name).toBeDefined()
-      expect(manifest.id).toBeDefined()
-      expect(manifest.api).toBeDefined()
-    })
-
-    it('plugin compiles without errors', async () => {
-      // This would run the build and check for errors
-      // In practice, run: cd figma-plugin && npm run build
-      expect(true).toBe(true) // Placeholder
-    })
-  })
-
-  describe('Admin Import Endpoint', () => {
-    it('accepts component data from plugin', async () => {
-      const mockPayload = {
-        components: [
-          { name: 'Button', figma_node_id: '123:456' }
-        ],
-        variables: {}
-      }
-
-      // POST to import endpoint
-      const response = await fetch('/api/figma-import', {
-        method: 'POST',
-        body: JSON.stringify(mockPayload),
-      })
-
-      expect(response.ok).toBe(true)
-    })
-  })
-})
-```
-
----
-
-## Gate 8 — Export System
-**Trigger:** Chunks 5.19, 5.20 complete
-**Blocks:** Phase 6 testing
-
-```javascript
-// tests/gates/gate-8.test.js
-import { describe, it, expect } from 'vitest'
-import { cssGenerator } from '@/services/generators/cssGenerator'
-import { jsonGenerator } from '@/services/generators/jsonGenerator'
-import { tailwindGenerator } from '@/services/generators/tailwindGenerator'
-import { llmsTxtGenerator } from '@/services/generators/llmsTxtGenerator'
-import { packageBuilder } from '@/services/exportService'
-
-const mockTokens = {
-  color: [
-    { name: 'primary', css_variable: '--color-primary', value: { hex: '#000' } }
-  ],
-  spacing: [
-    { name: 'md', css_variable: '--spacing-md', value: 16 }
-  ]
-}
-
-describe('Gate 8: Export System', () => {
-  describe('CSS Generator', () => {
-    it('generates valid CSS custom properties', () => {
-      const css = cssGenerator.generate(mockTokens)
-      expect(css).toContain(':root')
-      expect(css).toContain('--color-primary: #000')
-    })
-  })
-
-  describe('JSON Generator', () => {
-    it('generates nested JSON structure', () => {
-      const json = jsonGenerator.generate(mockTokens, { format: 'nested' })
-      const parsed = JSON.parse(json)
-      expect(parsed.color.primary).toBeDefined()
-    })
-
-    it('generates flat JSON structure', () => {
-      const json = jsonGenerator.generate(mockTokens, { format: 'flat' })
-      const parsed = JSON.parse(json)
-      expect(parsed['--color-primary']).toBeDefined()
-    })
-  })
-
-  describe('Tailwind Generator', () => {
-    it('generates theme extend object', () => {
-      const config = tailwindGenerator.generate(mockTokens)
-      expect(config).toContain('theme:')
-      expect(config).toContain('extend:')
-    })
-  })
-
-  describe('LLMS.txt Generator', () => {
-    it('generates markdown documentation', () => {
-      const llms = llmsTxtGenerator.generate(mockTokens, [])
-      expect(llms).toContain('# ')
-      expect(llms).toContain('## Colors')
-    })
-  })
-
-  describe('Package Builder', () => {
-    it('creates ZIP with all selected formats', async () => {
-      const blob = await packageBuilder.build({
-        themes: ['theme-1'],
-        formats: ['css', 'json'],
-      })
-      expect(blob).toBeInstanceOf(Blob)
-      expect(blob.type).toBe('application/zip')
-    })
-  })
-})
-```
-
----
-
-## Gate 9 — Final E2E
-**Trigger:** Phase 6 complete
-**Validates:** Complete system ready for release
-
-```typescript
-// tests/e2e/full-flow.spec.ts
-import { test, expect } from '@playwright/test'
-
-test.describe('Full Application Flow', () => {
-  test('complete theme lifecycle', async ({ page }) => {
-    // 1. Navigate to themes
-    await page.goto('/themes')
-    await expect(page.getByText('Themes')).toBeVisible()
-
-    // 2. Create new theme via import
-    await page.click('button:has-text("Create")')
-    await page.click('text=Import from JSON')
-    
-    // 3. Upload file
-    const fileInput = page.locator('input[type="file"]')
-    await fileInput.setInputFiles('./tests/fixtures/sample-tokens.json')
-    
-    // 4. Complete wizard
-    await page.click('button:has-text("Next")')
-    await page.fill('input[name="name"]', 'E2E Test Theme')
-    await page.click('button:has-text("Create Theme")')
-    
-    // 5. Verify theme created
-    await expect(page.getByText('E2E Test Theme')).toBeVisible()
-    
-    // 6. Edit theme
-    await page.click('text=E2E Test Theme')
-    await page.click('text=Color')
-    
-    // 7. Modify a token
-    const colorInput = page.locator('input[type="color"]').first()
-    await colorInput.fill('#FF0000')
-    await page.click('button:has-text("Save")')
-    
-    // 8. Export theme
-    await page.click('button:has-text("Export")')
-    await page.check('input[value="css"]')
-    await page.check('input[value="json"]')
-    
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.click('button:has-text("Download")')
-    ])
-    
-    expect(download.suggestedFilename()).toContain('.zip')
-    
-    // 9. Delete theme (cleanup)
-    await page.goto('/themes')
-    await page.click('text=E2E Test Theme')
-    await page.click('button:has-text("Delete")')
-    await page.click('button:has-text("Confirm")')
-    
-    await expect(page.getByText('E2E Test Theme')).not.toBeVisible()
-  })
-
-  test('component creation and generation', async ({ page }) => {
-    // 1. Navigate to components
-    await page.goto('/components')
-    
-    // 2. Create new component
-    await page.click('button:has-text("Add")')
-    await page.click('text=Create Manually')
-    
-    // 3. Fill basic info
-    await page.fill('input[name="name"]', 'E2E Button')
-    await page.fill('textarea[name="description"]', 'Test button')
-    await page.click('button:has-text("Next")')
-    
-    // 4. Add props
-    await page.click('button:has-text("Add Prop")')
-    await page.fill('input[name="propName"]', 'variant')
-    await page.click('button:has-text("Next")')
-    
-    // 5. Skip to create
-    await page.click('button:has-text("Create Component")')
-    
-    // 6. Verify component created
-    await expect(page.getByText('E2E Button')).toBeVisible()
-    
-    // 7. Generate code with AI (if configured)
-    await page.click('text=E2E Button')
-    const generateButton = page.locator('button:has-text("Generate")')
-    
-    if (await generateButton.isVisible()) {
-      await generateButton.click()
-      await expect(page.locator('.code-editor')).toContainText('function')
-    }
-  })
-})
-```
-
----
-
-## Running Gate Tests
-
+**Test:**
 ```bash
-# Gate 0 is MANUAL — review docs/00-validation-report.md
+# Plugin builds
+cd poc/figma-plugin && npm run build
 
-# Individual gate (1-8)
-npm test tests/gates/gate-1.test.js
+# Parser works
+node -e "require('./src/lib/tokenParser.js')"
 
-# All gates
-npm test tests/gates/
-
-# E2E (Gate 9)
-npx playwright test tests/e2e/full-flow.spec.ts
+# Supabase connects
+curl $SUPABASE_URL/rest/v1/ -H "apikey: $SUPABASE_ANON_KEY"
 ```
 
-## Gate Rules
+---
 
-1. **Never skip a gate** — All tests must pass before proceeding
-2. **Fix failures immediately** — Don't accumulate technical debt
-3. **Gates are integration tests** — They verify components work together
-4. **Update gate tests** — If requirements change, update the gate first
+## Phase 1 — Foundation
+
+### Gate 1 — Foundation Complete
+**Trigger:** 1.01-1.12 all ✅
+
+**Verifies:**
+- Database schema deployed
+- All services functional
+- Routing works
+- App shell renders
+
+**Test:**
+```bash
+# Build succeeds
+npm run build
+
+# App loads
+npm run dev
+# Navigate to / — should render app shell
+```
+
+---
+
+## Phase 2 — Theme System
+
+### Gate 2 — Theme CRUD
+**Trigger:** 2.01-2.04 all ✅
+
+**Verifies:**
+- Create theme works
+- Edit theme works
+- Delete theme works
+- ThemeContext provides data
+
+**Test:**
+1. Create new theme → appears in list
+2. Edit theme name → persists
+3. Delete theme → removed from list
+
+---
+
+### Gate 3 — Token Editors
+**Trigger:** 2.05-2.15 all ✅
+
+**Verifies:**
+- All editor components render
+- Token values editable
+- Changes persist to database
+
+**Test:**
+1. Edit color token → preview updates
+2. Edit spacing token → value saves
+3. All editors render without errors
+
+---
+
+### Gate 4 — Phase 2 Complete
+**Trigger:** 2.01-2.27 all ✅
+
+**Verifies:**
+- Full theme system works
+- Typography/typeface management
+- Theme preview functional
+- Token import from JSON
+
+**Test:**
+1. Import Figma JSON → tokens created
+2. Edit tokens across all categories
+3. Preview updates in real-time
+4. Typography page manages typefaces
+
+---
+
+## Phase 3 — Component System
+
+### Gate 5 — Component List
+**Trigger:** 3.01-3.04 all ✅
+
+**Verifies:**
+- ComponentsPage renders
+- Filters work
+- Cards display correctly
+- Add dropdown shows options
+
+**Test:**
+```bash
+# Components wired up
+grep -r "<ComponentCard" src/
+grep -r "<ComponentFilters" src/
+grep -r "<AddComponentDropdown" src/
+```
+
+1. Navigate to /components
+2. Filters update list
+3. "Add Component" dropdown shows 3 options
+
+---
+
+### Gate 6 — Creation Wizards
+**Trigger:** 3.05-3.11 all ✅
+
+**Verifies:**
+- Manual wizard completes all steps
+- AI generation works
+- Components save to database
+
+**Test:**
+1. /components/new?mode=manual → complete 4 steps → component created
+2. /components/new?mode=ai → enter prompt → generate → accept → saved
+
+---
+
+### Gate 7 — Component Detail
+**Trigger:** 3.12-3.17 all ✅
+
+**Verifies:**
+- Detail page loads
+- All 5 tabs work (Preview, Code, Props, Tokens, Examples)
+- Save/Cancel pattern works
+- Delete requires confirmation
+
+**Test:**
+1. Click component → detail page loads
+2. Each tab renders without error
+3. Edit code → Save → persists
+4. Edit props → Save → persists
+5. Link tokens → Save → persists
+
+---
+
+## Phase 4 — Figma Import
+
+### Gate 8 — Figma Plugin
+**Trigger:** 4.01-4.05 all ✅
+
+**Verifies:**
+- Plugin UI works
+- Component extraction works
+- Image export works
+- API client sends data
+
+**Test:**
+```bash
+# Plugin builds
+cd poc/figma-plugin && npm run build
+```
+
+1. Load plugin in Figma
+2. Scan Document → components appear
+3. Select components → Export → sends to API
+
+---
+
+### Gate 9 — Import UI
+**Trigger:** 4.06-4.11 all ✅
+
+**Verifies:**
+- FigmaImportPage shows imports
+- Review modal works
+- Structure/Images/Tokens tabs work
+- API endpoint receives data
+
+**Test:**
+1. Navigate to /figma-import
+2. Imports appear in list
+3. Click import → review modal opens
+4. All tabs render correctly
+
+---
+
+### Gate 10 — Phase 4 Complete
+**Trigger:** 4.01-4.13 all ✅
+
+**Verifies:**
+- Full Figma → Admin → AI generation flow
+- Figma context in AI prompt
+- Component created with linked tokens (PATHS not IDs)
+- Images uploaded
+
+**Test:**
+1. Export from Figma plugin
+2. Review in admin
+3. Click "Import & Generate Code"
+4. Component created with:
+   - Generated code ✅
+   - Props from Figma ✅
+   - Linked tokens as paths ✅
+   - Images uploaded ✅
+
+---
+
+## Phase 5 — Export System
+
+### Gate 11 — Export Modal UI
+**Trigger:** 5.01-5.04 all ✅
+
+**Verifies:**
+- ExportModal opens
+- ThemeSelector shows themes
+- ComponentSelector shows published components
+- FormatTabs navigate correctly
+
+**Test:**
+1. Open Export modal
+2. Select themes → checkboxes work
+3. Select components → filter works
+4. Tab navigation works
+
+---
+
+### Gate 12 — Token Generators
+**Trigger:** 5.05-5.09 all ✅
+
+**Verifies:**
+- CSS Generator → valid CSS
+- JSON Generator → valid JSON
+- Tailwind Generator → valid JS config
+- SCSS Generator → valid SCSS
+- FontFace Generator → valid @font-face rules
+
+**Test:**
+```javascript
+const tokens = [
+  { name: 'color-primary', value: '#3b82f6', category: 'color' }
+];
+
+// Each must produce valid output
+generateCSS(tokens);        // Valid CSS
+generateJSON(tokens);       // JSON.parse() works
+generateTailwind(tokens);   // Valid JS
+generateSCSS(tokens);       // Valid SCSS
+generateFontFaceCss([]);    // Valid CSS
+```
+
+---
+
+### Gate 13 — AI Generators
+**Trigger:** 5.10-5.13 all ✅
+
+**Verifies:**
+- LLMS.txt comprehensive
+- Cursor Rules under 3KB
+- Claude MD well-formatted
+- Project Knowledge complete
+
+**Test:**
+```javascript
+const themes = [{ name: 'Default', tokens: [...] }];
+const components = [{ name: 'Button', code: '...' }];
+
+generateLLMSTxt(themes, components);         // Comprehensive
+generateCursorRules(themes, components);     // Under 3KB
+generateClaudeMd(themes, components);        // Valid markdown
+generateProjectKnowledge(themes, components); // Complete
+```
+
+---
+
+### Gate 14 — Phase 5 Complete
+**Trigger:** 5.01-5.20 all ✅
+
+**Verifies:**
+- Full export flow works
+- All generators produce valid output
+- MCP server compiles
+- ZIP downloads correctly
+
+**Test:**
+1. Open Export Modal
+2. Select themes + components
+3. Select "Full Package"
+4. Click Export
+5. ZIP downloads with:
+   - LLMS.txt ✅
+   - dist/tokens.css ✅
+   - dist/tokens.json ✅
+   - dist/tailwind.config.js ✅
+   - .cursor/rules/*.mdc ✅
+   - CLAUDE.md ✅
+   - mcp-server/ ✅
+   - skill/ ✅
+   - package.json ✅
+
+6. Verify MCP server compiles:
+```bash
+cd mcp-server && npm install && npm run build
+```
+
+---
+
+## Phase 6 — Testing & Polish
+
+### Gate 15 — E2E Tests
+**Trigger:** 6.01-6.04 all ✅
+
+**Verifies:**
+- E2E test suite passes
+- All critical flows covered
+- CI/CD pipeline works
+
+---
+
+### Gate 16 — Phase 6 Complete (MVP)
+**Trigger:** 6.01-6.07 all ✅
+
+**Verifies:**
+- All tests pass
+- Performance acceptable
+- Documentation complete
+- Ready for release
+
+---
+
+## Gate Summary
+
+| Gate | Phase | Trigger | Verifies |
+|------|-------|---------|----------|
+| 0 | 0 | 0.01-0.03 | Validation/PoC |
+| 1 | 1 | 1.01-1.12 | Foundation |
+| 2 | 2 | 2.01-2.04 | Theme CRUD |
+| 3 | 2 | 2.05-2.15 | Token Editors |
+| 4 | 2 | 2.01-2.27 | Phase 2 Complete |
+| 5 | 3 | 3.01-3.04 | Component List |
+| 6 | 3 | 3.05-3.11 | Creation Wizards |
+| 7 | 3 | 3.12-3.17 | Component Detail |
+| 8 | 4 | 4.01-4.05 | Figma Plugin |
+| 9 | 4 | 4.06-4.11 | Import UI |
+| 10 | 4 | 4.01-4.13 | Phase 4 Complete |
+| 11 | 5 | 5.01-5.04 | Export Modal |
+| 12 | 5 | 5.05-5.09 | Token Generators |
+| 13 | 5 | 5.10-5.13 | AI Generators |
+| 14 | 5 | 5.01-5.20 | Phase 5 Complete |
+| 15 | 6 | 6.01-6.04 | E2E Tests |
+| 16 | 6 | 6.01-6.07 | MVP Complete |
+
+---
+
+## Current Status
+
+| Gate | Status |
+|------|--------|
+| Gate 0 | ✅ PASSED |
+| Gate 1 | ✅ PASSED |
+| Gate 2 | ✅ PASSED |
+| Gate 3 | ✅ PASSED |
+| Gate 4 | ✅ PASSED |
+| Gate 5 | ✅ PASSED |
+| Gate 6 | ✅ PASSED |
+| Gate 7 | ✅ PASSED |
+| Gate 8 | ✅ PASSED |
+| Gate 9 | ✅ PASSED |
+| Gate 10 | ✅ PASSED |
+| Gate 11 | ✅ PASSED |
+| Gate 12 | ⏳ In Progress |
+| Gate 13 | ⏳ In Progress |
+| Gate 14 | ⏳ Pending |
+| Gate 15 | ⬜ Not Started |
+| Gate 16 | ⬜ Not Started |

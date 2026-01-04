@@ -21,6 +21,7 @@
 @import './components-page.css';
 @import './component-wizard.css';
 @import './figma-import.css';
+@import './export-modal.css';
 
 @tailwind base;
 @tailwind components;
