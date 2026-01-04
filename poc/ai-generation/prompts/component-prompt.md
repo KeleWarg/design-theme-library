@@ -22,3 +22,4 @@ Category: {category}
 ## Output Format
 Return ONLY the TypeScript/JSX code, no explanation. The code should be a complete, working component file.
 
+

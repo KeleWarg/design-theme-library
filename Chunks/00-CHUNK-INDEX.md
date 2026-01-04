@@ -95,23 +95,23 @@ Estimated total time: **160-180 hours** (with parallelization)
 
 | Chunk | Name | Est. Time | Dependencies | Status |
 |-------|------|-----------|--------------|--------|
-| 3.01 | ComponentsPage Layout | 2h | 1.11, 1.10 | ⬜ |
-| 3.02 | ComponentCard | 2h | 3.01 | ⬜ |
-| 3.03 | ComponentFilters | 1.5h | 3.01 | ⬜ |
-| 3.04 | AddComponentDropdown | 1h | 3.01 | ⬜ |
-| 3.05 | ManualWizard Shell | 2h | 3.04 | ⬜ |
-| 3.06 | BasicInfoStep | 1.5h | 3.05 | ⬜ |
-| 3.07 | PropsStep | 2.5h | 3.05 | ⬜ |
-| 3.08 | VariantsStep | 2h | 3.05 | ⬜ |
-| 3.09 | TokenLinkingStep | 2.5h | 3.05, 2.04 | ⬜ |
-| 3.10 | AIGenerationFlow | 3h | 3.04, 2.04 | ⬜ |
-| 3.11 | AI Service | 4h | 1.08 | ⬜ |
-| 3.12 | ComponentDetail Layout | 2h | 3.01, 1.10 | ⬜ |
-| 3.13 | PreviewTab | 3h | 3.12, 2.04 | ⬜ |
-| 3.14 | CodeTab | 2.5h | 3.12 | ⬜ |
-| 3.15 | PropsTab | 2h | 3.12 | ⬜ |
-| 3.16 | TokensTab | 2h | 3.12, 2.04 | ⬜ |
-| 3.17 | ExamplesTab | 2h | 3.12 | ⬜ |
+| 3.01 | ComponentsPage Layout | 2h | 1.11, 1.10 | ✅ |
+| 3.02 | ComponentCard | 2h | 3.01 | ✅ |
+| 3.03 | ComponentFilters | 1.5h | 3.01 | ✅ |
+| 3.04 | AddComponentDropdown | 1h | 3.01 | ✅ |
+| 3.05 | ManualWizard Shell | 2h | 3.04 | ✅ |
+| 3.06 | BasicInfoStep | 1.5h | 3.05 | ✅ |
+| 3.07 | PropsStep | 2.5h | 3.05 | ✅ |
+| 3.08 | VariantsStep | 2h | 3.05 | ✅ |
+| 3.09 | TokenLinkingStep | 2.5h | 3.05, 2.04 | ✅ |
+| 3.10 | AIGenerationFlow | 3h | 3.04, 2.04 | ✅ |
+| 3.11 | AI Service | 4h | 1.08 | ✅ |
+| 3.12 | ComponentDetail Layout | 2h | 3.01, 1.10 | ✅ |
+| 3.13 | PreviewTab | 3h | 3.12, 2.04 | ✅ |
+| 3.14 | CodeTab | 2.5h | 3.12 | ✅ |
+| 3.15 | PropsTab | 2h | 3.12 | ✅ |
+| 3.16 | TokensTab | 2h | 3.12, 2.04 | ✅ |
+| 3.17 | ExamplesTab | 2h | 3.12 | ✅ |
 
 **Phase 3 Total:** 38.5 hours
 

@@ -239,3 +239,4 @@ function TokenMappingRow({ token, currentCategory, onUpdateMapping }) {
   );
 }
 
+

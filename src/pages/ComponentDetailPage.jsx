@@ -1,126 +1,283 @@
 /**
- * @chunk 1.11 - App Shell & Routing
- * Component detail page placeholder
+ * @chunk 3.12 - ComponentDetail Layout
+ * 
+ * Main component detail/edit page with tabbed interface.
+ * Provides preview, code editing, props management, token linking, and examples.
  */
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Edit, Code, Eye, Settings } from 'lucide-react'
+
+import { useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useComponent } from '../hooks/useComponent';
+import { componentService } from '../services/componentService';
+import { Tabs, Button, StatusBadge, DropdownMenu, DetailSkeleton } from '../components/ui';
+import { PreviewTab, CodeTab, PropsTab, TokensTab, ExamplesTab } from '../components/components/detail';
+import { ArrowLeft, MoreVertical } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ComponentDetailPage() {
-  const { id } = useParams()
-  
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { data: component, isLoading, error, mutate } = useComponent(id);
+  const [activeTab, setActiveTab] = useState('preview');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const handleSave = async (updates) => {
+    try {
+      await componentService.updateComponent(id, updates);
+      setHasChanges(false);
+      mutate();
+      toast.success('Component saved');
+    } catch (error) {
+      console.error('Failed to save component:', error);
+      toast.error('Failed to save component');
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      await componentService.updateComponent(id, { status: 'published' });
+      mutate();
+      toast.success('Component published');
+    } catch (error) {
+      console.error('Failed to publish component:', error);
+      toast.error('Failed to publish component');
+    }
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      const newComponent = await componentService.duplicateComponent(id);
+      toast.success('Component duplicated');
+      navigate(`/components/${newComponent.id}`);
+    } catch (error) {
+      console.error('Failed to duplicate component:', error);
+      toast.error('Failed to duplicate component');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Delete this component? This cannot be undone.')) return;
+    
+    try {
+      await componentService.deleteComponent(id);
+      toast.success('Component deleted');
+      navigate('/components');
+    } catch (error) {
+      console.error('Failed to delete component:', error);
+      toast.error('Failed to delete component');
+    }
+  };
+
+  if (isLoading) {
+    return <DetailSkeleton />;
+  }
+
+  if (error || !component) {
+    return (
+      <div className="page">
+        <div className="error-state">
+          <p>Failed to load component</p>
+          <Button onClick={() => navigate('/components')}>Back to Components</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page component-detail-page">
-      <header className="page-header">
-        <div className="page-header-left">
-          <Link to="/components" className="btn btn-ghost">
-            <ArrowLeft size={16} />
-            Back
-          </Link>
-          <h1>Component Details</h1>
-          <span className="component-id">ID: {id}</span>
-        </div>
-        <button className="btn btn-primary">
-          <Edit size={16} />
-          Edit Component
-        </button>
-      </header>
-      
-      <main className="page-content">
-        {/* Component detail tabs - will be implemented in Phase 3 */}
-        <div className="tabs-placeholder">
-          <div className="tab-list">
-            <button className="tab active">
-              <Eye size={16} />
-              Preview
-            </button>
-            <button className="tab">
-              <Code size={16} />
-              Code
-            </button>
-            <button className="tab">
-              <Settings size={16} />
-              Props
-            </button>
+      <div className="component-detail">
+        <div className="detail-header">
+          <div className="header-left">
+            <Link to="/components" className="back-link">
+              <ArrowLeft size={16} /> Components
+            </Link>
+            <h1>{component.name}</h1>
+            <StatusBadge status={component.status} />
           </div>
-          
-          <div className="tab-content">
-            <p>Component detail view will be implemented in Phase 3</p>
-            <p>This page will include:</p>
-            <ul>
-              <li>Live preview with theme tokens</li>
-              <li>Code view with syntax highlighting</li>
-              <li>Props documentation</li>
-              <li>Linked tokens</li>
-              <li>Usage examples</li>
-            </ul>
+          <div className="header-actions">
+            {hasChanges && (
+              <Button onClick={() => handleSave({})}>
+                Save Changes
+              </Button>
+            )}
+            {component.status === 'draft' && (
+              <Button variant="primary" onClick={handlePublish}>
+                Publish
+              </Button>
+            )}
+            <DropdownMenu
+              trigger={
+                <Button variant="ghost" size="small">
+                  <MoreVertical size={16} />
+                </Button>
+              }
+            >
+              <DropdownMenu.Item onClick={handleDuplicate}>
+                Duplicate
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item danger onClick={handleDelete}>
+                Delete
+              </DropdownMenu.Item>
+            </DropdownMenu>
           </div>
         </div>
-      </main>
-      
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs.List>
+            <Tabs.Trigger value="preview">Preview</Tabs.Trigger>
+            <Tabs.Trigger value="code">Code</Tabs.Trigger>
+            <Tabs.Trigger value="props">Props</Tabs.Trigger>
+            <Tabs.Trigger value="tokens">Tokens</Tabs.Trigger>
+            <Tabs.Trigger value="examples">Examples</Tabs.Trigger>
+          </Tabs.List>
+
+          <Tabs.Content value="preview">
+            <PreviewTab component={component} />
+          </Tabs.Content>
+          <Tabs.Content value="code">
+            <CodeTab 
+              component={component} 
+              onSave={(code) => handleSave({ code })}
+              onChangesMade={() => setHasChanges(true)}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="props">
+            <PropsTab 
+              component={component}
+              onSave={(props) => handleSave({ props })}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="tokens">
+            <TokensTab 
+              component={component}
+              onSave={(linked_tokens) => handleSave({ linked_tokens })}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="examples">
+            <ExamplesTab component={component} onUpdate={mutate} />
+          </Tabs.Content>
+        </Tabs>
+      </div>
+
       <style>{`
-        .page-header-left {
+        .component-detail-page {
+          padding: var(--spacing-lg);
+        }
+
+        .component-detail {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-lg);
+        }
+
+        .detail-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: var(--spacing-md);
+          padding-bottom: var(--spacing-md);
+          border-bottom: 1px solid var(--color-border);
+        }
+
+        .header-left {
           display: flex;
           align-items: center;
           gap: var(--spacing-md);
+          flex: 1;
         }
-        
-        .component-id {
-          font-size: var(--font-size-sm);
-          color: var(--color-muted-foreground);
-          padding: var(--spacing-xs) var(--spacing-sm);
-          background: var(--color-muted);
-          border-radius: var(--radius-sm);
-        }
-        
-        .tabs-placeholder {
-          background: var(--color-background);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          overflow: hidden;
-        }
-        
-        .tab-list {
-          display: flex;
-          border-bottom: 1px solid var(--color-border);
-          background: var(--color-muted);
-        }
-        
-        .tab {
+
+        .back-link {
           display: flex;
           align-items: center;
           gap: var(--spacing-xs);
+          color: var(--color-muted-foreground);
+          text-decoration: none;
+          font-size: var(--font-size-sm);
+          transition: color 0.2s;
+        }
+
+        .back-link:hover {
+          color: var(--color-foreground);
+        }
+
+        .detail-header h1 {
+          margin: 0;
+          font-size: var(--font-size-2xl);
+          font-weight: var(--font-weight-semibold);
+          color: var(--color-foreground);
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+        }
+
+        /* Tabs Styles */
+        .tabs {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-md);
+        }
+
+        .tabs-list {
+          display: flex;
+          gap: var(--spacing-xs);
+          border-bottom: 1px solid var(--color-border);
+          padding: 0 var(--spacing-sm);
+        }
+
+        .tabs-trigger {
           padding: var(--spacing-sm) var(--spacing-md);
           background: none;
           border: none;
+          border-bottom: 2px solid transparent;
           cursor: pointer;
           font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-medium);
           color: var(--color-muted-foreground);
-          border-bottom: 2px solid transparent;
+          transition: all 0.2s;
           margin-bottom: -1px;
         }
-        
-        .tab:hover {
+
+        .tabs-trigger:hover {
           color: var(--color-foreground);
         }
-        
-        .tab.active {
+
+        .tabs-trigger.active {
           color: var(--color-primary);
           border-bottom-color: var(--color-primary);
-          background: var(--color-background);
+          background: var(--color-primary-light, #eff6ff);
         }
-        
-        .tab-content {
+
+        .tabs-content {
+          padding: var(--spacing-lg);
+          background: var(--color-background);
+          border-radius: var(--radius-lg);
+        }
+
+        /* Tab placeholder styles */
+        .preview-tab-placeholder,
+        .code-tab-placeholder,
+        .props-tab-placeholder,
+        .tokens-tab-placeholder,
+        .examples-tab-placeholder {
           padding: var(--spacing-xl);
           text-align: center;
+          color: var(--color-muted-foreground);
         }
-        
-        .tab-content ul {
-          text-align: left;
-          max-width: 300px;
-          margin: var(--spacing-md) auto;
+
+        .error-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: var(--spacing-md);
+          padding: var(--spacing-xl);
+          min-height: 400px;
         }
       `}</style>
     </div>
-  )
+  );
 }
-

@@ -63,3 +63,4 @@ CREATE TRIGGER components_updated_at
   BEFORE UPDATE ON components
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+

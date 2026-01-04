@@ -67,3 +67,4 @@ COMMENT ON COLUMN typefaces.is_variable IS 'Whether this is a variable font with
 COMMENT ON COLUMN typography_roles.role_name IS 'Semantic name: display, heading-xl/lg/md/sm, body-lg/md/sm, label, caption, mono';
 COMMENT ON COLUMN typography_roles.typeface_role IS 'Links to typeface role (display, text, mono, accent)';
 
+

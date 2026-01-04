@@ -13,3 +13,4 @@ npm run dev
 
 Copy `.env.local.example` to `.env.local` and add your Supabase credentials.
 
+

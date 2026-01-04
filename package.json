@@ -14,6 +14,7 @@
     "seed": "node scripts/seed.js"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@supabase/supabase-js": "^2.47.0",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",

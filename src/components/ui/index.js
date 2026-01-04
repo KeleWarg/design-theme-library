@@ -13,7 +13,7 @@
 export { default as PageHeader } from './PageHeader';
 export { FilterBar, FilterButton } from './FilterBar';
 export { default as EmptyState } from './EmptyState';
-export { Skeleton, ThemeCardSkeleton, ThemeGridSkeleton } from './Skeleton';
+export { Skeleton, ThemeCardSkeleton, ThemeGridSkeleton, ComponentCardSkeleton, ComponentGridSkeleton, DetailSkeleton } from './Skeleton';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as StatusBadge } from './StatusBadge';
 export { default as DropdownMenu } from './DropdownMenu';
@@ -23,8 +23,11 @@ export { default as Input } from './Input';
 export { default as Textarea } from './Textarea';
 export { default as Button } from './Button';
 export { default as Select } from './Select';
+export { default as Checkbox } from './Checkbox';
 export { default as Slider } from './Slider';
 export { default as ColorInput } from './ColorInput';
 export { Popover, PopoverTrigger, PopoverContent } from './Popover';
 export { default as SegmentedControl } from './SegmentedControl';
+export { default as CodeEditor } from './CodeEditor';
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
 

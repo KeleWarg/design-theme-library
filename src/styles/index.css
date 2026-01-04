@@ -2,6 +2,8 @@
  * @chunk 1.11 - App Shell & Routing
  * @chunk 2.02 - ThemeCard Component
  * @chunk 2.03 - CreateThemeModal
+ * @chunk 3.01 - ComponentsPage Layout
+ * @chunk 3.05 - ManualCreationWizard Shell
  * Main stylesheet entry point
  */
 
@@ -16,6 +18,8 @@
 @import './theme-editor.css';
 @import './theme-selector.css';
 @import './theme-preview.css';
+@import './components-page.css';
+@import './component-wizard.css';
 
 @tailwind base;
 @tailwind components;

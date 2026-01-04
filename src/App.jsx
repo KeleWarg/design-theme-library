@@ -16,6 +16,7 @@ import {
   TypographyPage,
   ImportWizardPage,
   ComponentsPage,
+  CreateComponentPage,
   ComponentDetailPage,
   FigmaImportPage,
   SettingsPage,
@@ -50,6 +51,7 @@ export default function App() {
             
             {/* Components */}
             <Route path="/components" element={<ComponentsPage />} />
+            <Route path="/components/new" element={<CreateComponentPage />} />
             <Route path="/components/:id" element={<ComponentDetailPage />} />
             
             {/* Figma Import */}

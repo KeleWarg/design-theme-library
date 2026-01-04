@@ -61,3 +61,4 @@ CREATE TRIGGER tokens_updated_at
   BEFORE UPDATE ON tokens
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+

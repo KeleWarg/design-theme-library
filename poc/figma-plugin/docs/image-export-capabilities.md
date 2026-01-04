@@ -379,3 +379,4 @@ const result = await ImageExporter.exportNode(node, {
 - **Chunk 0.02:** Component Extraction
 - **Chunk 4.03:** Production ImageExporter (consumes this module)
 
+

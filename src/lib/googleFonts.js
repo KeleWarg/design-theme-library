@@ -176,3 +176,4 @@ export function getFontCategory(family) {
   return font?.category || 'sans-serif';
 }
 
+

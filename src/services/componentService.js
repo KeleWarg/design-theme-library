@@ -20,6 +20,27 @@ function generateSlug(name) {
     .replace(/^-|-$/g, '');
 }
 
+/**
+ * Validate linked_tokens format
+ * Checks if array contains UUIDs (incorrect) instead of paths (correct)
+ * @param {Array} linkedTokens - Array of token identifiers
+ * @returns {boolean} - True if contains UUIDs (invalid format)
+ */
+function hasUUIDsInLinkedTokens(linkedTokens) {
+  if (!Array.isArray(linkedTokens)) return false;
+  
+  // UUID regex pattern
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  return linkedTokens.some(token => {
+    // Check if token is a string that matches UUID pattern
+    if (typeof token === 'string') {
+      return uuidPattern.test(token);
+    }
+    return false;
+  });
+}
+
 export const componentService = {
   // ==========================================
   // Component CRUD Operations
@@ -33,15 +54,26 @@ export const componentService = {
    * @param {string} [filters.search] - Search by name
    * @returns {Promise<Array>} - Array of components
    */
-  async getComponents({ status, category, search } = {}) {
+  async getComponents(filters = {}) {
+    const { status, category, search } = filters;
+    
+    // Start with base query - all components, newest first
     let query = supabase
       .from('components')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (status) query = query.eq('status', status);
-    if (category) query = query.eq('category', category);
-    if (search) query = query.ilike('name', `%${search}%`);
+    // Only apply filters if they have a value (undefined/null/empty = show all)
+    // This allows useComponents hook to pass 'all' → undefined transformation
+    if (status) {
+      query = query.eq('status', status);
+    }
+    if (category) {
+      query = query.eq('category', category);
+    }
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
     
     const { data, error } = await query;
     if (error) throw error;
@@ -117,12 +149,22 @@ export const componentService = {
    * @param {string} [data.code] - Component code
    * @param {Array} [data.props] - Component props
    * @param {Array} [data.variants] - Component variants
-   * @param {Array} [data.linked_tokens] - Linked token IDs
+   * @param {Array} [data.linked_tokens] - Linked token paths (e.g., ["Color/Primary/500", "Spacing/MD"])
    * @param {string} [data.figma_id] - Figma component ID
    * @param {Object} [data.figma_structure] - Figma structure data
    * @returns {Promise<Object>} - Created component
    */
   async createComponent(data) {
+    // Validate linked_tokens format (should be paths, not UUIDs)
+    if (data.linked_tokens) {
+      if (hasUUIDsInLinkedTokens(data.linked_tokens)) {
+        console.warn(
+          '⚠️ linked_tokens contains UUIDs instead of paths. ' +
+          'This may cause issues with token linking. Expected format: ["Color/Primary/500", "Spacing/MD"]'
+        );
+      }
+    }
+    
     const slug = generateSlug(data.name);
     
     const { data: component, error } = await supabase
@@ -149,6 +191,16 @@ export const componentService = {
     // Update slug if name changed
     if (updates.name) {
       updates.slug = generateSlug(updates.name);
+    }
+    
+    // Validate linked_tokens format (should be paths, not UUIDs)
+    if (updates.linked_tokens) {
+      if (hasUUIDsInLinkedTokens(updates.linked_tokens)) {
+        console.warn(
+          '⚠️ linked_tokens contains UUIDs instead of paths. ' +
+          'This may cause issues with token linking. Expected format: ["Color/Primary/500", "Spacing/MD"]'
+        );
+      }
     }
     
     const { data, error } = await supabase
@@ -219,6 +271,27 @@ export const componentService = {
    */
   async unarchiveComponent(id) {
     return this.updateComponentStatus(id, 'draft');
+  },
+
+  /**
+   * Duplicate a component
+   * @param {string} id - Component UUID to duplicate
+   * @returns {Promise<Object>} - New duplicated component
+   */
+  async duplicateComponent(id) {
+    const original = await this.getComponent(id);
+    if (!original) throw new Error('Component not found');
+    
+    // Create a copy without the id and with modified name
+    const { id: _, slug: __, created_at, updated_at, component_images, component_examples, ...componentData } = original;
+    
+    const newComponent = await this.createComponent({
+      ...componentData,
+      name: `${original.name} (Copy)`,
+      status: 'draft' // Always start duplicates as draft
+    });
+    
+    return newComponent;
   },
 
   // ==========================================

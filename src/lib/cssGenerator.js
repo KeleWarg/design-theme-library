@@ -261,3 +261,4 @@ function inferCategoryFromName(name) {
   return 'other';
 }
 
+

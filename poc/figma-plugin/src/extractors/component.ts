@@ -476,3 +476,4 @@ export function getExtractionCapabilities(): Record<string, boolean> {
   };
 }
 
+

@@ -50,3 +50,4 @@ CREATE POLICY "Public delete images" ON storage.objects
 --     thumbnail.png
 --     {variant_name}.png
 
+

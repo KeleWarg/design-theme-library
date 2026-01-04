@@ -56,3 +56,4 @@ fs.writeFileSync(path.join(distDir, 'ui.html'), html);
 
 console.log('✅ Built ui.html with inlined JavaScript');
 
+

@@ -78,3 +78,4 @@ After validating this PoC:
 - [ ] Ping/Pong communication works
 - [ ] No console errors
 
+
