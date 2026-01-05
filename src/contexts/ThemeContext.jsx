@@ -124,18 +124,44 @@ export function ThemeProvider({ children }) {
   // Inject CSS variables into :root
   useEffect(() => {
     if (!activeTheme) return;
-    
+
     const root = document.documentElement;
-    
-    // Set new variables
+    const failedVariables = [];
+
+    // Set new variables with error handling
     Object.entries(cssVariables).forEach(([key, value]) => {
-      root.style.setProperty(key, value);
+      try {
+        // Validate the CSS variable name format
+        if (!key.startsWith('--')) {
+          console.warn(`Invalid CSS variable name: ${key} (must start with --)`);
+          failedVariables.push(key);
+          return;
+        }
+        // Validate value is not undefined/null
+        if (value === undefined || value === null) {
+          console.warn(`Skipping CSS variable ${key}: value is ${value}`);
+          failedVariables.push(key);
+          return;
+        }
+        root.style.setProperty(key, value);
+      } catch (err) {
+        console.warn(`Failed to set CSS variable ${key}:`, err);
+        failedVariables.push(key);
+      }
     });
-    
+
+    if (failedVariables.length > 0) {
+      console.warn(`Failed to inject ${failedVariables.length} CSS variables:`, failedVariables);
+    }
+
     // Cleanup: remove variables when theme changes or unmounts
     return () => {
       Object.keys(cssVariables).forEach(key => {
-        root.style.removeProperty(key);
+        try {
+          root.style.removeProperty(key);
+        } catch (err) {
+          // Silently ignore cleanup errors
+        }
       });
     };
   }, [cssVariables, activeTheme]);

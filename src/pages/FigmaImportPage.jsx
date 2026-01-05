@@ -132,16 +132,23 @@ export default function FigmaImportPage() {
         }
       }
 
-      // Update import record status
+      // Update import record status based on results
+      const newStatus = failCount === 0 ? 'imported' : (successCount > 0 ? 'partial' : 'failed');
       await supabase
         .from('figma_imports')
-        .update({ status: 'imported' })
+        .update({
+          status: newStatus,
+          imported_count: successCount,
+          failed_count: failCount
+        })
         .eq('id', importRecord.id);
 
       if (failCount === 0) {
         toast.success(`Successfully imported ${successCount} components`);
+      } else if (successCount > 0) {
+        toast.warning(`Imported ${successCount} components, ${failCount} failed. Check console for details.`);
       } else {
-        toast.warning(`Imported ${successCount} components, ${failCount} failed`);
+        toast.error(`Failed to import all ${failCount} components`);
       }
 
       refetch();
@@ -191,18 +198,25 @@ export default function FigmaImportPage() {
         }
       }
 
-      // Update import record status if all components imported
+      // Update import record status based on results
       if (reviewingImport) {
+        const newStatus = failCount === 0 ? 'imported' : (successCount > 0 ? 'partial' : 'failed');
         await supabase
           .from('figma_imports')
-          .update({ status: 'imported' })
+          .update({
+            status: newStatus,
+            imported_count: successCount,
+            failed_count: failCount
+          })
           .eq('id', reviewingImport.id);
       }
 
       if (failCount === 0) {
         toast.success(`Successfully imported ${successCount} components`);
+      } else if (successCount > 0) {
+        toast.warning(`Imported ${successCount} components, ${failCount} failed. Check console for details.`);
       } else {
-        toast.warning(`Imported ${successCount} components, ${failCount} failed`);
+        toast.error(`Failed to import all ${failCount} components`);
       }
 
       setReviewingImport(null);
