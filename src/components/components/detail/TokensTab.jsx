@@ -58,13 +58,6 @@ export default function TokensTab({ component, onSave }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
 
-  // Verify tokens load from context
-  useEffect(() => {
-    console.log('Tokens from context:', tokens);
-    if (!tokens || Object.keys(tokens).length === 0) {
-      console.warn('⚠️ No tokens loaded - check ThemeContext');
-    }
-  }, [tokens]);
 
   // Reset when component changes
   useEffect(() => {

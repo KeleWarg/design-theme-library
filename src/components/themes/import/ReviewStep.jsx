@@ -106,7 +106,8 @@ export default function ReviewStep({ data, onUpdate, onNext, onBack }) {
   };
 
   const totalTokens = data.parsedTokens.length;
-  const isValid = themeName.trim().length > 0;
+  const trimmedName = themeName.trim();
+  const isValid = trimmedName.length > 0;
 
   return (
     <div className="review-step">
@@ -130,7 +131,7 @@ export default function ReviewStep({ data, onUpdate, onNext, onBack }) {
           maxLength={50}
           placeholder="Enter theme name..."
           required
-          error={!isValid && themeName.length > 0 ? 'Theme name is required' : null}
+          error={!isValid && themeName.length > 0 ? 'Theme name cannot be empty or whitespace only' : null}
         />
         <p className="summary-card__hint">
           This name will identify your theme in the dashboard

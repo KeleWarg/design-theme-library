@@ -231,7 +231,12 @@ function formatImageReferences(images) {
  * @returns {Object|null} Matching token or null
  */
 function findTokenByName(name, allTokens) {
-  if (!name || !allTokens?.length) return null;
+  if (!name || !allTokens?.length) {
+    if (!allTokens?.length) {
+      console.warn('findTokenByName: No tokens provided for matching');
+    }
+    return null;
+  }
   
   // Exact match
   let token = allTokens.find(t => t.name === name);

@@ -91,7 +91,7 @@ export const componentService = {
   /**
    * Get single component with relations (images and examples)
    * @param {string} id - Component UUID
-   * @returns {Promise<Object>} - Component with images and examples
+   * @returns {Promise<Object|null>} - Component with images and examples, or null if not found
    */
   async getComponent(id) {
     const { data, error } = await supabase
@@ -103,21 +103,23 @@ export const componentService = {
       `)
       .eq('id', id)
       .single();
-    
+
+    // Return null if not found (consistent with themeService pattern)
+    if (error?.code === 'PGRST116') return null;
     if (error) throw error;
-    
+
     // Sort examples by sort_order
-    if (data.component_examples) {
+    if (data?.component_examples) {
       data.component_examples.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
     }
-    
+
     return data;
   },
 
   /**
    * Get component by slug
    * @param {string} slug - Component slug
-   * @returns {Promise<Object>} - Component with images and examples
+   * @returns {Promise<Object|null>} - Component with images and examples, or null if not found
    */
   async getComponentBySlug(slug) {
     const { data, error } = await supabase
@@ -129,14 +131,16 @@ export const componentService = {
       `)
       .eq('slug', slug)
       .single();
-    
+
+    // Return null if not found (consistent with themeService pattern)
+    if (error?.code === 'PGRST116') return null;
     if (error) throw error;
-    
+
     // Sort examples by sort_order
-    if (data.component_examples) {
+    if (data?.component_examples) {
       data.component_examples.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
     }
-    
+
     return data;
   },
 
@@ -155,6 +159,18 @@ export const componentService = {
    * @returns {Promise<Object>} - Created component
    */
   async createComponent(data) {
+    // Validate required fields
+    if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
+      throw new Error('Component name is required and cannot be empty');
+    }
+
+    // Validate category if provided
+    const validCategories = ['buttons', 'forms', 'layout', 'navigation', 'feedback', 'data-display', 'overlay', 'other'];
+    if (data.category && !validCategories.includes(data.category)) {
+      console.warn(`Invalid category "${data.category}". Using "other" instead.`);
+      data.category = 'other';
+    }
+
     // Validate linked_tokens format (should be paths, not UUIDs)
     if (data.linked_tokens) {
       if (hasUUIDsInLinkedTokens(data.linked_tokens)) {
@@ -164,8 +180,8 @@ export const componentService = {
         );
       }
     }
-    
-    const slug = generateSlug(data.name);
+
+    const slug = generateSlug(data.name.trim());
     
     const { data: component, error } = await supabase
       .from('components')
@@ -524,13 +540,17 @@ export const componentService = {
   /**
    * Get public URL for an image
    * @param {string} storagePath - Storage path of the image
-   * @returns {string} - Public URL
+   * @returns {string|null} - Public URL or null if invalid path
    */
   getImageUrl(storagePath) {
+    if (!storagePath) {
+      console.warn('getImageUrl called with empty storagePath');
+      return null;
+    }
     const { data } = supabase.storage
       .from('component-images')
       .getPublicUrl(storagePath);
-    return data.publicUrl;
+    return data?.publicUrl || null;
   },
 
   // ==========================================

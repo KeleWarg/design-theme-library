@@ -33,14 +33,38 @@ export const exportService = {
    * @returns {Promise<Object>} - Package object with files map, projectName, version, fileCount
    */
   async buildPackage({ themes, components, formats, options = {} }) {
-    // Fetch full data for selected items
-    const fullThemes = await Promise.all(
+    // Fetch full data for selected items with error handling
+    const themeResults = await Promise.allSettled(
       themes.map(id => themeService.getTheme(id))
     );
-    
-    const fullComponents = await Promise.all(
+
+    const componentResults = await Promise.allSettled(
       components.map(id => componentService.getComponent(id))
     );
+
+    // Filter successful results and log failures
+    const fullThemes = [];
+    themeResults.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        fullThemes.push(result.value);
+      } else {
+        console.warn(`Failed to fetch theme ${themes[index]}:`, result.reason || 'Theme not found');
+      }
+    });
+
+    const fullComponents = [];
+    componentResults.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        fullComponents.push(result.value);
+      } else {
+        console.warn(`Failed to fetch component ${components[index]}:`, result.reason || 'Component not found');
+      }
+    });
+
+    // Ensure we have at least some data to export
+    if (fullThemes.length === 0 && fullComponents.length === 0) {
+      throw new Error('No valid themes or components found for export');
+    }
 
     const projectName = options.projectName || 'design-system';
     const version = options.version || '1.0.0';

@@ -252,11 +252,15 @@ export const typefaceService = {
   /**
    * Get public URL for a font file
    * @param {string} storagePath - Storage path of the font file
-   * @returns {string} - Public URL
+   * @returns {string|null} - Public URL or null if invalid path
    */
   getFontUrl(storagePath) {
+    if (!storagePath) {
+      console.warn('getFontUrl called with empty storagePath');
+      return null;
+    }
     const { data } = supabase.storage.from('fonts').getPublicUrl(storagePath);
-    return data.publicUrl;
+    return data?.publicUrl || null;
   },
 
   /**
