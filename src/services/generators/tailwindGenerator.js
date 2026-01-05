@@ -54,12 +54,13 @@ module.exports = {
       case 'spacing':
         theme.spacing[name] = value;
         break;
-      case 'typography':
-        if (token.path.includes('size') || token.path.includes('fontSize') || token.type === 'dimension') {
+      case 'typography': {
+        const pathLower = (token.path || '').toLowerCase();
+        if (pathLower.includes('size') || pathLower.includes('fontsize') || token.type === 'dimension') {
           theme.fontSize[name] = value;
-        } else if (token.path.includes('weight') || token.path.includes('fontWeight')) {
+        } else if (pathLower.includes('weight') || pathLower.includes('fontweight') || token.type === 'fontWeight') {
           theme.fontWeight[name] = value;
-        } else if (token.path.includes('family') || token.path.includes('fontFamily') || token.type === 'fontFamily') {
+        } else if (pathLower.includes('family') || pathLower.includes('fontfamily') || token.type === 'fontFamily') {
           // Font family should use actual value (array of font names)
           // Even with CSS variables, we want the actual font stack
           const actualValue = tokenToCssValue(token);
@@ -80,17 +81,20 @@ module.exports = {
           theme.fontFamily[name] = familyValue;
         }
         break;
+      }
       case 'radius':
         theme.borderRadius[name] = value;
         break;
       case 'shadow':
         theme.boxShadow[name] = value;
         break;
-      case 'grid':
-        if (token.path.includes('breakpoint') || token.path.includes('screen')) {
+      case 'grid': {
+        const gridPathLower = (token.path || '').toLowerCase();
+        if (gridPathLower.includes('breakpoint') || gridPathLower.includes('screen')) {
           theme.screens[name] = value;
         }
         break;
+      }
     }
   }
 

@@ -232,8 +232,8 @@ describe('projectKnowledgeGenerator', () => {
       expect(result).toContain('...and 5 more components');
     });
 
-    it('should truncate if content exceeds 2.5KB', () => {
-      // Create a very large dataset
+    it('should keep output under 2.5KB even with large datasets', () => {
+      // Create a large dataset - the generator should summarize to stay under limit
       const manyTokens = Array.from({ length: 100 }, (_, i) => ({
         css_variable: `--color-token-${i}`,
         value: '#000000',
@@ -259,8 +259,11 @@ describe('projectKnowledgeGenerator', () => {
 
       const result = generateProjectKnowledge(themes, manyComponents);
 
+      // Generator summarizes content (12 colors, 10 components max) to stay compact
       expect(result.length).toBeLessThanOrEqual(2.5 * 1024);
-      expect(result).toContain('truncated');
+      // Should contain summary indicators showing data was condensed
+      expect(result).toContain('...and 88 more color tokens');
+      expect(result).toContain('...and 40 more components');
     });
 
     it('should include typography section if tokens exist', () => {
