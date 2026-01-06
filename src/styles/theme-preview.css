@@ -1,1 +1,322 @@
-/* Theme Preview Styles */
+/**
+ * @chunk 2.16 - Theme Preview Styles
+ *
+ * Styles for theme preview components including:
+ * - Preview container and panels
+ * - Color swatches preview
+ * - Typography preview
+ * - Component showcase
+ */
+
+/* ==========================================================================
+   Preview Container
+   ========================================================================== */
+
+.theme-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.theme-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.theme-preview-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+}
+
+.theme-preview-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* ==========================================================================
+   Preview Sections
+   ========================================================================== */
+
+.preview-section {
+  padding: var(--spacing-md);
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.preview-section-title {
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   Color Preview
+   ========================================================================== */
+
+.preview-colors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.preview-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.preview-color-swatch-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.preview-color-swatch-box {
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.preview-color-swatch-name {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Color preview container */
+.preview-colors-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.preview-color-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.preview-color-group-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.preview-color-swatch-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.preview-color-hex {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  opacity: 0.8;
+}
+
+.preview-color-name {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Color combinations - properly spaced */
+.preview-color-combinations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.preview-combinations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.preview-combination-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.combination-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.combination-accent {
+  font-size: var(--font-size-xs);
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Typography Preview
+   ========================================================================== */
+
+.preview-typography {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.preview-typography-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.preview-typography-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  font-weight: var(--font-weight-medium);
+}
+
+.preview-typography-sample {
+  color: var(--color-foreground);
+}
+
+/* Typography samples container */
+.preview-typography-samples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.preview-type-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.preview-type-text {
+  margin: 0;
+  color: var(--color-foreground);
+}
+
+/* Font weights grid - with proper spacing */
+.preview-typography-weights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.preview-weights-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground);
+}
+
+.preview-weights-grid > span {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Spacing Preview
+   ========================================================================== */
+
+.preview-spacing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.preview-spacing-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.preview-spacing-bar {
+  height: 16px;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+.preview-spacing-label {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  color: var(--color-muted-foreground);
+  min-width: 60px;
+}
+
+/* ==========================================================================
+   Component Preview
+   ========================================================================== */
+
+.preview-components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Viewport Controls
+   ========================================================================== */
+
+.preview-viewport-controls {
+  display: flex;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+.preview-viewport-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-muted-foreground);
+  transition: all var(--transition-fast);
+}
+
+.preview-viewport-btn:hover {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+.preview-viewport-btn.active {
+  background: var(--color-background);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
