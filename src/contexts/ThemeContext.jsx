@@ -32,19 +32,39 @@ export function ThemeProvider({ children }) {
         const savedThemeId = localStorage.getItem('activeThemeId');
         const userDefaultThemeId = localStorage.getItem('ds-admin-default-theme');
 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H1',location:'ThemeContext.jsx:loadInitialTheme',message:'localStorage theme ids read',data:{savedThemeId,userDefaultThemeId},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+
         // Get all themes
         const themes = await themeService.getThemes();
 
         if (!themes.length) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H3',location:'ThemeContext.jsx:loadInitialTheme',message:'no themes found',data:{savedThemeId,userDefaultThemeId},timestamp:Date.now()})}).catch(()=>{});
+          // #endregion
           setIsLoading(false);
           return;
         }
 
         // Find theme to load (saved > user preference > database default > first)
-        let themeToLoad = themes.find(t => t.id === savedThemeId)
-          || themes.find(t => t.id === userDefaultThemeId)
-          || themes.find(t => t.is_default)
-          || themes[0];
+        const defaultTheme = themes.find(t => t.is_default);
+        const firstTheme = themes[0];
+
+        let themeToLoad =
+          themes.find(t => t.id === savedThemeId) ||
+          themes.find(t => t.id === userDefaultThemeId) ||
+          defaultTheme ||
+          firstTheme;
+
+        let selectionSource = 'first';
+        if (themeToLoad?.id === savedThemeId) selectionSource = 'saved';
+        else if (themeToLoad?.id === userDefaultThemeId) selectionSource = 'user-default';
+        else if (themeToLoad?.id === defaultTheme?.id) selectionSource = 'db-default';
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H1',location:'ThemeContext.jsx:loadInitialTheme',message:'theme selection decision',data:{themesCount:themes.length,themeIds:themes.map(t=>t.id),savedThemeId,userDefaultThemeId,selectedThemeId:themeToLoad?.id,isDefaultMatch:Boolean(themes.find(t=>t.is_default)),selectionSource,defaultThemeId:defaultTheme?.id,firstThemeId:firstTheme?.id},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         
         if (themeToLoad) {
           await loadThemeInternal(themeToLoad.id);
@@ -68,6 +88,10 @@ export function ThemeProvider({ children }) {
     setError(null);
     
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H2',location:'ThemeContext.jsx:loadThemeInternal',message:'loadThemeInternal start',data:{themeId},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+
       const theme = await themeService.getTheme(themeId);
       setActiveTheme(theme);
       setTokens(groupTokensByCategory(theme.tokens || []));
@@ -78,8 +102,15 @@ export function ThemeProvider({ children }) {
         await loadThemeFonts(theme);
       }
       setFontsLoaded(true);
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H2',location:'ThemeContext.jsx:loadThemeInternal',message:'loadThemeInternal success',data:{loadedThemeId:themeId,themeName:theme.name,tokenCount:theme.tokens?.length || 0,typefaceCount:theme.typefaces?.length || 0},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
     } catch (err) {
       console.error('Failed to load theme:', err);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H2',location:'ThemeContext.jsx:loadThemeInternal',message:'loadThemeInternal error',data:{themeId,error:err?.message},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       setError(err.message);
       throw err;
     }

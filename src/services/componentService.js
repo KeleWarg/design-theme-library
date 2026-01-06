@@ -41,6 +41,34 @@ function hasUUIDsInLinkedTokens(linkedTokens) {
   });
 }
 
+/**
+ * Normalize linked_tokens to the expected path-based format
+ * - Drops UUIDs to avoid mixing formats that the UI/export layers can't consume
+ * - Trims/filters invalid entries and deduplicates
+ * @param {Array} tokens - Incoming linked token identifiers
+ * @returns {Array} - Sanitized array of token paths
+ */
+function sanitizeLinkedTokens(tokens) {
+  if (!Array.isArray(tokens)) return [];
+
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const cleaned = tokens
+    .filter(t => typeof t === 'string')
+    .map(t => t.trim())
+    .filter(t => {
+      if (!t) return false;
+      if (uuidPattern.test(t)) {
+        console.warn(
+          'linked_tokens sanitize: dropping UUID entry; expected path format like "Color/Primary/500"'
+        );
+        return false;
+      }
+      return true;
+    });
+
+  return [...new Set(cleaned)];
+}
+
 export const componentService = {
   // ==========================================
   // Component CRUD Operations
@@ -217,6 +245,7 @@ export const componentService = {
           'This may cause issues with token linking. Expected format: ["Color/Primary/500", "Spacing/MD"]'
         );
       }
+      updates.linked_tokens = sanitizeLinkedTokens(updates.linked_tokens);
     }
     
     const { data, error } = await supabase
@@ -317,38 +346,41 @@ export const componentService = {
   /**
    * Link design tokens to a component
    * @param {string} componentId - Component UUID
-   * @param {Array<string>} tokenIds - Array of token UUIDs to link
+   * @param {Array<string>} tokenPaths - Array of token paths to link (e.g., "Color/Primary/500")
    * @returns {Promise<Object>} - Updated component
    */
-  async linkTokens(componentId, tokenIds) {
+  async linkTokens(componentId, tokenPaths) {
+    const cleaned = sanitizeLinkedTokens(tokenPaths);
     return this.updateComponent(componentId, { 
-      linked_tokens: tokenIds 
+      linked_tokens: cleaned 
     });
   },
 
   /**
    * Add tokens to existing linked tokens
    * @param {string} componentId - Component UUID
-   * @param {Array<string>} tokenIds - Array of token UUIDs to add
+   * @param {Array<string>} tokenPaths - Array of token paths to add
    * @returns {Promise<Object>} - Updated component
    */
-  async addLinkedTokens(componentId, tokenIds) {
+  async addLinkedTokens(componentId, tokenPaths) {
+    const cleaned = sanitizeLinkedTokens(tokenPaths);
     const component = await this.getComponent(componentId);
     const currentTokens = component.linked_tokens || [];
-    const newTokens = [...new Set([...currentTokens, ...tokenIds])];
+    const newTokens = sanitizeLinkedTokens([...currentTokens, ...cleaned]);
     return this.linkTokens(componentId, newTokens);
   },
 
   /**
    * Remove tokens from linked tokens
    * @param {string} componentId - Component UUID
-   * @param {Array<string>} tokenIds - Array of token UUIDs to remove
+   * @param {Array<string>} tokenPaths - Array of token paths to remove
    * @returns {Promise<Object>} - Updated component
    */
-  async removeLinkedTokens(componentId, tokenIds) {
+  async removeLinkedTokens(componentId, tokenPaths) {
+    const cleaned = sanitizeLinkedTokens(tokenPaths);
     const component = await this.getComponent(componentId);
     const currentTokens = component.linked_tokens || [];
-    const newTokens = currentTokens.filter(id => !tokenIds.includes(id));
+    const newTokens = currentTokens.filter(id => !cleaned.includes(id));
     return this.linkTokens(componentId, newTokens);
   },
 

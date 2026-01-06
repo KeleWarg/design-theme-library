@@ -270,11 +270,53 @@ export const themeService = {
         is_variable: typeface.is_variable
       }));
       
-      const { error: typefaceError } = await supabase
+      const { data: createdTypefaces, error: typefaceError } = await supabase
         .from('typefaces')
-        .insert(newTypefaces);
+        .insert(newTypefaces)
+        .select();
       
       if (typefaceError) throw typefaceError;
+
+      // Map new typefaces by role for font file copying
+      const typefaceRoleMap = {};
+      if (Array.isArray(createdTypefaces)) {
+        createdTypefaces.forEach(tf => {
+          typefaceRoleMap[tf.role] = tf;
+        });
+      }
+
+      // Copy font files (including storage objects) for each typeface
+      for (const typeface of sourceTheme.typefaces) {
+        if (!typeface.font_files?.length) continue;
+        const targetTypeface = typefaceRoleMap[typeface.role];
+        if (!targetTypeface) continue;
+
+        for (const fontFile of typeface.font_files) {
+          const filename = fontFile.storage_path?.split('/').pop();
+          if (!filename) continue;
+
+          const newPath = `${newTheme.id}/${typeface.role}/${filename}`;
+
+          // Copy the storage object into the new theme folder
+          const { error: copyError } = await supabase.storage
+            .from('fonts')
+            .copy(fontFile.storage_path, newPath);
+          if (copyError) throw copyError;
+
+          // Insert duplicated font_file record
+          const { error: fontFileError } = await supabase
+            .from('font_files')
+            .insert({
+              typeface_id: targetTypeface.id,
+              storage_path: newPath,
+              format: fontFile.format,
+              weight: fontFile.weight,
+              style: fontFile.style,
+              file_size: fontFile.file_size
+            });
+          if (fontFileError) throw fontFileError;
+        }
+      }
     }
     
     // Copy typography roles

@@ -224,6 +224,8 @@
   overflow: hidden;
   background: var(--color-background);
   border-right: 1px solid var(--color-border);
+  /* Fixed height with internal scroll */
+  max-height: calc(100vh - 140px);
 }
 
 /* Also support token-list-wrapper for backwards compatibility */
@@ -236,6 +238,8 @@
   overflow: hidden;
   background: var(--color-background);
   border-right: 1px solid var(--color-border);
+  /* Fixed height with internal scroll */
+  max-height: calc(100vh - 140px);
 }
 
 .token-list-header {
@@ -340,6 +344,8 @@
   padding: var(--spacing-sm);
   margin: 0;
   list-style: none;
+  /* Ensure scrolling works within flex container */
+  min-height: 0;
 }
 
 /* Token List Footer */
@@ -556,6 +562,8 @@
   max-width: none;
   border-right: none;
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  /* Fixed height in hybrid layout */
+  max-height: calc(100vh - 140px);
 }
 
 /* ==========================================================================
@@ -2000,6 +2008,291 @@
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border);
   margin-top: auto;
+}
+
+/* ==========================================================================
+   Grid Editor - Preview Section
+   ========================================================================== */
+
+.grid-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-lg);
+}
+
+.grid-preview-container {
+  position: relative;
+  height: 80px;
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.grid-preview-margins {
+  height: 100%;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.grid-visualization {
+  height: 100%;
+}
+
+.grid-column {
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.grid-column:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.grid-margin-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px dashed rgba(239, 68, 68, 0.3);
+}
+
+.grid-margin-left {
+  left: 0;
+  border-left: none;
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.grid-margin-right {
+  right: 0;
+  border-right: none;
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.grid-margin-label {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  color: rgba(239, 68, 68, 0.7);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.grid-preview-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted-foreground);
+}
+
+.grid-preview-stat strong {
+  color: var(--color-foreground);
+}
+
+.grid-preview-divider {
+  opacity: 0.3;
+}
+
+/* ==========================================================================
+   Grid Editor - Settings Section
+   ========================================================================== */
+
+.grid-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.grid-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.grid-settings-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+  margin: 0;
+}
+
+.grid-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+}
+
+.grid-control-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.grid-control-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+/* ==========================================================================
+   Grid Editor - Breakpoints Section
+   ========================================================================== */
+
+.grid-breakpoints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.grid-breakpoints-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breakpoint-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.breakpoint-row {
+  display: grid;
+  grid-template-columns: 100px 120px 1fr;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+.breakpoint-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.breakpoint-key {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-mono);
+  color: var(--color-primary);
+  text-transform: uppercase;
+}
+
+.breakpoint-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.breakpoint-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.breakpoint-input {
+  width: 80px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
+  text-align: right;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  transition: border-color var(--transition-fast);
+}
+
+.breakpoint-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.breakpoint-unit {
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.breakpoint-bar-container {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.breakpoint-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), rgba(59, 130, 246, 0.5));
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+}
+
+.breakpoint-bar-zero {
+  background: var(--color-muted-foreground);
+  width: 4px !important;
+}
+
+/* ==========================================================================
+   Grid Editor - Breakpoint Visualization
+   ========================================================================== */
+
+.breakpoint-visualization {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+.breakpoint-scale {
+  display: flex;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.breakpoint-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  background: var(--color-primary);
+  border-right: 1px solid var(--color-background);
+  transition: background var(--transition-fast);
+}
+
+.breakpoint-segment:nth-child(1) { background: rgba(59, 130, 246, 0.2); }
+.breakpoint-segment:nth-child(2) { background: rgba(59, 130, 246, 0.35); }
+.breakpoint-segment:nth-child(3) { background: rgba(59, 130, 246, 0.5); }
+.breakpoint-segment:nth-child(4) { background: rgba(59, 130, 246, 0.65); }
+.breakpoint-segment:nth-child(5) { background: rgba(59, 130, 246, 0.8); }
+
+.breakpoint-segment:last-child {
+  border-right: none;
+}
+
+.breakpoint-segment-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-family-mono);
+  text-transform: uppercase;
+  color: var(--color-foreground);
+}
+
+.breakpoint-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-family-mono);
+  color: var(--color-muted-foreground);
 }
 
 /* ==========================================================================

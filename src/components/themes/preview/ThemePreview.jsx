@@ -1,16 +1,17 @@
 /**
  * @chunk 2.27 - ThemePreview
  * 
- * Full-featured theme preview panel with:
- * - Collapsible/expandable panel
+ * Floating expandable theme preview panel with:
+ * - Collapsible floating panel (bottom-right)
+ * - Expandable to full modal view
  * - Viewport width controls (mobile/tablet/desktop)
  * - Font loading indicator
  * - Dark/light mode preview toggle
  * - Multiple preview sections (typography, colors, buttons, cards, forms)
  */
 
-import { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Monitor, Tablet, Smartphone, Sun, Moon } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { ChevronDown, ChevronUp, Monitor, Tablet, Smartphone, Sun, Moon, Maximize2, Minimize2, X } from 'lucide-react';
 import { useThemeContext } from '../../../contexts/ThemeContext';
 import PreviewTypography from './PreviewTypography';
 import PreviewColors from './PreviewColors';
@@ -31,7 +32,7 @@ export const PREVIEW_STATES = ['all', 'typography', 'colors', 'buttons', 'card',
 
 export default function ThemePreview({ 
   theme,
-  initialCollapsed = false,
+  initialCollapsed = false, // Start open as modal overlay
   initialViewport = 'desktop',
   showControls = true 
 }) {
@@ -42,14 +43,57 @@ export default function ThemePreview({
   // The actual tokens are applied via CSS variables by ThemeContext
   
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [isExpanded, setIsExpanded] = useState(false); // Full modal expanded state
   const [viewport, setViewport] = useState(initialViewport);
   const [darkMode, setDarkMode] = useState(false);
+
+  /**
+   * Handle escape key to close expanded view
+   */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isExpanded) {
+        setIsExpanded(false);
+      }
+    };
+    
+    if (isExpanded) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when expanded
+      document.body.style.overflow = 'hidden';
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isExpanded]);
 
   /**
    * Toggle collapsed state
    */
   const handleToggleCollapse = useCallback(() => {
+    if (isExpanded) return; // Don't collapse when in expanded mode
     setIsCollapsed(prev => !prev);
+  }, [isExpanded]);
+
+  /**
+   * Toggle expanded modal state
+   */
+  const handleToggleExpand = useCallback((e) => {
+    e.stopPropagation();
+    setIsExpanded(prev => !prev);
+    // Uncollapse when expanding
+    if (isCollapsed) {
+      setIsCollapsed(false);
+    }
+  }, [isCollapsed]);
+
+  /**
+   * Close expanded view
+   */
+  const handleCloseExpanded = useCallback(() => {
+    setIsExpanded(false);
   }, []);
 
   /**
@@ -130,22 +174,61 @@ export default function ThemePreview({
     </>
   );
 
-  return (
-    <div className={`theme-preview ${isCollapsed ? 'collapsed' : ''}`}>
-      {/* Header with toggle and controls */}
-      <div className="theme-preview-header">
-        {/* Collapse/Expand Toggle */}
-        <button 
-          className="theme-preview-toggle"
-          onClick={handleToggleCollapse}
-          aria-expanded={!isCollapsed}
-          aria-label={isCollapsed ? 'Expand preview' : 'Collapse preview'}
-        >
-          {isCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          <span className="theme-preview-title">Preview</span>
-        </button>
+  /**
+   * Handle backdrop click - collapse the preview
+   */
+  const handleBackdropClick = useCallback(() => {
+    if (isExpanded) {
+      setIsExpanded(false);
+    } else {
+      setIsCollapsed(true);
+    }
+  }, [isExpanded]);
 
-        {/* Controls - only shown when expanded and showControls is true */}
+  return (
+    <>
+      {/* Backdrop - shown when preview is open (not collapsed) */}
+      {!isCollapsed && (
+        <div 
+          className="theme-preview-backdrop visible"
+          onClick={handleBackdropClick}
+          aria-hidden="true"
+        />
+      )}
+
+      <div className={`theme-preview ${isCollapsed ? 'collapsed' : ''} ${isExpanded ? 'expanded' : ''}`}>
+        {/* Header with toggle and controls */}
+        <div className="theme-preview-header" onClick={handleToggleCollapse}>
+          {/* Collapse/Expand Toggle */}
+          <div className="theme-preview-toggle">
+            {isCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <span className="theme-preview-title">Preview</span>
+          </div>
+
+          {/* Header actions - expand/close buttons */}
+          <div className="theme-preview-header-actions">
+            <button
+              className="theme-preview-expand-btn"
+              onClick={handleToggleExpand}
+              title={isExpanded ? 'Minimize' : 'Expand'}
+              aria-label={isExpanded ? 'Minimize preview' : 'Expand preview'}
+            >
+              {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+            {isExpanded && (
+              <button
+                className="theme-preview-close-btn"
+                onClick={handleCloseExpanded}
+                title="Close"
+                aria-label="Close expanded preview"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Controls - only shown when not collapsed and showControls is true */}
         {showControls && !isCollapsed && (
           <div className="theme-preview-controls">
             {/* Viewport Size Selector */}
@@ -154,7 +237,10 @@ export default function ThemePreview({
                 <button
                   key={key}
                   className={`segmented-option ${viewport === key ? 'selected' : ''}`}
-                  onClick={() => setViewport(key)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewport(key);
+                  }}
                   title={label}
                   aria-label={`${label} viewport`}
                 >
@@ -167,7 +253,10 @@ export default function ThemePreview({
             <div className="segmented-control segmented-control-sm">
               <button
                 className={`segmented-option ${!darkMode ? 'selected' : ''}`}
-                onClick={() => setDarkMode(false)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDarkMode(false);
+                }}
                 title="Light mode"
                 aria-label="Light mode preview"
               >
@@ -175,7 +264,10 @@ export default function ThemePreview({
               </button>
               <button
                 className={`segmented-option ${darkMode ? 'selected' : ''}`}
-                onClick={() => setDarkMode(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDarkMode(true);
+                }}
                 title="Dark mode"
                 aria-label="Dark mode preview"
               >
@@ -184,27 +276,27 @@ export default function ThemePreview({
             </div>
           </div>
         )}
-      </div>
 
-      {/* Body - scrollable preview area */}
-      {!isCollapsed && (
-        <div className="theme-preview-body">
-          {/* Font loading indicator */}
-          {renderFontsLoading()}
+        {/* Body - scrollable preview area */}
+        {!isCollapsed && (
+          <div className="theme-preview-body">
+            {/* Font loading indicator */}
+            {renderFontsLoading()}
 
-          {/* Viewport container with width control */}
-          <div 
-            className="theme-preview-viewport"
-            style={{
-              ...getViewportStyle(),
-              backgroundColor: darkMode ? 'var(--color-foreground)' : 'var(--color-background)',
-              color: darkMode ? 'var(--color-background)' : 'var(--color-foreground)'
-            }}
-          >
-            {renderPreviewSections()}
+            {/* Viewport container with width control */}
+            <div 
+              className="theme-preview-viewport"
+              style={{
+                ...getViewportStyle(),
+                backgroundColor: darkMode ? 'var(--color-foreground)' : 'var(--color-background)',
+                color: darkMode ? 'var(--color-background)' : 'var(--color-foreground)'
+              }}
+            >
+              {renderPreviewSections()}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }

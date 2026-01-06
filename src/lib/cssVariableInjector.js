@@ -173,6 +173,11 @@ function formatShadowValue(value) {
   if (typeof value === 'string') return value;
   
   // Handle array of shadows
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'none';
+    return value.map(formatSingleShadow).join(', ');
+  }
+
   if (value.shadows && Array.isArray(value.shadows)) {
     if (value.shadows.length === 0) return 'none';
     

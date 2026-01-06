@@ -2,42 +2,300 @@
  * @chunk 2.16 - Theme Preview Styles
  *
  * Styles for theme preview components including:
- * - Preview container and panels
+ * - Floating expandable preview panel
  * - Color swatches preview
  * - Typography preview
  * - Component showcase
  */
 
 /* ==========================================================================
-   Preview Container
+   Preview Container - Modal Overlay
    ========================================================================== */
 
 .theme-preview {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 150;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
+
+/* Collapsed state - minimal floating pill in bottom-right */
+.theme-preview.collapsed {
+  top: auto;
+  left: auto;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  transform: none;
+  width: 140px;
+  max-width: 140px;
+  max-height: 44px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Expanded state - larger modal */
+.theme-preview.expanded {
+  max-width: 1100px;
+  max-height: 90vh;
+}
+
+/* ==========================================================================
+   Preview Backdrop (shown when preview is open)
+   ========================================================================== */
+
+.theme-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 149;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+
+.theme-preview-backdrop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   Preview Header
+   ========================================================================== */
 
 .theme-preview-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-height: 44px;
+  transition: border-color 0.2s ease;
+}
+
+.theme-preview:not(.collapsed) .theme-preview-header {
+  border-bottom-color: var(--color-border);
+}
+
+.theme-preview-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-foreground);
 }
 
 .theme-preview-title {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+  white-space: nowrap;
+}
+
+.theme-preview.expanded .theme-preview-title {
+  font-size: var(--font-size-base);
+}
+
+/* Header actions (expand/close buttons) */
+.theme-preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.theme-preview.collapsed .theme-preview-header-actions {
+  display: none;
+}
+
+.theme-preview-expand-btn,
+.theme-preview-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.theme-preview-expand-btn:hover,
+.theme-preview-close-btn:hover {
+  background: var(--color-muted);
   color: var(--color-foreground);
 }
 
 .theme-preview-actions {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+/* ==========================================================================
+   Preview Controls (viewport, dark mode)
+   ========================================================================== */
+
+.theme-preview-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.theme-preview.collapsed .theme-preview-controls {
+  display: none;
+}
+
+/* Segmented Controls */
+.segmented-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+.segmented-control-sm {
+  padding: 2px;
+}
+
+.segmented-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.segmented-control-sm .segmented-option {
+  padding: var(--spacing-xs);
+  min-width: 28px;
+  height: 28px;
+}
+
+.segmented-option:hover {
+  color: var(--color-foreground);
+}
+
+.segmented-option.selected {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  box-shadow: var(--shadow-sm);
+}
+
+.segmented-label {
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Preview Body
+   ========================================================================== */
+
+.theme-preview-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-lg);
+  min-height: 0;
+}
+
+.theme-preview.collapsed .theme-preview-body {
+  display: none;
+}
+
+.theme-preview-viewport {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: max-width 0.3s ease;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   Fonts Loading Indicator
+   ========================================================================== */
+
+.theme-preview-fonts-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  background: var(--color-warning-bg, rgba(234, 179, 8, 0.1));
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-warning, #ca8a04);
+}
+
+.theme-preview-fonts-loading .loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Preview Sections
+   ========================================================================== */
+
+.theme-preview-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.theme-preview-section:last-child {
+  margin-bottom: 0;
+}
+
+.theme-preview-section-title {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.theme-preview-section-content {
+  /* Content container - inherits styling from preview sections */
+  display: block;
 }
 
 /* ==========================================================================
@@ -327,8 +585,13 @@
 
 @media (max-width: 1024px) {
   .theme-preview {
-    padding: var(--spacing-md);
-    gap: var(--spacing-md);
+    width: 320px;
+    max-height: 360px;
+  }
+
+  .theme-preview.expanded {
+    max-width: 95%;
+    max-height: 90vh;
   }
 
   .preview-combinations-grid {
@@ -338,18 +601,32 @@
 
 @media (max-width: 768px) {
   .theme-preview {
-    padding: var(--spacing-sm);
-    gap: var(--spacing-sm);
+    bottom: var(--spacing-md);
+    right: var(--spacing-md);
+    width: 280px;
+    max-height: 320px;
+  }
+
+  .theme-preview.collapsed {
+    width: 120px;
+  }
+
+  .theme-preview.expanded {
+    width: 95%;
+    max-width: none;
+    max-height: 85vh;
   }
 
   .theme-preview-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
 
   .theme-preview-title {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-xs);
+  }
+
+  .theme-preview-body {
+    padding: var(--spacing-sm);
   }
 
   .preview-section {
@@ -385,6 +662,18 @@
 }
 
 @media (max-width: 480px) {
+  .theme-preview {
+    bottom: var(--spacing-sm);
+    right: var(--spacing-sm);
+    left: var(--spacing-sm);
+    width: auto;
+  }
+
+  .theme-preview.collapsed {
+    left: auto;
+    width: 100px;
+  }
+
   .preview-color-swatches {
     grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
   }

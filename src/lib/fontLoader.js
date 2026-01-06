@@ -15,6 +15,10 @@ import { typefaceService } from '../services/typefaceService';
  * @returns {Promise<void>}
  */
 export async function loadThemeFonts(theme) {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H4',location:'fontLoader.js:loadThemeFonts',message:'loadThemeFonts start',data:{themeId:theme?.id,themeName:theme?.name,typefaceCount:theme?.typefaces?.length || 0},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+
   if (!theme.typefaces?.length) return;
 
   const googleFonts = [];
@@ -74,6 +78,10 @@ export async function loadThemeFonts(theme) {
 
   // Wait for all fonts to load
   await document.fonts.ready;
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H4',location:'fontLoader.js:loadThemeFonts',message:'loadThemeFonts success',data:{themeId:theme?.id,googleFontsCount:googleFonts.length,fontFaceRuleCount:fontFaceRules.length},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 }
 
 /**
@@ -98,7 +106,12 @@ async function loadGoogleFonts(fonts) {
     link.rel = 'stylesheet';
     link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
     link.onload = resolve;
-    link.onerror = reject;
+    link.onerror = (e) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H4',location:'fontLoader.js:loadGoogleFonts',message:'google fonts load error',data:{fonts},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      reject(e);
+    };
     document.head.appendChild(link);
   });
 }
