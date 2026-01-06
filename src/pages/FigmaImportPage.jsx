@@ -87,29 +87,143 @@ export default function FigmaImportPage() {
 
   const handleImportAll = async (importRecord) => {
     try {
-      // Implementation will be in chunk 4.13
-      toast.success(`Importing ${importRecord.componentCount} components...`);
-      // For now, just show success
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`Imported ${importRecord.componentCount} components`);
+      toast.info(`Importing ${importRecord.componentCount} components...`);
+
+      // Fetch all components for this import
+      const { data: components, error: fetchError } = await supabase
+        .from('figma_import_components')
+        .select('*')
+        .eq('import_id', importRecord.id);
+
+      if (fetchError) throw fetchError;
+
+      if (!components || components.length === 0) {
+        toast.warning('No components to import');
+        return;
+      }
+
+      // Import each component to the components table
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const comp of components) {
+        try {
+          const { error: insertError } = await supabase
+            .from('components')
+            .insert({
+              name: comp.name,
+              slug: comp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+              description: comp.description || `Imported from Figma: ${comp.figma_id}`,
+              category: comp.category || 'other',
+              figma_id: comp.figma_id,
+              figma_structure: comp.structure,
+              status: 'draft'
+            });
+
+          if (insertError) {
+            failCount++;
+            console.error(`Failed to import component ${comp.name}:`, insertError);
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          failCount++;
+          console.error(`Failed to import component ${comp.name}:`, err);
+        }
+      }
+
+      // Update import record status based on results
+      const newStatus = failCount === 0 ? 'imported' : (successCount > 0 ? 'partial' : 'failed');
+      await supabase
+        .from('figma_imports')
+        .update({
+          status: newStatus,
+          imported_count: successCount,
+          failed_count: failCount
+        })
+        .eq('id', importRecord.id);
+
+      if (failCount === 0) {
+        toast.success(`Successfully imported ${successCount} components`);
+      } else if (successCount > 0) {
+        toast.warning(`Imported ${successCount} components, ${failCount} failed. Check console for details.`);
+      } else {
+        toast.error(`Failed to import all ${failCount} components`);
+      }
+
       refetch();
     } catch (error) {
-      toast.error('Failed to import components');
+      toast.error('Failed to import components: ' + (error.message || 'Unknown error'));
       console.error('Import error:', error);
     }
   };
 
   const handleImportSelected = async (result) => {
     try {
-      // Implementation will be in chunk 4.13
-      toast.success(`Importing ${result.components.length} components...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success(`Imported ${result.components.length} components`);
+      const { components: selectedComponents } = result;
+
+      if (!selectedComponents || selectedComponents.length === 0) {
+        toast.warning('No components selected');
+        return;
+      }
+
+      toast.info(`Importing ${selectedComponents.length} components...`);
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const comp of selectedComponents) {
+        try {
+          const { error: insertError } = await supabase
+            .from('components')
+            .insert({
+              name: comp.name,
+              slug: comp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+              description: comp.description || `Imported from Figma: ${comp.figma_id}`,
+              category: comp.category || 'other',
+              figma_id: comp.figma_id,
+              figma_structure: comp.structure,
+              status: 'draft'
+            });
+
+          if (insertError) {
+            failCount++;
+            console.error(`Failed to import component ${comp.name}:`, insertError);
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          failCount++;
+          console.error(`Failed to import component ${comp.name}:`, err);
+        }
+      }
+
+      // Update import record status based on results
+      if (reviewingImport) {
+        const newStatus = failCount === 0 ? 'imported' : (successCount > 0 ? 'partial' : 'failed');
+        await supabase
+          .from('figma_imports')
+          .update({
+            status: newStatus,
+            imported_count: successCount,
+            failed_count: failCount
+          })
+          .eq('id', reviewingImport.id);
+      }
+
+      if (failCount === 0) {
+        toast.success(`Successfully imported ${successCount} components`);
+      } else if (successCount > 0) {
+        toast.warning(`Imported ${successCount} components, ${failCount} failed. Check console for details.`);
+      } else {
+        toast.error(`Failed to import all ${failCount} components`);
+      }
+
       setReviewingImport(null);
       setImportData(null);
       refetch();
     } catch (error) {
-      toast.error('Failed to import components');
+      toast.error('Failed to import components: ' + (error.message || 'Unknown error'));
       console.error('Import error:', error);
     }
   };

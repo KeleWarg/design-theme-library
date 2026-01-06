@@ -13,12 +13,13 @@ import JSZip from 'jszip';
  * @param {Object} options - Options
  * @param {string} options.filename - ZIP filename (default: 'design-system-export.zip')
  * @param {Function} options.onProgress - Progress callback (0-100)
- * @returns {Promise<Blob>} - ZIP file blob
+ * @returns {Promise<{blob: Blob, warnings: string[]}>} - ZIP file blob and any warnings
  */
 export async function createExportZip(files, options = {}) {
   const { filename = 'design-system-export.zip', onProgress } = options;
   const zip = new JSZip();
-  
+  const warnings = [];
+
   const entries = Object.entries(files);
   let processed = 0;
 
@@ -33,27 +34,37 @@ export async function createExportZip(files, options = {}) {
         if (response.ok) {
           const blob = await response.blob();
           zip.file(path, blob);
+        } else {
+          const warning = `Failed to fetch ${path}: HTTP ${response.status}`;
+          console.warn(warning);
+          warnings.push(warning);
         }
       } catch (error) {
-        console.warn(`Failed to fetch ${content.url}:`, error);
+        const warning = `Failed to fetch ${path}: ${error.message}`;
+        console.warn(warning);
+        warnings.push(warning);
       }
     } else if (content instanceof Blob) {
       zip.file(path, content);
+    } else if (content === null || content === undefined) {
+      const warning = `Skipped ${path}: content is null or undefined`;
+      console.warn(warning);
+      warnings.push(warning);
     }
-    
+
     processed++;
     if (onProgress) {
       onProgress((processed / entries.length) * 100);
     }
   }
 
-  const blob = await zip.generateAsync({ 
+  const blob = await zip.generateAsync({
     type: 'blob',
     compression: 'DEFLATE',
     compressionOptions: { level: 6 }
   });
-  
-  return blob;
+
+  return { blob, warnings };
 }
 
 /**
@@ -76,11 +87,11 @@ export function downloadBlob(blob, filename) {
  * Create and download a ZIP file from export files
  * @param {Object} files - Object mapping file paths to content
  * @param {Object} options - Options (see createExportZip)
- * @returns {Promise<Blob>} - ZIP file blob
+ * @returns {Promise<{blob: Blob, warnings: string[]}>} - ZIP file blob and any warnings
  */
 export async function downloadExportZip(files, options = {}) {
-  const blob = await createExportZip(files, options);
+  const { blob, warnings } = await createExportZip(files, options);
   downloadBlob(blob, options.filename || 'design-system-export.zip');
-  return blob;
+  return { blob, warnings };
 }
 

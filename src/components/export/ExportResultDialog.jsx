@@ -18,14 +18,20 @@ export default function ExportResultDialog({ result, onClose }) {
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      await downloadExportZip(result.files, {
+      const { warnings } = await downloadExportZip(result.files, {
         filename: `${result.projectName}-v${result.version}.zip`,
         onProgress: setProgress
       });
-      toast.success('Download started');
+
+      if (warnings && warnings.length > 0) {
+        toast.warning(`Download complete with ${warnings.length} warning(s). Check console for details.`);
+        console.warn('Export warnings:', warnings);
+      } else {
+        toast.success('Download started');
+      }
     } catch (error) {
       console.error('Download failed:', error);
-      toast.error('Download failed');
+      toast.error('Download failed: ' + (error.message || 'Unknown error'));
     } finally {
       setDownloading(false);
       setProgress(0);

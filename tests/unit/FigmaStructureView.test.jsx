@@ -54,14 +54,16 @@ describe('FigmaStructureView', () => {
     ],
   };
 
+  // Note: The component uses path='' for root, 'ChildName' for direct children,
+  // and 'Parent/Child' for nested children
   const mockBoundVariables = [
     {
-      nodePath: 'Button/Label',
+      nodePath: 'Label',  // Direct child of root, path is just 'Label'
       variableName: 'color-primary',
       field: 'fills',
     },
     {
-      nodePath: 'Container',
+      nodePath: '',  // Root node has empty path
       variableName: 'spacing-md',
       field: 'paddingLeft',
     },
@@ -120,44 +122,43 @@ describe('FigmaStructureView', () => {
       expect(screen.getByText('Icon')).toBeInTheDocument();
     });
 
-    it('collapses node when clicked', () => {
+    it('expands node when clicked', () => {
       render(<FigmaStructureView structure={mockStructure} />);
 
-      // Find and click the Button node header
-      const buttonNode = screen.getByText('Button').closest('.node-header');
-      expect(buttonNode).toBeInTheDocument();
-
-      // IconPath should be visible initially (nested under Icon)
-      const iconPath = screen.queryByText('IconPath');
-      expect(iconPath).toBeInTheDocument();
-
-      // Click Icon node to collapse it
+      // Find the Icon node header (child of root)
       const iconNode = screen.getByText('Icon').closest('.node-header');
+      expect(iconNode).toBeInTheDocument();
+
+      // IconPath should NOT be visible initially (Icon is not expanded by default)
+      expect(screen.queryByText('IconPath')).not.toBeInTheDocument();
+
+      // Click Icon node to expand it
       fireEvent.click(iconNode);
 
-      // IconPath should still be visible (we need to check expand state)
-      // Actually, let's check if the chevron rotates
+      // IconPath should now be visible
+      expect(screen.getByText('IconPath')).toBeInTheDocument();
+
+      // Chevron should have expanded class
       const chevron = iconNode.querySelector('.expand-icon');
       expect(chevron).toHaveClass('expanded');
     });
 
-    it('expands collapsed node when clicked again', () => {
+    it('collapses expanded node when clicked again', () => {
       render(<FigmaStructureView structure={mockStructure} />);
 
       const iconNode = screen.getByText('Icon').closest('.node-header');
-      const chevron = iconNode.querySelector('.expand-icon');
 
-      // Initially expanded
-      expect(chevron).toHaveClass('expanded');
-
-      // Click to collapse
-      fireEvent.click(iconNode);
-      
-      // Click again to expand
+      // Click to expand Icon
       fireEvent.click(iconNode);
 
-      // Should be expanded again
-      expect(chevron).toHaveClass('expanded');
+      // Verify IconPath is now visible
+      expect(screen.getByText('IconPath')).toBeInTheDocument();
+
+      // Click again to collapse
+      fireEvent.click(iconNode);
+
+      // IconPath should no longer be visible
+      expect(screen.queryByText('IconPath')).not.toBeInTheDocument();
     });
 
     it('does not toggle nodes without children', () => {
@@ -248,11 +249,11 @@ describe('FigmaStructureView', () => {
 
       const boundVars = [
         {
-          nodePath: 'Button',
+          nodePath: '',  // Root node has empty path
           variableName: 'color-primary',
         },
         {
-          nodePath: 'Button',
+          nodePath: '',  // Root node has empty path
           variableName: 'spacing-md',
         },
       ];
@@ -290,7 +291,7 @@ describe('FigmaStructureView', () => {
   });
 
   describe('Deep Nesting', () => {
-    it('limits rendering depth to MAX_RENDER_DEPTH', () => {
+    it('limits rendering depth to MAX_RENDER_DEPTH', async () => {
       // Create a deeply nested structure (12 levels deep)
       let deepStructure = { name: 'Level0', type: 'FRAME' };
       let current = deepStructure;
@@ -299,14 +300,28 @@ describe('FigmaStructureView', () => {
         current = current.children[0];
       }
 
-      render(<FigmaStructureView structure={deepStructure} />);
+      const { container } = render(<FigmaStructureView structure={deepStructure} />);
 
-      // Should show depth limit message
+      // Progressively expand each level to reach max depth
+      // Each click reveals the next level
+      for (let i = 0; i <= 10; i++) {
+        const nodeHeaders = container.querySelectorAll('.node-header.has-children');
+        // Find and click the deepest visible node with children
+        for (const header of nodeHeaders) {
+          const expandIcon = header.querySelector('.expand-icon:not(.expanded)');
+          if (expandIcon) {
+            fireEvent.click(header);
+          }
+        }
+      }
+
+      // Should show depth limit message at level 10
       expect(screen.getByText(/max depth reached/i)).toBeInTheDocument();
     });
 
     it('shows performance warning for large structures', () => {
       // Create a structure with many nodes
+      // Total nodes = root + 150 children = 151 nodes
       const largeStructure = {
         name: 'Root',
         type: 'FRAME',
@@ -319,7 +334,7 @@ describe('FigmaStructureView', () => {
       render(<FigmaStructureView structure={largeStructure} />);
 
       expect(screen.getByText(/Large structure/i)).toBeInTheDocument();
-      expect(screen.getByText(/150 nodes/)).toBeInTheDocument();
+      expect(screen.getByText(/151 nodes/)).toBeInTheDocument();
     });
   });
 
@@ -339,13 +354,13 @@ describe('FigmaStructureView', () => {
 
     it('renders correct icon for TEXT type', () => {
       const textStructure = {
-        name: 'Text',
+        name: 'MyTextNode',
         type: 'TEXT',
       };
 
       render(<FigmaStructureView structure={textStructure} />);
 
-      const textNode = screen.getByText('Text').closest('.node-header');
+      const textNode = screen.getByText('MyTextNode').closest('.node-header');
       const icon = textNode.querySelector('.type-icon');
       expect(icon).toBeInTheDocument();
     });

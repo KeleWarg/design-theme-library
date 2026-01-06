@@ -16,11 +16,15 @@ export const storage = {
    * Get public URL for a file
    * @param {string} bucket - Bucket name (use BUCKETS constant)
    * @param {string} path - File path within bucket
-   * @returns {string} Public URL
+   * @returns {string|null} Public URL or null if invalid parameters
    */
   getPublicUrl(bucket, path) {
+    if (!bucket || !path) {
+      console.warn('getPublicUrl called with missing bucket or path');
+      return null;
+    }
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    return data.publicUrl;
+    return data?.publicUrl || null;
   },
 
   /**

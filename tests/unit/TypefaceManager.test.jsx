@@ -39,6 +39,15 @@ vi.mock('../../src/services/typefaceService', () => ({
   },
 }));
 
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}));
+
 import TypefaceManager from '../../src/components/themes/typography/TypefaceManager';
 import TypefaceCard from '../../src/components/themes/typography/TypefaceCard';
 import { typefaceService } from '../../src/services/typefaceService';
@@ -353,13 +362,16 @@ describe('TypefaceManager', () => {
       expect(playfairElements.length).toBeGreaterThanOrEqual(1);
     });
 
-    // Click Add Typeface button
-    fireEvent.click(screen.getByRole('button', { name: /Add Typeface/ }));
+    // Click Add Typeface button (the primary button in the header)
+    const addButtons = screen.getAllByRole('button', { name: /Add Typeface/i });
+    fireEvent.click(addButtons[0]);
 
-    // Modal should open - check for modal-specific content
+    // Modal should open - check for modal-specific content that only appears in the form
     await waitFor(() => {
-      expect(screen.getByText('Font Family')).toBeInTheDocument();
-      expect(screen.getByLabelText('Role')).toBeInTheDocument();
+      // "Source" label only appears in TypefaceForm modal
+      expect(screen.getByText('Source')).toBeInTheDocument();
+      // "Fallback Stack" only appears in TypefaceForm modal
+      expect(screen.getByText('Fallback Stack')).toBeInTheDocument();
     });
   });
 });

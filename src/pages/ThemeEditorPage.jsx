@@ -56,18 +56,22 @@ export default function ThemeEditorPage() {
    * Update a token's value
    */
   const handleTokenUpdate = useCallback(async (tokenId, updates) => {
+    // Store previous state for rollback
+    const previousTokens = tokens;
+    const previousSelectedToken = selectedToken;
+
     // Optimistic update
-    setTokens(prev => prev.map(t => 
+    setTokens(prev => prev.map(t =>
       t.id === tokenId ? { ...t, ...updates } : t
     ));
-    
+
     // Update selected token if it's being edited
     if (selectedToken?.id === tokenId) {
       setSelectedToken(prev => ({ ...prev, ...updates }));
     }
-    
+
     setHasChanges(true);
-    
+
     try {
       await tokenService.updateToken(tokenId, updates);
       // Refresh ThemeContext to update CSS variables across the app
@@ -76,10 +80,11 @@ export default function ThemeEditorPage() {
     } catch (err) {
       console.error('Failed to update token:', err);
       toast.error('Failed to update token');
-      // Revert on error
-      refetch();
+      // Revert to previous state immediately (no flicker)
+      setTokens(previousTokens);
+      setSelectedToken(previousSelectedToken);
     }
-  }, [selectedToken, refetch, refreshTheme]);
+  }, [tokens, selectedToken, refreshTheme]);
 
   /**
    * Add a new token
@@ -111,25 +116,30 @@ export default function ThemeEditorPage() {
    * Delete a token
    */
   const handleDeleteToken = useCallback(async (tokenId) => {
+    // Store previous state for rollback
+    const previousTokens = tokens;
+    const previousSelectedToken = selectedToken;
+
     // Optimistic update
     setTokens(prev => prev.filter(t => t.id !== tokenId));
-    
+
     if (selectedToken?.id === tokenId) {
       setSelectedToken(null);
     }
-    
+
     setHasChanges(true);
-    
+
     try {
       await tokenService.deleteToken(tokenId);
       toast.success('Token deleted');
     } catch (err) {
       console.error('Failed to delete token:', err);
       toast.error('Failed to delete token');
-      // Revert on error
-      refetch();
+      // Revert to previous state immediately (no flicker)
+      setTokens(previousTokens);
+      setSelectedToken(previousSelectedToken);
     }
-  }, [selectedToken, refetch]);
+  }, [tokens, selectedToken]);
 
   /**
    * Select a token for editing

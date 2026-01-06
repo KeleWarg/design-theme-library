@@ -161,28 +161,34 @@ describe('ComponentSelector', () => {
 
     it('toggles component selection on checkbox click', () => {
       render(<ComponentSelector selected={[]} onChange={mockOnChange} />);
-      
-      const checkbox = screen.getByLabelText(/PrimaryButton/i).querySelector('input[type="checkbox"]');
-      fireEvent.click(checkbox);
-      
+
+      // Find the component item by name and click it (the label handles the click)
+      const componentItem = screen.getByText('PrimaryButton').closest('label');
+      fireEvent.click(componentItem);
+
       expect(mockOnChange).toHaveBeenCalledWith(['1']);
     });
 
     it('deselects component when already selected', () => {
       render(<ComponentSelector selected={['1', '2']} onChange={mockOnChange} />);
-      
-      const checkbox = screen.getByLabelText(/PrimaryButton/i).querySelector('input[type="checkbox"]');
-      fireEvent.click(checkbox);
-      
+
+      // Find the component item by name and click it
+      const componentItem = screen.getByText('PrimaryButton').closest('label');
+      fireEvent.click(componentItem);
+
       expect(mockOnChange).toHaveBeenCalledWith(['2']);
     });
 
     it('shows selected components as checked', () => {
       render(<ComponentSelector selected={['1', '3']} onChange={mockOnChange} />);
-      
-      const primaryButtonCheckbox = screen.getByLabelText(/PrimaryButton/i).querySelector('input[type="checkbox"]');
-      const cardCheckbox = screen.getByLabelText(/Card/i).querySelector('input[type="checkbox"]');
-      
+
+      // Find checkboxes by their parent component items
+      const primaryButtonItem = screen.getByText('PrimaryButton').closest('label');
+      const cardItem = screen.getByText('Card').closest('label');
+
+      const primaryButtonCheckbox = primaryButtonItem.querySelector('input[type="checkbox"]');
+      const cardCheckbox = cardItem.querySelector('input[type="checkbox"]');
+
       expect(primaryButtonCheckbox).toBeChecked();
       expect(cardCheckbox).toBeChecked();
     });

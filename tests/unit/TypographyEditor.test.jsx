@@ -215,11 +215,11 @@ describe('TypographyEditor', () => {
         css_variable: '--letter-spacing-tight',
         value: { value: -0.025, unit: 'em' }
       };
-      
+
       render(<TypographyEditor token={letterSpacingToken} onUpdate={mockOnUpdate} />);
-      
-      // Should show letter-spacing specific presets
-      expect(screen.getByRole('button', { name: '0' })).toBeInTheDocument();
+
+      // Should show letter-spacing specific presets (formatPresetValue adds + for non-negative)
+      expect(screen.getByRole('button', { name: '+0' })).toBeInTheDocument();
     });
 
     it('detects font-weight token type', () => {

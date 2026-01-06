@@ -22,6 +22,10 @@ import { parseTokens, detectFormat, generateCssVariable, detectCategory } from '
 import { injectCssVariables, removeCssVariables, getCssVariables, tokenToCssValue } from '@/lib/cssVariableInjector'
 import { themeService } from '@/services/themeService'
 import { tokenService } from '@/services/tokenService'
+import { supabase } from '@/lib/supabase'
+
+// Track if Supabase is accessible for integration tests
+let supabaseConnected = false
 
 // =============================================================================
 // Sample Test Data
@@ -118,6 +122,20 @@ const mockTokens = [
 // =============================================================================
 
 describe('Gate 2: Theme Context + Import', () => {
+  // Check Supabase connectivity for integration tests
+  beforeAll(async () => {
+    try {
+      const { error } = await supabase.from('themes').select('count')
+      supabaseConnected = !error
+      if (error) {
+        console.warn('Supabase not connected, integration tests will be skipped:', error.message)
+      }
+    } catch (err) {
+      console.warn('Supabase connection failed:', err.message)
+      supabaseConnected = false
+    }
+  })
+
   describe('Token Parser', () => {
     it('parses Figma Variables JSON', () => {
       const result = parseTokens(sampleFigmaJSON)
@@ -421,7 +439,9 @@ describe('Gate 2: Theme Context + Import', () => {
       }
     })
 
-    it('creates theme and imports tokens via services', async () => {
+    it('creates theme and imports tokens via services', async ({ skip }) => {
+      if (!supabaseConnected) skip()
+
       // 1. Parse tokens from JSON
       const { tokens: parsedTokens } = parseTokens(extendedFigmaJSON)
       expect(parsedTokens.length).toBeGreaterThan(0)
@@ -453,7 +473,9 @@ describe('Gate 2: Theme Context + Import', () => {
       expect(Object.keys(grouped).length).toBeGreaterThan(0)
     })
 
-    it('imported tokens have correct CSS variables', async () => {
+    it('imported tokens have correct CSS variables', async ({ skip }) => {
+      if (!supabaseConnected) skip()
+
       if (!testTheme?.id) {
         // Create theme and tokens if not already done
         const { tokens: parsedTokens } = parseTokens(sampleFigmaJSON)
@@ -469,7 +491,7 @@ describe('Gate 2: Theme Context + Import', () => {
 
       const grouped = await tokenService.getTokensByTheme(testTheme.id)
       const colorTokens = grouped.color || []
-      
+
       if (colorTokens.length > 0) {
         const token = colorTokens[0]
         expect(token.css_variable).toMatch(/^--[a-z-]+/)

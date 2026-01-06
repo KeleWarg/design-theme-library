@@ -22,7 +22,7 @@ const CATEGORIES = [
 ];
 
 export default function ComponentSelector({ selected, onChange }) {
-  const { data: components, isLoading } = useComponents({ status: 'published' });
+  const { data: components, isLoading, error } = useComponents({ status: 'published' });
   const [filterCategory, setFilterCategory] = useState('all');
 
   const filteredComponents = filterCategory === 'all'
@@ -49,6 +49,16 @@ export default function ComponentSelector({ selected, onChange }) {
     return (
       <div className="export-component-selector">
         <div className="selector-loading">Loading components...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="export-component-selector">
+        <div className="selector-error">
+          Failed to load components: {error.message || 'Unknown error'}
+        </div>
       </div>
     );
   }
@@ -92,7 +102,7 @@ export default function ComponentSelector({ selected, onChange }) {
             <div className="component-info">
               <span className="component-name">{component.name}</span>
               <span className="linked-count">
-                {component.linked_tokens?.length || 0} linked tokens
+                {component.linked_tokens?.length || 0} linked token{(component.linked_tokens?.length || 0) !== 1 ? 's' : ''}
               </span>
             </div>
           </label>
@@ -122,6 +132,14 @@ export default function ComponentSelector({ selected, onChange }) {
           color: var(--color-muted-foreground, #78716C);
           font-size: var(--font-size-sm, 0.875rem);
           padding: var(--spacing-sm, 0.5rem);
+        }
+
+        .selector-error {
+          color: var(--color-destructive, #dc2626);
+          font-size: var(--font-size-sm, 0.875rem);
+          padding: var(--spacing-sm, 0.5rem);
+          background: var(--color-destructive-light, #fef2f2);
+          border-radius: var(--radius-md, 0.375rem);
         }
 
         .selector-header {

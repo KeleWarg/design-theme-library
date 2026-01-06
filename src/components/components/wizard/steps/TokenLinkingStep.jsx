@@ -53,13 +53,6 @@ export default function TokenLinkingStep({ data, onUpdate }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
 
-  // Debug: Log token data to verify it loads
-  useEffect(() => {
-    console.log('Tokens available:', tokens);
-    if (!tokens || Object.keys(tokens).length === 0) {
-      console.warn('⚠️ No tokens loaded - check ThemeContext');
-    }
-  }, [tokens]);
 
   // Group tokens by category for the browser
   const tokensByCategory = useMemo(() => {
