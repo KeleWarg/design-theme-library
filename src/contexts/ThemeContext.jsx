@@ -27,20 +27,22 @@ export function ThemeProvider({ children }) {
     const loadInitialTheme = async () => {
       try {
         setError(null);
-        
-        // Check localStorage for saved preference
+
+        // Check localStorage for saved active theme and user's default preference from Settings
         const savedThemeId = localStorage.getItem('activeThemeId');
-        
+        const userDefaultThemeId = localStorage.getItem('ds-admin-default-theme');
+
         // Get all themes
         const themes = await themeService.getThemes();
-        
+
         if (!themes.length) {
           setIsLoading(false);
           return;
         }
-        
-        // Find theme to load (saved > default > first)
+
+        // Find theme to load (saved > user preference > database default > first)
         let themeToLoad = themes.find(t => t.id === savedThemeId)
+          || themes.find(t => t.id === userDefaultThemeId)
           || themes.find(t => t.is_default)
           || themes[0];
         
