@@ -353,13 +353,18 @@ describe('TypefaceManager', () => {
       expect(playfairElements.length).toBeGreaterThanOrEqual(1);
     });
 
-    // Click Add Typeface button
-    fireEvent.click(screen.getByRole('button', { name: /Add Typeface/ }));
+    // Click Add Typeface button in header
+    const addButtons = screen.getAllByRole('button', { name: /Add Typeface/ });
+    fireEvent.click(addButtons[0]);
 
-    // Modal should open - check for modal-specific content
+    // Modal should open - check for form elements (Role and Source selectors)
     await waitFor(() => {
-      expect(screen.getByText('Font Family')).toBeInTheDocument();
-      expect(screen.getByLabelText('Role')).toBeInTheDocument();
+      // Role selector should be present in the modal form
+      expect(screen.getByText('Role')).toBeInTheDocument();
+      // Source selector should be present
+      expect(screen.getByText('Source')).toBeInTheDocument();
+      // Fallback Stack selector should be present
+      expect(screen.getByText('Fallback Stack')).toBeInTheDocument();
     });
   });
 });
