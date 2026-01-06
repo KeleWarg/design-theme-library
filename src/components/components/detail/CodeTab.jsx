@@ -11,14 +11,12 @@ import Editor from '@monaco-editor/react';
 import { Button } from '../../ui';
 import { CopyIcon, CheckIcon, EditIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { componentService } from '../../../services/componentService';
 
-export default function CodeTab({ component, onSave, onChangesMade }) {
+export default function CodeTab({ component, onSave }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState(component.code || '');
   const [hasChanges, setHasChanges] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [syntaxError, setSyntaxError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset when component changes
@@ -26,7 +24,6 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
     setEditedCode(component.code || '');
     setHasChanges(false);
     setIsEditing(false);
-    setSyntaxError(null);
   }, [component.code]);
 
   // Track changes
@@ -34,23 +31,6 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
     setEditedCode(value || '');
     const changed = value !== (component.code || '');
     setHasChanges(changed);
-    
-    if (changed && onChangesMade) {
-      onChangesMade();
-    }
-    
-    // Basic syntax validation
-    if (value) {
-      try {
-        // Try to parse as JavaScript/JSX
-        new Function(value);
-        setSyntaxError(null);
-      } catch (e) {
-        setSyntaxError(e.message);
-      }
-    } else {
-      setSyntaxError(null);
-    }
   };
 
   // Enter edit mode
@@ -58,7 +38,6 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
     setIsEditing(true);
     setEditedCode(component.code || '');
     setHasChanges(false);
-    setSyntaxError(null);
   };
 
   // Cancel editing - revert changes
@@ -66,31 +45,21 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
     setEditedCode(component.code || '');
     setHasChanges(false);
     setIsEditing(false);
-    setSyntaxError(null);
-    if (onChangesMade) {
-      onChangesMade();
-    }
   };
 
   // Save explicitly
   const handleSave = async () => {
-    if (syntaxError) {
-      toast.error('Please fix syntax errors before saving');
-      return;
-    }
-
     setIsSaving(true);
     try {
-      await componentService.updateComponent(component.id, { code: editedCode });
+      // Delegate persistence to parent (single write path)
+      if (onSave) {
+        await onSave(editedCode);
+      }
       setHasChanges(false);
       setIsEditing(false);
-      setSyntaxError(null);
-      if (onSave) {
-        onSave(editedCode);
-      }
-      toast.success('Code saved successfully');
     } catch (error) {
       console.error('Failed to save code:', error);
+      // Parent typically toasts; keep a fallback here
       toast.error('Failed to save code');
     } finally {
       setIsSaving(false);
@@ -117,11 +86,6 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
     <div className="code-tab">
       <div className="code-toolbar">
         <div className="toolbar-left">
-          {syntaxError && isEditing && (
-            <span className="syntax-error" title={syntaxError}>
-              ⚠️ Syntax Error
-            </span>
-          )}
           {isEmpty && !isEditing && (
             <span className="empty-state">No code available</span>
           )}
@@ -160,7 +124,7 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
                 variant="primary" 
                 size="small" 
                 onClick={handleSave}
-                disabled={!!syntaxError || !hasChanges || isSaving}
+                disabled={!hasChanges || isSaving}
                 loading={isSaving}
               >
                 Save Code
@@ -230,18 +194,6 @@ export default function CodeTab({ component, onSave, onChangesMade }) {
           display: flex;
           align-items: center;
           gap: var(--spacing-sm);
-        }
-
-        .syntax-error {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-xs);
-          padding: var(--spacing-xs) var(--spacing-sm);
-          background: var(--color-error);
-          color: white;
-          border-radius: var(--radius-sm);
-          font-size: var(--font-size-sm);
-          font-weight: var(--font-weight-medium);
         }
 
         .empty-state {

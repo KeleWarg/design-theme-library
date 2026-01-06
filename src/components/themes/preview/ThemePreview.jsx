@@ -35,7 +35,8 @@ export default function ThemePreview({
   initialViewport = 'desktop',
   showControls = true 
 }) {
-  const { fontsLoading } = useThemeContext();
+  const { fontsLoaded } = useThemeContext();
+  const fontsLoading = !fontsLoaded;
   
   // Theme prop is passed from ThemeEditorPage for live preview
   // The actual tokens are applied via CSS variables by ThemeContext

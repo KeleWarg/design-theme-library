@@ -1,14 +1,12 @@
 /**
  * @chunk 1.11 - App Shell & Routing
- * @chunk 2.05 - ThemeSelector (Header)
  * @chunk 5.01 - ExportModal Shell
  * 
- * Application header with logo, theme selector, and export button
+ * Application header with logo and export button
  */
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Layers, Menu, Download } from 'lucide-react'
-import ThemeSelector from './ThemeSelector'
 import { ExportModal } from '../export'
 
 export default function Header({ onMenuToggle }) {
@@ -34,8 +32,6 @@ export default function Header({ onMenuToggle }) {
         </div>
         
         <div className="header-right">
-          <ThemeSelector />
-          
           <button 
             className="btn btn-primary"
             onClick={() => setExportModalOpen(true)}

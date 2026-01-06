@@ -24,13 +24,25 @@ const AI_CONFIG = {
  * @returns {string|null} API key or null if not found
  */
 function getApiKey() {
-  // Try environment variable first (Vite)
+  // Prefer env in all cases; required in production
   if (import.meta.env.VITE_CLAUDE_API_KEY) {
     return import.meta.env.VITE_CLAUDE_API_KEY;
   }
+
+  // Allow localStorage overrides only in non-production
+  const allowOverrides = import.meta.env.MODE !== 'production';
+  if (!allowOverrides) return null;
   
   // Fall back to localStorage for user-configured keys
-  return localStorage.getItem('claude_api_key');
+  // Prefer SettingsPage key, but support legacy key for backwards compatibility
+  try {
+    return (
+      localStorage.getItem('ds-admin-claude-key') ||
+      localStorage.getItem('claude_api_key')
+    );
+  } catch {
+    return null;
+  }
 }
 
 export const aiService = {

@@ -29,8 +29,9 @@ import GridEditor from './GridEditor';
  * @param {string} props.category - Token category
  * @param {string} props.themeId - Theme ID for fetching typefaces
  * @param {Function} props.onUpdate - Update handler (saves to DB)
+ * @param {Function} props.onClose - Close handler for mobile view
  */
-export default function TokenEditorPanel({ token, category, themeId, onUpdate }) {
+export default function TokenEditorPanel({ token, category, themeId, onUpdate, onClose }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   
@@ -239,6 +240,14 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate })
   return (
     <div className={`token-editor-panel ${hasChanges ? 'has-changes' : ''}`}>
       <div className="token-editor-header">
+        {/* Close button */}
+        <button 
+          className="token-editor-close"
+          onClick={onClose}
+          aria-label="Close editor"
+        >
+          <X size={18} />
+        </button>
         {isEditingName ? (
           <div className="token-name-edit-row">
             <input

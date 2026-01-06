@@ -1,93 +1,86 @@
 /**
  * @chunk 4.07 - ImportReviewCard
  * 
- * Card component for displaying a single imported component with preview,
- * stats, and review/import actions.
+ * Card component for displaying a single Figma import record (file-level import),
+ * with stats and review/import actions.
  */
 
-import { Box, Layers2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { Figma, Layers2, Calendar, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import Button from '../ui/Button';
-import { storage, BUCKETS } from '../../lib/storage';
+import { formatDate } from '../../lib/utils';
 
-export default function ImportReviewCard({ 
-  component, 
-  images = [], 
-  onReview, 
-  onQuickImport 
+function getStatusMeta(status) {
+  switch (status) {
+    case 'imported':
+      return { label: 'Imported', icon: CheckCircle2 };
+    case 'partial':
+      return { label: 'Partial', icon: AlertCircle };
+    case 'failed':
+      return { label: 'Failed', icon: AlertCircle };
+    case 'pending':
+    default:
+      return { label: 'Pending', icon: Clock };
+  }
+}
+
+export default function ImportReviewCard({
+  import: importRecord,
+  onReview,
+  onImport,
 }) {
-  // Find preview image (one with '_preview' in node_name)
-  const previewImage = images.find(img => 
-    img.node_name && img.node_name.includes('_preview')
-  ) || images[0]; // Fallback to first image if no preview
+  if (!importRecord) return null;
 
-  const getImageUrl = (storagePath) => {
-    if (!storagePath) return null;
-    return storage.getPublicUrl(BUCKETS.COMPONENT_IMAGES, storagePath);
-  };
+  const fileName =
+    importRecord.metadata?.fileName ||
+    importRecord.file_name ||
+    'Untitled Import';
 
-  const imageUrl = previewImage?.storage_path 
-    ? getImageUrl(previewImage.storage_path) 
-    : null;
+  const exportedAt =
+    importRecord.metadata?.exportedAt ||
+    importRecord.exported_at ||
+    null;
 
-  const propertyCount = component.properties?.length || 0;
-  const variantCount = component.variants?.length || 0;
-  const boundVariablesCount = component.bound_variables?.length || 0;
-  const imageCount = images.length;
+  const componentCount = importRecord.componentCount ?? importRecord.component_count ?? 0;
+
+  const statusMeta = getStatusMeta(importRecord.status);
+  const StatusIcon = statusMeta.icon;
 
   return (
     <div className="import-review-card">
       <div className="card-preview">
-        {imageUrl ? (
-          <img 
-            src={imageUrl}
-            alt={component.name || 'Component preview'}
-            loading="lazy"
-          />
-        ) : (
-          <div className="no-preview">
-            <Box size={32} />
-          </div>
-        )}
+        <div className="no-preview" aria-label="Figma import">
+          <Figma size={32} />
+        </div>
       </div>
 
       <div className="card-content">
-        <h3 className="card-title">{component.name || 'Unnamed Component'}</h3>
+        <h3 className="card-title">{fileName}</h3>
         <p className="card-description">
-          {component.description || 'No description'}
+          {importRecord.file_key ? `Figma file key: ${importRecord.file_key}` : 'Imported from Figma plugin'}
         </p>
         
         <div className="card-stats">
-          <span title="Properties">
+          <span title="Components">
             <Layers2 size={14} />
-            {propertyCount} {propertyCount === 1 ? 'prop' : 'props'}
+            {componentCount} component{componentCount === 1 ? '' : 's'}
           </span>
-          <span title="Variants">
-            <Layers2 size={14} />
-            {variantCount} {variantCount === 1 ? 'variant' : 'variants'}
+          <span title="Status">
+            <StatusIcon size={14} />
+            {statusMeta.label}
           </span>
-          <span title="Images">
-            <ImageIcon size={14} />
-            {imageCount} {imageCount === 1 ? 'image' : 'images'}
+          <span title="Exported at">
+            <Calendar size={14} />
+            {exportedAt ? formatDate(exportedAt, { dateStyle: 'medium' }) : 'Unknown date'}
           </span>
-          <span title="Token bindings">
-            <LinkIcon size={14} />
-            {boundVariablesCount} {boundVariablesCount === 1 ? 'token' : 'tokens'}
-          </span>
-        </div>
-
-        <div className="card-type">
-          {component.component_type === 'COMPONENT_SET' 
-            ? 'Component Set' 
-            : 'Component'}
         </div>
       </div>
 
       <div className="card-actions">
-        <Button variant="ghost" onClick={() => onReview?.(component)}>
+        <Button variant="ghost" onClick={() => onReview?.(importRecord)}>
           Review
         </Button>
-        <Button onClick={() => onQuickImport?.(component)}>
-          Import
+        <Button onClick={() => onImport?.(importRecord)}>
+          Import All
         </Button>
       </div>
     </div>

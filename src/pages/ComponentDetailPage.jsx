@@ -19,12 +19,10 @@ export default function ComponentDetailPage() {
   const navigate = useNavigate();
   const { data: component, isLoading, error, mutate } = useComponent(id);
   const [activeTab, setActiveTab] = useState('preview');
-  const [hasChanges, setHasChanges] = useState(false);
 
   const handleSave = async (updates) => {
     try {
       await componentService.updateComponent(id, updates);
-      setHasChanges(false);
       mutate();
       toast.success('Component saved');
     } catch (error) {
@@ -95,11 +93,6 @@ export default function ComponentDetailPage() {
             <StatusBadge status={component.status} />
           </div>
           <div className="header-actions">
-            {hasChanges && (
-              <Button onClick={() => handleSave({})}>
-                Save Changes
-              </Button>
-            )}
             {component.status === 'draft' && (
               <Button variant="primary" onClick={handlePublish}>
                 Publish
@@ -139,7 +132,6 @@ export default function ComponentDetailPage() {
             <CodeTab 
               component={component} 
               onSave={(code) => handleSave({ code })}
-              onChangesMade={() => setHasChanges(true)}
             />
           </Tabs.Content>
           <Tabs.Content value="props">

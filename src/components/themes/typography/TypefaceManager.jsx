@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { useTypefaces } from '../../../hooks/useTypefaces';
+import { useThemeContext } from '../../../contexts/ThemeContext';
 import { typefaceService } from '../../../services/typefaceService';
 import TypefaceCard from './TypefaceCard';
 import TypefaceForm from './TypefaceForm';
@@ -19,18 +20,28 @@ import TypefaceForm from './TypefaceForm';
  */
 export default function TypefaceManager({ themeId }) {
   const { data: typefaces, isLoading, error, refetch } = useTypefaces(themeId);
+  const { refreshTheme } = useThemeContext();
   const [editingTypeface, setEditingTypeface] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const roles = ['display', 'text', 'mono', 'accent'];
   const assignedRoles = new Set(typefaces?.map(t => t.role) || []);
 
+  /**
+   * Refresh both local typeface list and theme fonts
+   */
+  const handleRefresh = async () => {
+    refetch();
+    // Reload theme fonts so preview updates with new typeface
+    await refreshTheme();
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Remove this typeface? Font files will also be deleted.')) return;
     
     try {
       await typefaceService.deleteTypeface(id);
-      refetch();
+      await handleRefresh();
     } catch (err) {
       console.error('Failed to delete typeface:', err);
       alert('Failed to delete typeface. Please try again.');
@@ -86,7 +97,7 @@ export default function TypefaceManager({ themeId }) {
                 typeface={typeface}
                 onEdit={() => setEditingTypeface(typeface || { role })}
                 onDelete={() => typeface && handleDelete(typeface.id)}
-                onUpdate={refetch}
+                onUpdate={handleRefresh}
               />
             );
           })}
@@ -102,8 +113,8 @@ export default function TypefaceManager({ themeId }) {
             setShowAddForm(false);
             setEditingTypeface(null);
           }}
-          onSave={() => {
-            refetch();
+          onSave={async () => {
+            await handleRefresh();
             setShowAddForm(false);
             setEditingTypeface(null);
           }}

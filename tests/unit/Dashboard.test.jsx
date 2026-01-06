@@ -1,10 +1,9 @@
 /**
  * Dashboard Tests
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import Dashboard from '../../src/pages/Dashboard';
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
@@ -14,11 +13,40 @@ vi.mock('lucide-react', () => ({
   Activity: () => <span data-testid="icon-activity">Activity</span>,
 }));
 
+vi.mock('../../src/services/themeService', () => ({
+  themeService: {
+    getThemes: vi.fn(),
+  },
+}));
+
+vi.mock('../../src/services/componentService', () => ({
+  componentService: {
+    getComponents: vi.fn(),
+  },
+}));
+
+import Dashboard from '../../src/pages/Dashboard';
+import { themeService } from '../../src/services/themeService';
+import { componentService } from '../../src/services/componentService';
+
 const renderWithRouter = (component) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
 
 describe('Dashboard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    themeService.getThemes.mockResolvedValue([
+      { id: 't1', tokenCount: 12 },
+      { id: 't2', tokenCount: 8 },
+    ]);
+    componentService.getComponents.mockResolvedValue([
+      { id: 'c1' },
+      { id: 'c2' },
+      { id: 'c3' },
+    ]);
+  });
+
   describe('Page Structure', () => {
     it('renders dashboard page with header', () => {
       renderWithRouter(<Dashboard />);
@@ -40,10 +68,12 @@ describe('Dashboard', () => {
       expect(screen.getByText('Exports')).toBeInTheDocument();
     });
 
-    it('shows zero values for stats (initial state)', () => {
+    it('loads and displays stats', async () => {
       renderWithRouter(<Dashboard />);
-      const statValues = screen.getAllByText('0');
-      expect(statValues.length).toBe(4);
+      expect(await screen.findByTestId('stat-themes')).toHaveTextContent('2');
+      expect(screen.getByTestId('stat-components')).toHaveTextContent('3');
+      expect(screen.getByTestId('stat-tokens')).toHaveTextContent('20');
+      expect(screen.getByTestId('stat-exports')).toHaveTextContent('0');
     });
 
     it('renders stat icons', () => {

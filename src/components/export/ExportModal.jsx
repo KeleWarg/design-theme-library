@@ -86,7 +86,7 @@ export default function ExportModal({ open, onClose }) {
             <Button 
               onClick={handleExport} 
               loading={isExporting}
-              disabled={selectedThemes.length === 0}
+              disabled={selectedThemes.length === 0 && selectedComponents.length === 0}
             >
               Export
             </Button>

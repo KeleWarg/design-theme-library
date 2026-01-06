@@ -10,6 +10,7 @@ import { typefaceService } from '../services/typefaceService';
 /**
  * Load all fonts for a theme
  * Handles Google Fonts, Adobe Fonts, custom fonts, and system fonts.
+ * Also injects CSS variables for font-family based on typeface roles.
  * @param {Object} theme - Theme object with typefaces array
  * @returns {Promise<void>}
  */
@@ -67,6 +68,9 @@ export async function loadThemeFonts(theme) {
   if (fontFaceRules.length > 0) {
     injectFontFaceRules(fontFaceRules);
   }
+
+  // Inject font-family CSS variables for each typeface role
+  injectFontFamilyVariables(theme.typefaces);
 
   // Wait for all fonts to load
   await document.fonts.ready;
@@ -207,7 +211,35 @@ function injectFontFaceRules(rules) {
 }
 
 /**
- * Clear all injected font rules
+ * Inject font-family CSS variables based on typeface roles
+ * Creates variables like --font-family-display, --font-family-text, etc.
+ * @param {Array} typefaces - Array of typeface objects with role, family, fallback
+ */
+function injectFontFamilyVariables(typefaces) {
+  const root = document.documentElement;
+  
+  // Clear previous font-family variables
+  ['display', 'text', 'mono', 'accent'].forEach(role => {
+    root.style.removeProperty(`--font-family-${role}`);
+  });
+  
+  // Inject new font-family variables based on typefaces
+  for (const typeface of typefaces) {
+    if (!typeface.role || !typeface.family) continue;
+    
+    // Build font stack with fallback
+    const fontStack = typeface.family.includes(' ') 
+      ? `"${typeface.family}"` 
+      : typeface.family;
+    const fallback = typeface.fallback || 'sans-serif';
+    const cssValue = `${fontStack}, ${fallback}`;
+    
+    root.style.setProperty(`--font-family-${typeface.role}`, cssValue);
+  }
+}
+
+/**
+ * Clear all injected font rules and CSS variables
  */
 export function clearThemeFonts() {
   // Remove custom font styles
@@ -237,6 +269,12 @@ export function clearThemeFonts() {
   if (adobeScript) {
     adobeScript.remove();
   }
+  
+  // Clear font-family CSS variables
+  const root = document.documentElement;
+  ['display', 'text', 'mono', 'accent'].forEach(role => {
+    root.style.removeProperty(`--font-family-${role}`);
+  });
 }
 
 /**

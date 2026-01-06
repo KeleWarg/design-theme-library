@@ -20,12 +20,13 @@ export default function PreviewTypography() {
 
   return (
     <div className="preview-typography-samples">
-      {/* Heading samples */}
+      {/* Heading samples - use display font */}
       <div className="preview-typography-item">
         <span className="preview-type-label">Display</span>
         <h1 
           className="preview-type-text preview-display"
           style={{ 
+            fontFamily: 'var(--font-family-display, var(--font-family-sans))',
             fontSize: 'var(--font-size-display, 48px)',
             fontWeight: 'var(--font-weight-bold, 700)',
             lineHeight: 'var(--line-height-tight, 1.1)',
@@ -40,6 +41,7 @@ export default function PreviewTypography() {
         <h2 
           className="preview-type-text preview-h1"
           style={{ 
+            fontFamily: 'var(--font-family-display, var(--font-family-sans))',
             fontSize: 'var(--font-size-3xl, 32px)',
             fontWeight: 'var(--font-weight-bold, 700)',
             lineHeight: 'var(--line-height-tight, 1.2)',
@@ -54,6 +56,7 @@ export default function PreviewTypography() {
         <h3 
           className="preview-type-text preview-h2"
           style={{ 
+            fontFamily: 'var(--font-family-display, var(--font-family-sans))',
             fontSize: 'var(--font-size-2xl, 24px)',
             fontWeight: 'var(--font-weight-semibold, 600)',
             lineHeight: 'var(--line-height-snug, 1.3)',
@@ -68,6 +71,7 @@ export default function PreviewTypography() {
         <h4 
           className="preview-type-text preview-h3"
           style={{ 
+            fontFamily: 'var(--font-family-display, var(--font-family-sans))',
             fontSize: 'var(--font-size-xl, 20px)',
             fontWeight: 'var(--font-weight-semibold, 600)',
             lineHeight: 'var(--line-height-snug, 1.4)',
@@ -77,12 +81,13 @@ export default function PreviewTypography() {
         </h4>
       </div>
 
-      {/* Body text samples */}
+      {/* Body text samples - use text font */}
       <div className="preview-typography-item">
         <span className="preview-type-label">Body Large</span>
         <p 
           className="preview-type-text preview-body-lg"
           style={{ 
+            fontFamily: 'var(--font-family-text, var(--font-family-sans))',
             fontSize: 'var(--font-size-lg, 18px)',
             fontWeight: 'var(--font-weight-normal, 400)',
             lineHeight: 'var(--line-height-normal, 1.6)',
@@ -97,6 +102,7 @@ export default function PreviewTypography() {
         <p 
           className="preview-type-text preview-body"
           style={{ 
+            fontFamily: 'var(--font-family-text, var(--font-family-sans))',
             fontSize: 'var(--font-size-base, 16px)',
             fontWeight: 'var(--font-weight-normal, 400)',
             lineHeight: 'var(--line-height-relaxed, 1.625)',
@@ -111,6 +117,7 @@ export default function PreviewTypography() {
         <p 
           className="preview-type-text preview-small"
           style={{ 
+            fontFamily: 'var(--font-family-text, var(--font-family-sans))',
             fontSize: 'var(--font-size-sm, 14px)',
             fontWeight: 'var(--font-weight-normal, 400)',
             lineHeight: 'var(--line-height-normal, 1.5)',
@@ -126,6 +133,7 @@ export default function PreviewTypography() {
         <p 
           className="preview-type-text preview-xs"
           style={{ 
+            fontFamily: 'var(--font-family-text, var(--font-family-sans))',
             fontSize: 'var(--font-size-xs, 12px)',
             fontWeight: 'var(--font-weight-normal, 400)',
             lineHeight: 'var(--line-height-normal, 1.5)',
@@ -136,10 +144,30 @@ export default function PreviewTypography() {
         </p>
       </div>
 
-      {/* Font weights */}
+      {/* Mono font sample */}
+      <div className="preview-typography-item">
+        <span className="preview-type-label">Monospace</span>
+        <code 
+          className="preview-type-text preview-mono"
+          style={{ 
+            fontFamily: 'var(--font-family-mono, monospace)',
+            fontSize: 'var(--font-size-sm, 14px)',
+            fontWeight: 'var(--font-weight-normal, 400)',
+            lineHeight: 'var(--line-height-normal, 1.5)',
+            display: 'block',
+            padding: 'var(--spacing-sm)',
+            backgroundColor: 'var(--color-muted)',
+            borderRadius: 'var(--radius-sm)',
+          }}
+        >
+          const theme = &#123; fonts: 'custom' &#125;;
+        </code>
+      </div>
+
+      {/* Font weights - use text font */}
       <div className="preview-typography-weights">
         <span className="preview-type-label">Font Weights</span>
-        <div className="preview-weights-grid">
+        <div className="preview-weights-grid" style={{ fontFamily: 'var(--font-family-text, var(--font-family-sans))' }}>
           <span style={{ fontWeight: 'var(--font-weight-light, 300)' }}>Light 300</span>
           <span style={{ fontWeight: 'var(--font-weight-normal, 400)' }}>Regular 400</span>
           <span style={{ fontWeight: 'var(--font-weight-medium, 500)' }}>Medium 500</span>

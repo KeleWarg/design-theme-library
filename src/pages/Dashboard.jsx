@@ -2,9 +2,52 @@
  * @chunk 1.11 - App Shell & Routing
  * Dashboard page - overview of design system
  */
+import { useEffect, useState } from 'react'
 import { Palette, Box, Download, Activity } from 'lucide-react'
+import { themeService } from '../services/themeService'
+import { componentService } from '../services/componentService'
 
 export default function Dashboard() {
+  const [stats, setStats] = useState({
+    themes: 0,
+    components: 0,
+    tokens: 0,
+    exports: 0,
+  })
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadStats() {
+      try {
+        const [themes, components] = await Promise.all([
+          themeService.getThemes(),
+          componentService.getComponents(),
+        ])
+
+        if (cancelled) return
+
+        const tokenCount = (themes || []).reduce((sum, theme) => {
+          return sum + (theme?.tokenCount || 0)
+        }, 0)
+
+        setStats((prev) => ({
+          ...prev,
+          themes: themes?.length || 0,
+          components: components?.length || 0,
+          tokens: tokenCount,
+        }))
+      } catch (error) {
+        console.error('Failed to load dashboard stats:', error)
+      }
+    }
+
+    loadStats()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <div className="page dashboard-page">
       <header className="page-header">
@@ -19,7 +62,7 @@ export default function Dashboard() {
               <Palette size={24} />
             </div>
             <div className="stat-content">
-              <span className="stat-value">0</span>
+              <span className="stat-value" data-testid="stat-themes">{stats.themes}</span>
               <span className="stat-label">Themes</span>
             </div>
           </div>
@@ -29,7 +72,7 @@ export default function Dashboard() {
               <Box size={24} />
             </div>
             <div className="stat-content">
-              <span className="stat-value">0</span>
+              <span className="stat-value" data-testid="stat-components">{stats.components}</span>
               <span className="stat-label">Components</span>
             </div>
           </div>
@@ -39,7 +82,7 @@ export default function Dashboard() {
               <Activity size={24} />
             </div>
             <div className="stat-content">
-              <span className="stat-value">0</span>
+              <span className="stat-value" data-testid="stat-tokens">{stats.tokens}</span>
               <span className="stat-label">Tokens</span>
             </div>
           </div>
@@ -49,7 +92,7 @@ export default function Dashboard() {
               <Download size={24} />
             </div>
             <div className="stat-content">
-              <span className="stat-value">0</span>
+              <span className="stat-value" data-testid="stat-exports">{stats.exports}</span>
               <span className="stat-label">Exports</span>
             </div>
           </div>

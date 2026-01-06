@@ -1,10 +1,10 @@
 /**
  * @chunk 2.12 - ThemeEditor Layout
  * 
- * Main theme editor page with three-column layout:
+ * Hybrid theme editor layout:
  * - Category sidebar (left)
- * - Token list (center)
- * - Editor panel (right)
+ * - Token list (center/main)
+ * - Modal panel for editing (opens when token selected)
  * - Preview panel (bottom, collapsible)
  */
 
@@ -27,6 +27,7 @@ import '../styles/theme-editor.css';
 
 /**
  * Theme editor page with token management
+ * Uses hybrid layout: 2-column browse + modal for editing
  */
 export default function ThemeEditorPage() {
   const { id } = useParams();
@@ -149,6 +150,13 @@ export default function ThemeEditorPage() {
   }, []);
 
   /**
+   * Close the mobile editor panel
+   */
+  const handleCloseEditor = useCallback(() => {
+    setSelectedToken(null);
+  }, []);
+
+  /**
    * Change active category
    */
   const handleCategoryChange = useCallback((category) => {
@@ -219,7 +227,7 @@ export default function ThemeEditorPage() {
           onCategoryChange={handleCategoryChange}
         />
 
-        <div className="editor-main">
+        <div className="editor-main editor-main--hybrid">
           <TokenList
             tokens={categoryTokens}
             category={activeCategory}
@@ -229,7 +237,17 @@ export default function ThemeEditorPage() {
             onAddToken={handleAddToken}
             onDeleteToken={handleDeleteToken}
           />
+        </div>
+      </div>
 
+      {/* Token Editor Modal - shown when token is selected */}
+      {selectedToken && (
+        <>
+          <div 
+            className="editor-modal-backdrop"
+            onClick={handleCloseEditor}
+            aria-hidden="true"
+          />
           <TokenEditorPanel
             token={selectedToken}
             category={activeCategory}
@@ -239,9 +257,10 @@ export default function ThemeEditorPage() {
                 handleTokenUpdate(selectedToken.id, updates);
               }
             }}
+            onClose={handleCloseEditor}
           />
-        </div>
-      </div>
+        </>
+      )}
 
       {showPreview && (
         <ThemePreview theme={{ ...theme, tokens }} />

@@ -21,24 +21,47 @@ function generateSlug(name) {
 
 export const themeService = {
   /**
-   * Get all themes with token counts
-   * @returns {Promise<Array>} - Array of themes with token counts
+   * Get all themes with token counts and color preview tokens
+   * @returns {Promise<Array>} - Array of themes with token counts and preview colors
    */
   async getThemes() {
-    const { data, error } = await supabase
+    // First get themes with token counts
+    const { data: themes, error: themesError } = await supabase
       .from('themes')
       .select(`
         *,
-        tokens:tokens(count)
+        token_count:tokens(count)
       `)
       .order('created_at', { ascending: false });
     
-    if (error) throw error;
+    if (themesError) throw themesError;
     
-    // Transform token count from array to number
-    return data.map(theme => ({
+    // Get color tokens for preview (first 5 per theme)
+    // Fetch separately per theme to ensure fair distribution
+    const themeIds = themes.map(t => t.id);
+    const tokensByTheme = {};
+    
+    // Fetch color tokens for all themes in parallel
+    const tokenPromises = themeIds.map(async (themeId) => {
+      const { data, error } = await supabase
+        .from('tokens')
+        .select('id, theme_id, name, category, value')
+        .eq('theme_id', themeId)
+        .eq('category', 'color')
+        .limit(5);
+      
+      if (!error && data) {
+        tokensByTheme[themeId] = data;
+      }
+    });
+    
+    await Promise.all(tokenPromises);
+    
+    // Transform and merge data
+    return themes.map(theme => ({
       ...theme,
-      tokenCount: theme.tokens?.[0]?.count || 0
+      tokenCount: theme.token_count?.[0]?.count || 0,
+      tokens: tokensByTheme[theme.id] || []
     }));
   },
 
