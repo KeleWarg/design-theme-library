@@ -12,6 +12,14 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.js'],
     include: ['src/**/*.test.{js,jsx}', 'tests/**/*.test.{js,jsx}'],
+    // In some sandboxed environments, the default pool (forks) can fail to terminate cleanly,
+    // causing noisy unhandled rejections. Threads + singleThread is more stable here.
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
   },
   resolve: {
     alias: {
