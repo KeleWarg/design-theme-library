@@ -107,10 +107,10 @@ export default function Dashboard() {
               <h3>Create Theme</h3>
               <p>Start a new design theme from scratch</p>
             </a>
-            <a href="/figma-import" className="card action-card">
+            <a href="/components/new?mode=ai" className="card action-card">
               <Box size={32} />
-              <h3>Import from Figma</h3>
-              <p>Sync components from your Figma files</p>
+              <h3>Generate Component</h3>
+              <p>Use AI to create a new component</p>
             </a>
             <a href="/components" className="card action-card">
               <Activity size={32} />

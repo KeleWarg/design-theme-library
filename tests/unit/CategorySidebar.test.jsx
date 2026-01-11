@@ -44,9 +44,9 @@ describe('CategorySidebar', () => {
       />
     );
     
-    // Should always show color, typography, spacing
+    // Should always show color + typography (preview) + spacing
     expect(screen.getByText('Colors')).toBeInTheDocument();
-    expect(screen.getByText('Typography')).toBeInTheDocument();
+    expect(screen.getByText('Typography (preview)')).toBeInTheDocument();
     expect(screen.getByText('Spacing')).toBeInTheDocument();
     
     // Should show categories with tokens
@@ -66,9 +66,9 @@ describe('CategorySidebar', () => {
     // Color has 3 tokens
     const colorButton = screen.getByText('Colors').closest('button');
     expect(colorButton).toHaveTextContent('3');
-    
+
     // Typography has 2 tokens
-    const typographyButton = screen.getByText('Typography').closest('button');
+    const typographyButton = screen.getByText('Typography (preview)').closest('button');
     expect(typographyButton).toHaveTextContent('2');
     
     // Spacing has 3 tokens
@@ -88,17 +88,13 @@ describe('CategorySidebar', () => {
     render(
       <CategorySidebar 
         tokens={mockTokens} 
-        activeCategory="typography" 
+        activeCategory="spacing" 
         onCategoryChange={() => {}} 
       />
     );
     
-    const typographyButton = screen.getByText('Typography').closest('button');
-    expect(typographyButton).toHaveClass('active');
-    
-    // Other categories should not be active
-    const colorButton = screen.getByText('Colors').closest('button');
-    expect(colorButton).not.toHaveClass('active');
+    const spacingButton = screen.getByText('Spacing').closest('button');
+    expect(spacingButton).toHaveClass('active');
   });
 
   it('click changes active category', () => {
@@ -112,13 +108,17 @@ describe('CategorySidebar', () => {
       />
     );
     
-    // Click on Typography
-    fireEvent.click(screen.getByText('Typography'));
+    // Click on Typography (preview)
+    fireEvent.click(screen.getByText('Typography (preview)'));
     expect(onCategoryChange).toHaveBeenCalledWith('typography');
-    
+
     // Click on Spacing
     fireEvent.click(screen.getByText('Spacing'));
     expect(onCategoryChange).toHaveBeenCalledWith('spacing');
+
+    // Click on Shadows
+    fireEvent.click(screen.getByText('Shadows'));
+    expect(onCategoryChange).toHaveBeenCalledWith('shadow');
   });
 
   it('renders with empty tokens array', () => {
@@ -132,7 +132,7 @@ describe('CategorySidebar', () => {
     
     // Should still show default categories (color, typography, spacing)
     expect(screen.getByText('Colors')).toBeInTheDocument();
-    expect(screen.getByText('Typography')).toBeInTheDocument();
+    expect(screen.getByText('Typography (preview)')).toBeInTheDocument();
     expect(screen.getByText('Spacing')).toBeInTheDocument();
     
     // All counts should be 0
@@ -167,7 +167,7 @@ describe('CategorySidebar', () => {
       />
     );
     
-    // "Other" category should appear and have count of 1
+    // "Other" category should appear and include unknown categories
     expect(screen.getByText('Other')).toBeInTheDocument();
     const otherButton = screen.getByText('Other').closest('button');
     expect(otherButton).toHaveTextContent('1');

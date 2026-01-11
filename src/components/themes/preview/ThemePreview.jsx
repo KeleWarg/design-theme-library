@@ -1,23 +1,25 @@
 /**
  * @chunk 2.27 - ThemePreview
  * 
- * Floating expandable theme preview panel with:
- * - Collapsible floating panel (bottom-right)
+ * Theme-local preview panel that renders with the actual theme's tokens.
+ * CSS variables are injected into a scoped container, not globally.
+ * 
+ * Features:
+ * - Collapsible floating panel (bottom-right when collapsed)
  * - Expandable to full modal view
  * - Viewport width controls (mobile/tablet/desktop)
- * - Font loading indicator
  * - Dark/light mode preview toggle
  * - Multiple preview sections (typography, colors, buttons, cards, forms)
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronUp, Monitor, Tablet, Smartphone, Sun, Moon, Maximize2, Minimize2, X } from 'lucide-react';
-import { useThemeContext } from '../../../contexts/ThemeContext';
 import PreviewTypography from './PreviewTypography';
 import PreviewColors from './PreviewColors';
 import PreviewButtons from './PreviewButtons';
 import PreviewCard from './PreviewCard';
 import PreviewForm from './PreviewForm';
+import { isCompositeTypographyToken, expandCompositeTypographyToken, tokenToCssValue } from '../../../lib/cssVariableInjector';
 import '../../../styles/theme-preview.css';
 
 // Viewport width presets
@@ -30,22 +32,82 @@ const VIEWPORT_SIZES = {
 // Preview states for export
 export const PREVIEW_STATES = ['all', 'typography', 'colors', 'buttons', 'card', 'form'];
 
+/**
+ * Build font-family string for a typeface
+ */
+function buildFontFamily(typeface) {
+  if (!typeface) return null;
+
+  const familyRaw = typeface.family || typeface.google_font_name || typeface.name;
+  if (!familyRaw) return null;
+
+  // If the "family" already looks like a full stack, don't try to re-quote/re-append.
+  const trimmed = String(familyRaw).trim();
+  if (trimmed.includes(',')) return trimmed;
+
+  const family = trimmed.includes(' ') && !(trimmed.startsWith('"') && trimmed.endsWith('"'))
+    ? `"${trimmed}"`
+    : trimmed;
+
+  // Different parts of the codebase have used different field names historically.
+  const fallback = typeface.fallback || typeface.fallback_stack || 'sans-serif';
+
+  return `${family}, ${fallback}`;
+}
+
 export default function ThemePreview({ 
   theme,
-  initialCollapsed = false, // Start open as modal overlay
+  initialCollapsed = false,
   initialViewport = 'desktop',
   showControls = true 
 }) {
-  const { fontsLoaded } = useThemeContext();
-  const fontsLoading = !fontsLoaded;
-  
-  // Theme prop is passed from ThemeEditorPage for live preview
-  // The actual tokens are applied via CSS variables by ThemeContext
-  
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
-  const [isExpanded, setIsExpanded] = useState(false); // Full modal expanded state
+  const [isExpanded, setIsExpanded] = useState(false);
   const [viewport, setViewport] = useState(initialViewport);
   const [darkMode, setDarkMode] = useState(false);
+
+  /**
+   * Convert theme tokens to CSS variable object for scoped injection
+   */
+  const scopedCssVariables = useMemo(() => {
+    if (!theme?.tokens) return {};
+    
+    const vars = {};
+    
+    // Convert all tokens to CSS variables
+    theme.tokens.forEach(token => {
+      if (token.css_variable) {
+        // Composite typography tokens expand into multiple variables
+        if (isCompositeTypographyToken(token)) {
+          Object.assign(vars, expandCompositeTypographyToken(token));
+          return;
+        }
+
+        vars[token.css_variable] = tokenToCssValue(token);
+      }
+    });
+    
+    // Add typeface font families
+    if (theme.typefaces?.length) {
+      // Current schema uses `role` (display/text/mono). Older code sometimes used `type`.
+      const displayTypeface = theme.typefaces.find(t => (t.role || t.type) === 'display');
+      const textTypeface = theme.typefaces.find(t => (t.role || t.type) === 'text');
+      const monoTypeface = theme.typefaces.find(t => (t.role || t.type) === 'mono');
+
+      // Only add these if tokens didn't already define them
+      if (!vars['--font-family-display'] && displayTypeface) {
+        vars['--font-family-display'] = buildFontFamily(displayTypeface);
+      }
+      if (!vars['--font-family-text'] && textTypeface) {
+        vars['--font-family-text'] = buildFontFamily(textTypeface);
+      }
+      if (!vars['--font-family-mono'] && monoTypeface) {
+        vars['--font-family-mono'] = buildFontFamily(monoTypeface);
+      }
+    }
+    
+    return vars;
+  }, [theme]);
 
   /**
    * Handle escape key to close expanded view
@@ -59,7 +121,6 @@ export default function ThemePreview({
     
     if (isExpanded) {
       document.addEventListener('keydown', handleKeyDown);
-      // Prevent body scroll when expanded
       document.body.style.overflow = 'hidden';
     }
     
@@ -73,7 +134,7 @@ export default function ThemePreview({
    * Toggle collapsed state
    */
   const handleToggleCollapse = useCallback(() => {
-    if (isExpanded) return; // Don't collapse when in expanded mode
+    if (isExpanded) return;
     setIsCollapsed(prev => !prev);
   }, [isExpanded]);
 
@@ -83,7 +144,6 @@ export default function ThemePreview({
   const handleToggleExpand = useCallback((e) => {
     e.stopPropagation();
     setIsExpanded(prev => !prev);
-    // Uncollapse when expanding
     if (isCollapsed) {
       setIsCollapsed(false);
     }
@@ -97,11 +157,15 @@ export default function ThemePreview({
   }, []);
 
   /**
-   * Toggle dark mode preview
+   * Handle backdrop click - collapse the preview
    */
-  const handleToggleDarkMode = useCallback(() => {
-    setDarkMode(prev => !prev);
-  }, []);
+  const handleBackdropClick = useCallback(() => {
+    if (isExpanded) {
+      setIsExpanded(false);
+    } else {
+      setIsCollapsed(true);
+    }
+  }, [isExpanded]);
 
   /**
    * Get viewport max-width style
@@ -114,21 +178,29 @@ export default function ThemePreview({
   };
 
   /**
-   * Render font loading indicator
+   * Build inline style object with all scoped CSS variables
    */
-  const renderFontsLoading = () => {
-    if (!fontsLoading) return null;
+  const viewportStyleWithVars = useMemo(() => {
+    const baseStyle = {
+      ...getViewportStyle(),
+      backgroundColor: darkMode 
+        ? 'var(--background-neutral-strong, var(--background-body, inherit))' 
+        : 'var(--background-white, var(--background-body, inherit))',
+      color: darkMode 
+        ? 'var(--foreground-body-inverse, var(--foreground-body, inherit))' 
+        : 'var(--foreground-body, inherit)'
+    };
     
-    return (
-      <div className="theme-preview-fonts-loading">
-        <div className="loading-spinner" />
-        <span>Loading fonts...</span>
-      </div>
-    );
-  };
+    // Inject all CSS variables as inline styles (scoped to this container)
+    Object.entries(scopedCssVariables).forEach(([key, value]) => {
+      baseStyle[key] = value;
+    });
+    
+    return baseStyle;
+  }, [scopedCssVariables, darkMode, viewport]);
 
   /**
-   * Render preview sections
+   * Render preview sections with theme prop
    */
   const renderPreviewSections = () => (
     <>
@@ -136,7 +208,7 @@ export default function ThemePreview({
       <div className="theme-preview-section">
         <h4 className="theme-preview-section-title">Typography</h4>
         <div className="theme-preview-section-content">
-          <PreviewTypography />
+          <PreviewTypography theme={theme} />
         </div>
       </div>
 
@@ -144,7 +216,7 @@ export default function ThemePreview({
       <div className="theme-preview-section">
         <h4 className="theme-preview-section-title">Colors</h4>
         <div className="theme-preview-section-content">
-          <PreviewColors />
+          <PreviewColors theme={theme} />
         </div>
       </div>
 
@@ -152,7 +224,7 @@ export default function ThemePreview({
       <div className="theme-preview-section">
         <h4 className="theme-preview-section-title">Buttons</h4>
         <div className="theme-preview-section-content">
-          <PreviewButtons />
+          <PreviewButtons theme={theme} />
         </div>
       </div>
 
@@ -160,7 +232,7 @@ export default function ThemePreview({
       <div className="theme-preview-section">
         <h4 className="theme-preview-section-title">Card</h4>
         <div className="theme-preview-section-content">
-          <PreviewCard />
+          <PreviewCard theme={theme} />
         </div>
       </div>
 
@@ -168,22 +240,11 @@ export default function ThemePreview({
       <div className="theme-preview-section">
         <h4 className="theme-preview-section-title">Form</h4>
         <div className="theme-preview-section-content">
-          <PreviewForm />
+          <PreviewForm theme={theme} />
         </div>
       </div>
     </>
   );
-
-  /**
-   * Handle backdrop click - collapse the preview
-   */
-  const handleBackdropClick = useCallback(() => {
-    if (isExpanded) {
-      setIsExpanded(false);
-    } else {
-      setIsCollapsed(true);
-    }
-  }, [isExpanded]);
 
   return (
     <>
@@ -203,6 +264,9 @@ export default function ThemePreview({
           <div className="theme-preview-toggle">
             {isCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             <span className="theme-preview-title">Preview</span>
+            {theme?.name && (
+              <span className="theme-preview-theme-name">— {theme.name}</span>
+            )}
           </div>
 
           {/* Header actions - expand/close buttons */}
@@ -280,17 +344,10 @@ export default function ThemePreview({
         {/* Body - scrollable preview area */}
         {!isCollapsed && (
           <div className="theme-preview-body">
-            {/* Font loading indicator */}
-            {renderFontsLoading()}
-
-            {/* Viewport container with width control */}
+            {/* Viewport container with scoped CSS variables */}
             <div 
               className="theme-preview-viewport"
-              style={{
-                ...getViewportStyle(),
-                backgroundColor: darkMode ? 'var(--color-foreground)' : 'var(--color-background)',
-                color: darkMode ? 'var(--color-background)' : 'var(--color-foreground)'
-              }}
+              style={viewportStyleWithVars}
             >
               {renderPreviewSections()}
             </div>

@@ -56,3 +56,5 @@ Each fixture follows the `ExtractedComponent` interface:
 - `boundVariables`: Array of bound design tokens
 - `structure`: Simplified node tree structure
 
+
+

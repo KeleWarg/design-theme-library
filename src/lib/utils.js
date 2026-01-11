@@ -52,17 +52,23 @@ export function formatDate(date, options = {}) {
   if (isNaN(dateObj.getTime())) {
     return '';
   }
-  
-  const defaultOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    ...options
-  };
-  
-  return new Intl.DateTimeFormat('en-US', defaultOptions).format(dateObj);
+
+  // Intl.DateTimeFormat does not allow mixing `dateStyle/timeStyle` with
+  // component options like `year/month/day/hour/minute`.
+  const usesStyle = options && (options.dateStyle || options.timeStyle);
+
+  const formatOptions = usesStyle
+    ? { ...options }
+    : {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        ...options,
+      };
+
+  return new Intl.DateTimeFormat('en-US', formatOptions).format(dateObj);
 }
 
 export default { cn, formatDate };

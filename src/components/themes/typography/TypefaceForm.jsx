@@ -20,6 +20,7 @@ import Input from '../../ui/Input';
 import Button from '../../ui/Button';
 import GoogleFontSearch from './GoogleFontSearch';
 import WeightSelector from './WeightSelector';
+import FontUploader, { parseStyleFromFilename, parseWeightFromFilename } from './FontUploader';
 
 // Fallback options
 const FALLBACK_OPTIONS = [
@@ -56,6 +57,7 @@ function capitalize(str) {
  */
 export default function TypefaceForm({ typeface, themeId, availableRoles, onClose, onSave }) {
   const isEditing = !!typeface?.id;
+  const hasUploadedFonts = !!typeface?.font_files?.length;
   
   const [formData, setFormData] = useState({
     role: typeface?.role || availableRoles[0] || '',
@@ -68,6 +70,7 @@ export default function TypefaceForm({ typeface, themeId, availableRoles, onClos
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableWeights, setAvailableWeights] = useState(null);
+  const [pendingCustomFiles, setPendingCustomFiles] = useState([]);
 
   // Update fallback suggestion when role changes (only for new typefaces)
   useEffect(() => {
@@ -113,6 +116,7 @@ export default function TypefaceForm({ typeface, themeId, availableRoles, onClos
       weights: [400],
     }));
     setAvailableWeights(null);
+    setPendingCustomFiles([]);
   };
 
   // Handle Google Font selection
@@ -162,6 +166,7 @@ export default function TypefaceForm({ typeface, themeId, availableRoles, onClos
       
       if (isEditing) {
         await typefaceService.updateTypeface(typeface.id, {
+          role: formData.role,
           family: formData.family,
           fallback: formData.fallback,
           source_type: formData.source_type,
@@ -170,7 +175,22 @@ export default function TypefaceForm({ typeface, themeId, availableRoles, onClos
         });
         toast.success('Typeface updated');
       } else {
-        await typefaceService.createTypeface(themeId, formData);
+        const created = await typefaceService.createTypeface(themeId, formData);
+        
+        // If user staged custom font files, upload them now that we have an id.
+        if (formData.source_type === 'custom' && pendingCustomFiles.length > 0) {
+          for (const file of pendingCustomFiles) {
+            const weight = parseWeightFromFilename(file.name);
+            const style = parseStyleFromFilename(file.name);
+            try {
+              await typefaceService.uploadFontFile(created.id, file, weight, style);
+            } catch (uploadErr) {
+              console.error('Failed to upload staged font file:', uploadErr);
+              // Keep going; partial uploads are better than failing the whole create.
+            }
+          }
+        }
+
         toast.success('Typeface added');
       }
       
@@ -236,13 +256,53 @@ export default function TypefaceForm({ typeface, themeId, availableRoles, onClos
               value={formData.family}
               onChange={(e) => handleChange('family', e.target.value)}
               placeholder="Custom font family name"
-              disabled={isSubmitting}
+              disabled={
+                isSubmitting ||
+                (isEditing && formData.source_type === 'custom' && hasUploadedFonts)
+              }
               required
             />
-            <p className="form-hint">
-              Enter the font family name. You'll be able to upload font files 
-              after creating the typeface.
-            </p>
+            
+            {isEditing ? (
+              <>
+                <p className="form-hint">
+                  Upload font files for this custom typeface.
+                  {hasUploadedFonts ? ' (Renaming family after uploads is disabled.)' : ''}
+                </p>
+                <FontUploader
+                  typefaceId={typeface.id}
+                  existingFiles={typeface.font_files || []}
+                />
+              </>
+            ) : (
+              <>
+                <div className="form-field">
+                  <label className="form-label" htmlFor="custom-font-files">
+                    Font files (optional)
+                  </label>
+                  <input
+                    id="custom-font-files"
+                    className="form-input"
+                    type="file"
+                    accept=".woff2,.woff,.ttf,.otf"
+                    multiple
+                    disabled={isSubmitting}
+                    onChange={(e) => setPendingCustomFiles(Array.from(e.target.files || []))}
+                  />
+                  <p className="form-hint">
+                    Select font files now and they’ll upload right after the typeface is created.
+                  </p>
+                </div>
+                
+                {pendingCustomFiles.length > 0 && (
+                  <div className="form-field">
+                    <div className="form-hint">
+                      Staged files: {pendingCustomFiles.map(f => f.name).join(', ')}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </>
         );
       
@@ -265,7 +325,7 @@ export default function TypefaceForm({ typeface, themeId, availableRoles, onClos
           value={formData.role}
           onChange={(role) => handleChange('role', role)}
           options={availableRoles.map(r => ({ value: r, label: capitalize(r) }))}
-          disabled={isEditing || isSubmitting}
+          disabled={isSubmitting}
           required
         />
         

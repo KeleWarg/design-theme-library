@@ -5,7 +5,7 @@
  * Supports single theme, multi-theme, and font-face generation.
  */
 
-import { tokenToCssValue } from '../../lib/cssVariableInjector.js';
+import { tokenToCssValue, isCompositeTypographyToken, expandCompositeTypographyToken } from '../../lib/cssVariableInjector.js';
 import { generateFontFaceCss } from '../../lib/fontLoader.js';
 
 /**
@@ -67,7 +67,22 @@ export function generateCSS(tokens, options = {}) {
 
     for (const token of sortedTokens) {
       if (!token.css_variable) continue;
-      
+
+      // Composite typography tokens expand into multiple CSS variables.
+      // We intentionally do NOT emit the base var (e.g. `--typography-body-md`) because it has no single CSS value.
+      if (isCompositeTypographyToken(token)) {
+        const expanded = expandCompositeTypographyToken(token);
+        const order = ['family', 'size', 'weight', 'line-height', 'letter-spacing'];
+
+        for (const suffix of order) {
+          const varName = `${token.css_variable}-${suffix}`;
+          if (!(varName in expanded)) continue;
+          const line = `  ${varName}: ${expanded[varName]};`;
+          css += minify ? line.trim() : line + '\n';
+        }
+        continue;
+      }
+
       const value = tokenToCssValue(token);
       const line = `  ${token.css_variable}: ${value};`;
       css += minify ? line.trim() : line + '\n';

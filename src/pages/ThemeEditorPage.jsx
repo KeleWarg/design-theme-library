@@ -32,7 +32,7 @@ import '../styles/theme-editor.css';
 export default function ThemeEditorPage() {
   const { id } = useParams();
   const { data: theme, isLoading, error, refetch } = useTheme(id);
-  const { refreshTheme } = useThemeContext();
+  const { activeTheme, loadTheme, refreshTheme } = useThemeContext();
   
   // UI state
   const [activeCategory, setActiveCategory] = useState('color');
@@ -49,6 +49,17 @@ export default function ThemeEditorPage() {
       setTokens(theme.tokens);
     }
   }, [theme?.tokens]);
+
+  // Keep global ThemeContext aligned with the theme being edited.
+  // This ensures token list / editor UI (which relies on global CSS variables) matches the preview + the current route.
+  useEffect(() => {
+    if (!id) return;
+    if (activeTheme?.id === id) return;
+
+    loadTheme(id).catch((err) => {
+      console.error('Failed to set active theme for editor:', err);
+    });
+  }, [id, activeTheme?.id, loadTheme]);
 
   // Get tokens for active category
   const categoryTokens = tokens.filter(t => t.category === activeCategory);
@@ -91,13 +102,14 @@ export default function ThemeEditorPage() {
    * Add a new token
    */
   const handleAddToken = useCallback(async (tokenData) => {
+    // Use data from the modal form if provided, with sensible defaults
     const newToken = {
-      name: `New ${tokenData.category} token`,
-      path: `${tokenData.category}/new-token`,
+      name: tokenData.name || `New ${tokenData.category} token`,
+      path: tokenData.path || `${tokenData.category}/${(tokenData.name || 'new-token').toLowerCase().replace(/\s+/g, '-')}`,
       category: tokenData.category,
-      type: tokenData.category,
-      value: tokenData.category === 'color' ? { hex: '#000000' } : '',
-      css_variable: `--${tokenData.category}-new-token`,
+      type: tokenData.type || tokenData.category,
+      value: tokenData.value !== undefined ? tokenData.value : (tokenData.category === 'color' ? { hex: '#000000' } : ''),
+      css_variable: tokenData.css_variable || `--${tokenData.category}-new-token`,
       theme_id: id
     };
 
@@ -106,6 +118,7 @@ export default function ThemeEditorPage() {
       setTokens(prev => [...prev, created]);
       setSelectedToken(created);
       setHasChanges(true);
+      await refreshTheme();
       toast.success('Token created');
     } catch (err) {
       console.error('Failed to create token:', err);
@@ -132,6 +145,7 @@ export default function ThemeEditorPage() {
 
     try {
       await tokenService.deleteToken(tokenId);
+      await refreshTheme();
       toast.success('Token deleted');
     } catch (err) {
       console.error('Failed to delete token:', err);
@@ -263,7 +277,7 @@ export default function ThemeEditorPage() {
       )}
 
       {showPreview && (
-        <ThemePreview theme={{ ...theme, tokens }} />
+        <ThemePreview theme={{ ...theme, tokens }} initialCollapsed={true} />
       )}
     </div>
   );

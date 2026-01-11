@@ -27,6 +27,8 @@ export default function ImportReviewCard({
   import: importRecord,
   onReview,
   onImport,
+  onRetry,
+  onReset,
 }) {
   if (!importRecord) return null;
 
@@ -44,6 +46,11 @@ export default function ImportReviewCard({
 
   const statusMeta = getStatusMeta(importRecord.status);
   const StatusIcon = statusMeta.icon;
+
+  const status = importRecord.status || 'pending';
+  const canReset = status !== 'pending';
+  const canRetry = status === 'failed' || status === 'partial';
+  const canReimport = status === 'imported';
 
   return (
     <div className="import-review-card">
@@ -79,9 +86,20 @@ export default function ImportReviewCard({
         <Button variant="ghost" onClick={() => onReview?.(importRecord)}>
           Review
         </Button>
-        <Button onClick={() => onImport?.(importRecord)}>
-          Import All
-        </Button>
+        {canReset && (
+          <Button variant="ghost" onClick={() => onReset?.(importRecord)}>
+            Reset
+          </Button>
+        )}
+        {(canRetry || canReimport) ? (
+          <Button onClick={() => onRetry?.(importRecord)}>
+            {canRetry ? 'Retry Import' : 'Re-import'}
+          </Button>
+        ) : (
+          <Button onClick={() => onImport?.(importRecord)}>
+            Import All
+          </Button>
+        )}
       </div>
     </div>
   );

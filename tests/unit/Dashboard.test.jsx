@@ -95,14 +95,14 @@ describe('Dashboard', () => {
     it('displays all 3 action cards', () => {
       renderWithRouter(<Dashboard />);
       expect(screen.getByText('Create Theme')).toBeInTheDocument();
-      expect(screen.getByText('Import from Figma')).toBeInTheDocument();
+      expect(screen.getByText('Generate Component')).toBeInTheDocument();
       expect(screen.getByText('Manage Components')).toBeInTheDocument();
     });
 
     it('displays action card descriptions', () => {
       renderWithRouter(<Dashboard />);
       expect(screen.getByText('Start a new design theme from scratch')).toBeInTheDocument();
-      expect(screen.getByText('Sync components from your Figma files')).toBeInTheDocument();
+      expect(screen.getByText('Use AI to create a new component')).toBeInTheDocument();
       expect(screen.getByText('View and edit your component library')).toBeInTheDocument();
     });
   });
@@ -114,10 +114,10 @@ describe('Dashboard', () => {
       expect(createThemeCard).toHaveAttribute('href', '/themes');
     });
 
-    it('Import from Figma links to /figma-import', () => {
+    it('Generate Component links to /components/new?mode=ai', () => {
       renderWithRouter(<Dashboard />);
-      const importCard = screen.getByText('Import from Figma').closest('a');
-      expect(importCard).toHaveAttribute('href', '/figma-import');
+      const generateCard = screen.getByText('Generate Component').closest('a');
+      expect(generateCard).toHaveAttribute('href', '/components/new?mode=ai');
     });
 
     it('Manage Components links to /components', () => {

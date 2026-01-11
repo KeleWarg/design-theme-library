@@ -5,7 +5,7 @@
  * Includes design tokens, components, and usage guidelines.
  */
 
-import { tokenToCssValue } from '../../lib/cssVariableInjector.js';
+import { tokenToCssValue, isCompositeTypographyToken, expandCompositeTypographyToken } from '../../lib/cssVariableInjector.js';
 
 /**
  * Generate LLMS.txt content string from themes and components
@@ -97,12 +97,68 @@ Design tokens are the foundational design decisions of the system. Use CSS varia
     content += '\n';
   }
   
-  // Typography tokens
+  // Typography tokens - separate composite from simple tokens
   const typographyTokens = allTokens.filter(t => t.category === 'typography');
-  if (typographyTokens.length > 0) {
-    content += `#### Typography Scale\n\n`;
+  const compositeTypographyTokens = typographyTokens.filter(isCompositeTypographyToken);
+  const simpleTypographyTokens = typographyTokens.filter(t => !isCompositeTypographyToken(t));
+  
+  // Composite typography tokens (with full property details)
+  if (compositeTypographyTokens.length > 0) {
+    content += `#### Typography Scale (Composite)\n\n`;
+    content += 'These composite typography tokens bundle all typography properties together. Use the individual CSS variables to access each property:\n\n';
+    
+    for (const token of compositeTypographyTokens) {
+      const description = token.metadata?.description || token.description || '';
+      content += `##### ${token.name || token.css_variable}\n\n`;
+      
+      if (description) {
+        content += `${description}\n\n`;
+      }
+      
+      // Get the expanded CSS variables
+      const expandedVars = expandCompositeTypographyToken(token);
+      
+      content += `**CSS Variables:**\n`;
+      for (const [varName, value] of Object.entries(expandedVars)) {
+        content += `- \`${varName}\`: ${value}\n`;
+      }
+      
+      // Also show the structured value for LLM understanding
+      const { value } = token;
+      content += `\n**Properties:**\n`;
+      if (value.fontFamily) {
+        content += `- Font Family: ${value.fontFamily}\n`;
+      }
+      if (value.fontSize) {
+        const size = typeof value.fontSize === 'object' 
+          ? `${value.fontSize.value}${value.fontSize.unit || 'rem'}` 
+          : value.fontSize;
+        content += `- Font Size: ${size}\n`;
+      }
+      if (value.fontWeight !== undefined) {
+        content += `- Font Weight: ${value.fontWeight}\n`;
+      }
+      if (value.lineHeight !== undefined) {
+        const lh = typeof value.lineHeight === 'object' ? value.lineHeight.value : value.lineHeight;
+        content += `- Line Height: ${lh}\n`;
+      }
+      if (value.letterSpacing !== undefined) {
+        const ls = value.letterSpacing === 'normal' 
+          ? 'normal' 
+          : typeof value.letterSpacing === 'object'
+            ? `${value.letterSpacing.value}${value.letterSpacing.unit || 'em'}`
+            : value.letterSpacing;
+        content += `- Letter Spacing: ${ls}\n`;
+      }
+      content += '\n';
+    }
+  }
+  
+  // Simple typography tokens
+  if (simpleTypographyTokens.length > 0) {
+    content += `#### Typography Tokens\n\n`;
     content += 'Use these CSS variables for consistent typography:\n\n';
-    for (const token of typographyTokens) {
+    for (const token of simpleTypographyTokens) {
       const value = tokenToCssValue(token);
       const description = token.metadata?.description || token.description || '';
       content += `- \`${token.css_variable}\`: ${value}${description ? ` — ${description}` : ''}\n`;

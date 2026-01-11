@@ -7,7 +7,6 @@
 
 import { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
-import { useTypefaces } from '../../../hooks/useTypefaces';
 import { useThemeContext } from '../../../contexts/ThemeContext';
 import { typefaceService } from '../../../services/typefaceService';
 import TypefaceCard from './TypefaceCard';
@@ -17,9 +16,12 @@ import TypefaceForm from './TypefaceForm';
  * TypefaceManager component
  * @param {Object} props
  * @param {string} props.themeId - Theme UUID
+ * @param {Array} [props.typefaces] - Typefaces for the theme (preferred; pass from parent to keep UI in sync)
+ * @param {Function} [props.onRefresh] - Refetch callback for typefaces (preferred)
+ * @param {boolean} [props.isLoading] - Loading flag for typefaces (preferred)
+ * @param {Error|null} [props.error] - Error for typefaces (preferred)
  */
-export default function TypefaceManager({ themeId }) {
-  const { data: typefaces, isLoading, error, refetch } = useTypefaces(themeId);
+export default function TypefaceManager({ themeId, typefaces = [], onRefresh, isLoading = false, error = null }) {
   const { refreshTheme } = useThemeContext();
   const [editingTypeface, setEditingTypeface] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -31,7 +33,7 @@ export default function TypefaceManager({ themeId }) {
    * Refresh both local typeface list and theme fonts
    */
   const handleRefresh = async () => {
-    refetch();
+    await onRefresh?.();
     // Reload theme fonts so preview updates with new typeface
     await refreshTheme();
   };
@@ -53,7 +55,7 @@ export default function TypefaceManager({ themeId }) {
       <div className="typeface-manager">
         <div className="error-state">
           <p>Failed to load typefaces</p>
-          <button className="btn btn-secondary" onClick={refetch}>
+          <button className="btn btn-secondary" onClick={onRefresh}>
             Retry
           </button>
         </div>

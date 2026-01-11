@@ -22,6 +22,14 @@ function getColorValue(token) {
   const { value } = token;
   if (typeof value === 'string') return value;
   if (value?.hex) return value.hex;
+  // Fallback for legacy/mismatched shapes: rgb without hex
+  if (value?.rgb?.r !== undefined && value?.rgb?.g !== undefined && value?.rgb?.b !== undefined) {
+    const r = Math.max(0, Math.min(255, Math.round(value.rgb.r)));
+    const g = Math.max(0, Math.min(255, Math.round(value.rgb.g)));
+    const b = Math.max(0, Math.min(255, Math.round(value.rgb.b)));
+    const toHex = (n) => n.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
   return null;
 }
 

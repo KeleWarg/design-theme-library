@@ -7,7 +7,7 @@
 
 import { 
   Palette, 
-  Type, 
+  Type,
   Move, 
   Square, 
   Circle, 
@@ -17,7 +17,7 @@ import {
 
 const CATEGORY_CONFIG = {
   color: { icon: Palette, label: 'Colors' },
-  typography: { icon: Type, label: 'Typography' },
+  typography: { icon: Type, label: 'Typography (preview)' },
   spacing: { icon: Move, label: 'Spacing' },
   shadow: { icon: Square, label: 'Shadows' },
   radius: { icon: Circle, label: 'Radius' },
@@ -25,6 +25,8 @@ const CATEGORY_CONFIG = {
   other: { icon: Package, label: 'Other' }
 };
 
+// NOTE: Typography is editable only via the dedicated Typography page (/themes/:id/typography).
+// We still show a read-only "preview" category here for convenience.
 const CATEGORY_ORDER = ['color', 'typography', 'spacing', 'shadow', 'radius', 'grid', 'other'];
 
 /**

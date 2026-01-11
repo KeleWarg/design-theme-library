@@ -1,45 +1,97 @@
 /**
  * @chunk 2.27 - Preview Components
  * 
- * Card preview section showing card component variants.
+ * Card preview section showing card component variants using
+ * the theme's actual tokens.
  */
 
 import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 
 /**
+ * Extract color value from token
+ */
+function getColorValue(token) {
+  if (!token) return null;
+  const { value } = token;
+  if (typeof value === 'string') return value;
+  if (value?.hex) return value.hex;
+  return null;
+}
+
+/**
+ * Extract dimension value from token
+ */
+function getDimensionValue(token, defaultValue) {
+  if (!token) return defaultValue;
+  const { value } = token;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return `${value}px`;
+  if (value?.value !== undefined) return `${value.value}${value.unit || 'px'}`;
+  return defaultValue;
+}
+
+/**
  * Preview card variants with theme styles applied
  */
-export default function PreviewCard() {
+export default function PreviewCard({ theme }) {
+  const tokens = theme?.tokens || [];
+  
+  // Find tokens by css_variable
+  const findToken = (cssVar) => tokens.find(t => t.css_variable === cssVar);
+  
+  // Background colors
+  const bgWhite = getColorValue(findToken('--background-white')) || 'var(--background-white, transparent)';
+  const bgNeutralSubtle = getColorValue(findToken('--background-neutral-subtle')) || 'var(--background-neutral-subtle, var(--background-muted, transparent))';
+  const bgBrand = getColorValue(findToken('--background-brand')) || 
+                  getColorValue(findToken('--background-button')) || 'var(--background-brand, var(--background-button, transparent))';
+  
+  // Foreground colors
+  const fgHeading = getColorValue(findToken('--foreground-heading')) || 'var(--foreground-heading, var(--foreground-body, currentColor))';
+  const fgBody = getColorValue(findToken('--foreground-body')) || 'var(--foreground-body, currentColor)';
+  const fgCaption = getColorValue(findToken('--foreground-caption')) || 'var(--foreground-caption, var(--foreground-muted, currentColor))';
+  const fgStroke = getColorValue(findToken('--foreground-stroke-default')) || 
+                   getColorValue(findToken('--foreground-divider')) || 'var(--foreground-stroke-default, currentColor)';
+  
+  // Radius tokens
+  const radiusMd = getDimensionValue(findToken('--radius-md'), '6px');
+  const radiusLg = getDimensionValue(findToken('--radius-lg'), '8px');
+  const radiusXl = getDimensionValue(findToken('--radius-xl'), '12px');
+  
+  // Shadow tokens (use fallback if not defined)
+  const shadowSm = '0 1px 2px rgba(0,0,0,0.05)';
+  const shadowMd = '0 4px 6px rgba(0,0,0,0.1)';
+  const shadowLg = '0 10px 15px rgba(0,0,0,0.1)';
+
   return (
-    <div className="preview-cards-container">
+    <div className="preview-cards-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Basic card */}
       <div 
         className="preview-card"
         style={{
-          backgroundColor: 'var(--color-background, #ffffff)',
-          border: '1px solid var(--color-border, #e5e7eb)',
-          borderRadius: 'var(--radius-lg, 8px)',
-          boxShadow: 'var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05))',
-          padding: 'var(--spacing-md, 16px)',
+          backgroundColor: bgWhite,
+          border: `1px solid ${fgStroke}`,
+          borderRadius: radiusLg,
+          boxShadow: shadowSm,
+          padding: '16px',
         }}
       >
         <h4 
-          className="preview-card-title"
           style={{
-            fontSize: 'var(--font-size-lg, 18px)',
-            fontWeight: 'var(--font-weight-semibold, 600)',
-            color: 'var(--color-foreground, #1a1a1a)',
-            marginBottom: 'var(--spacing-xs, 4px)',
+            fontSize: '18px',
+            fontWeight: 600,
+            color: fgHeading,
+            marginBottom: '4px',
+            margin: 0,
           }}
         >
           Card Title
         </h4>
         <p 
-          className="preview-card-description"
           style={{
-            fontSize: 'var(--font-size-sm, 14px)',
-            color: 'var(--color-muted-foreground, #6b7280)',
-            lineHeight: 'var(--line-height-relaxed, 1.625)',
+            fontSize: '14px',
+            color: fgCaption,
+            lineHeight: 1.625,
+            margin: '8px 0 0 0',
           }}
         >
           This is a basic card component with title and description. It uses theme tokens for all styling.
@@ -50,18 +102,17 @@ export default function PreviewCard() {
       <div 
         className="preview-card preview-card-structured"
         style={{
-          backgroundColor: 'var(--color-background, #ffffff)',
-          border: '1px solid var(--color-border, #e5e7eb)',
-          borderRadius: 'var(--radius-lg, 8px)',
-          boxShadow: 'var(--shadow-md, 0 4px 6px rgba(0,0,0,0.1))',
+          backgroundColor: bgWhite,
+          border: `1px solid ${fgStroke}`,
+          borderRadius: radiusLg,
+          boxShadow: shadowMd,
           overflow: 'hidden',
         }}
       >
         <div 
-          className="preview-card-header"
           style={{
-            padding: 'var(--spacing-md, 16px)',
-            borderBottom: '1px solid var(--color-border, #e5e7eb)',
+            padding: '16px',
+            borderBottom: `1px solid ${fgStroke}`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -70,20 +121,15 @@ export default function PreviewCard() {
           <div>
             <h4 
               style={{
-                fontSize: 'var(--font-size-base, 16px)',
-                fontWeight: 'var(--font-weight-semibold, 600)',
-                color: 'var(--color-foreground, #1a1a1a)',
+                fontSize: '16px',
+                fontWeight: 600,
+                color: fgHeading,
                 margin: 0,
               }}
             >
               Structured Card
             </h4>
-            <span 
-              style={{
-                fontSize: 'var(--font-size-xs, 12px)',
-                color: 'var(--color-muted-foreground, #6b7280)',
-              }}
-            >
+            <span style={{ fontSize: '12px', color: fgCaption }}>
               With header and footer
             </span>
           </div>
@@ -91,26 +137,21 @@ export default function PreviewCard() {
             style={{
               background: 'transparent',
               border: 'none',
-              padding: 'var(--spacing-xs, 4px)',
-              borderRadius: 'var(--radius-sm, 4px)',
-              color: 'var(--color-muted-foreground, #6b7280)',
+              padding: '4px',
+              borderRadius: '4px',
+              color: fgCaption,
               cursor: 'pointer',
             }}
           >
             <MoreHorizontal size={18} />
           </button>
         </div>
-        <div 
-          className="preview-card-body"
-          style={{
-            padding: 'var(--spacing-md, 16px)',
-          }}
-        >
+        <div style={{ padding: '16px' }}>
           <p 
             style={{
-              fontSize: 'var(--font-size-sm, 14px)',
-              color: 'var(--color-foreground, #1a1a1a)',
-              lineHeight: 'var(--line-height-relaxed, 1.625)',
+              fontSize: '14px',
+              color: fgBody,
+              lineHeight: 1.625,
               margin: 0,
             }}
           >
@@ -118,25 +159,24 @@ export default function PreviewCard() {
           </p>
         </div>
         <div 
-          className="preview-card-footer"
           style={{
-            padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-            borderTop: '1px solid var(--color-border, #e5e7eb)',
-            backgroundColor: 'var(--color-muted, #f5f5f5)',
+            padding: '8px 16px',
+            borderTop: `1px solid ${fgStroke}`,
+            backgroundColor: bgNeutralSubtle,
             display: 'flex',
-            gap: 'var(--spacing-md, 16px)',
+            gap: '16px',
           }}
         >
           <button 
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'var(--spacing-xs, 4px)',
+              gap: '4px',
               background: 'transparent',
               border: 'none',
-              padding: 'var(--spacing-xs, 4px)',
-              color: 'var(--color-muted-foreground, #6b7280)',
-              fontSize: 'var(--font-size-sm, 14px)',
+              padding: '4px',
+              color: fgCaption,
+              fontSize: '14px',
               cursor: 'pointer',
             }}
           >
@@ -146,12 +186,12 @@ export default function PreviewCard() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'var(--spacing-xs, 4px)',
+              gap: '4px',
               background: 'transparent',
               border: 'none',
-              padding: 'var(--spacing-xs, 4px)',
-              color: 'var(--color-muted-foreground, #6b7280)',
-              fontSize: 'var(--font-size-sm, 14px)',
+              padding: '4px',
+              color: fgCaption,
+              fontSize: '14px',
               cursor: 'pointer',
             }}
           >
@@ -161,12 +201,12 @@ export default function PreviewCard() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'var(--spacing-xs, 4px)',
+              gap: '4px',
               background: 'transparent',
               border: 'none',
-              padding: 'var(--spacing-xs, 4px)',
-              color: 'var(--color-muted-foreground, #6b7280)',
-              fontSize: 'var(--font-size-sm, 14px)',
+              padding: '4px',
+              color: fgCaption,
+              fontSize: '14px',
               cursor: 'pointer',
             }}
           >
@@ -179,55 +219,56 @@ export default function PreviewCard() {
       <div 
         className="preview-card preview-card-elevated"
         style={{
-          backgroundColor: 'var(--color-background, #ffffff)',
-          borderRadius: 'var(--radius-xl, 12px)',
-          boxShadow: 'var(--shadow-lg, 0 10px 15px rgba(0,0,0,0.1))',
-          padding: 'var(--spacing-lg, 24px)',
+          backgroundColor: bgWhite,
+          borderRadius: radiusXl,
+          boxShadow: shadowLg,
+          padding: '24px',
         }}
       >
         <div 
           style={{
             width: '48px',
             height: '48px',
-            borderRadius: 'var(--radius-md, 6px)',
-            backgroundColor: 'var(--color-primary, #3b82f6)',
+            borderRadius: radiusMd,
+            backgroundColor: bgBrand,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 'var(--spacing-md, 16px)',
+            marginBottom: '16px',
           }}
         >
-          <span style={{ color: '#fff', fontSize: '24px' }}>✨</span>
+          <span style={{ color: 'var(--foreground-on-brand, var(--foreground-body-inverse, currentColor))', fontSize: '24px' }}>✨</span>
         </div>
         <h4 
           style={{
-            fontSize: 'var(--font-size-lg, 18px)',
-            fontWeight: 'var(--font-weight-semibold, 600)',
-            color: 'var(--color-foreground, #1a1a1a)',
-            marginBottom: 'var(--spacing-xs, 4px)',
+            fontSize: '18px',
+            fontWeight: 600,
+            color: fgHeading,
+            marginBottom: '4px',
+            margin: 0,
           }}
         >
           Elevated Card
         </h4>
         <p 
           style={{
-            fontSize: 'var(--font-size-sm, 14px)',
-            color: 'var(--color-muted-foreground, #6b7280)',
-            lineHeight: 'var(--line-height-relaxed, 1.625)',
-            marginBottom: 'var(--spacing-md, 16px)',
+            fontSize: '14px',
+            color: fgCaption,
+            lineHeight: 1.625,
+            margin: '8px 0 16px 0',
           }}
         >
           A card with prominent shadow for emphasis.
         </p>
         <button
           style={{
-            backgroundColor: 'var(--color-primary, #3b82f6)',
-            color: 'var(--color-primary-foreground, #ffffff)',
+            backgroundColor: bgBrand,
+            color: 'var(--foreground-on-brand, var(--foreground-body-inverse, currentColor))',
             border: 'none',
-            borderRadius: 'var(--radius-md, 6px)',
-            padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-            fontWeight: 'var(--font-weight-medium, 500)',
-            fontSize: 'var(--font-size-sm, 14px)',
+            borderRadius: radiusMd,
+            padding: '8px 16px',
+            fontWeight: 500,
+            fontSize: '14px',
             cursor: 'pointer',
           }}
         >
@@ -237,4 +278,3 @@ export default function PreviewCard() {
     </div>
   );
 }
-

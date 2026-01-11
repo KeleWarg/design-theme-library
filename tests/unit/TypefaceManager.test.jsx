@@ -7,6 +7,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
+const mockRefreshTheme = vi.fn().mockResolvedValue(undefined);
+
 // Mock Supabase client before importing services
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
@@ -28,10 +30,21 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
+// Mock useTypefaces hook (TypefaceManager now uses this for loading data)
+vi.mock('../../src/hooks/useTypefaces', () => ({
+  useTypefaces: vi.fn(),
+}));
+
+// Mock ThemeContext (TypefaceManager expects refreshTheme from context)
+vi.mock('../../src/contexts/ThemeContext', () => ({
+  useThemeContext: () => ({
+    refreshTheme: mockRefreshTheme,
+  }),
+}));
+
 // Mock the typefaceService
 vi.mock('../../src/services/typefaceService', () => ({
   typefaceService: {
-    getTypefacesByTheme: vi.fn(),
     getTypeface: vi.fn(),
     createTypeface: vi.fn(),
     updateTypeface: vi.fn(),
@@ -51,6 +64,7 @@ vi.mock('sonner', () => ({
 import TypefaceManager from '../../src/components/themes/typography/TypefaceManager';
 import TypefaceCard from '../../src/components/themes/typography/TypefaceCard';
 import { typefaceService } from '../../src/services/typefaceService';
+import { useTypefaces } from '../../src/hooks/useTypefaces';
 
 describe('TypefaceCard', () => {
   const mockTypeface = {
@@ -222,8 +236,13 @@ describe('TypefaceManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    typefaceService.getTypefacesByTheme.mockResolvedValue(mockTypefaces);
     typefaceService.deleteTypeface.mockResolvedValue(true);
+    useTypefaces.mockReturnValue({
+      data: mockTypefaces,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
   });
 
   it('shows all 4 role slots', async () => {
@@ -320,7 +339,12 @@ describe('TypefaceManager', () => {
   });
 
   it('shows loading state', () => {
-    typefaceService.getTypefacesByTheme.mockImplementation(() => new Promise(() => {}));
+    useTypefaces.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
     
     render(<TypefaceManager themeId="theme-1" />);
 
@@ -328,7 +352,13 @@ describe('TypefaceManager', () => {
   });
 
   it('shows error state with retry button', async () => {
-    typefaceService.getTypefacesByTheme.mockRejectedValue(new Error('Failed to load'));
+    const refetch = vi.fn();
+    useTypefaces.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Failed to load'),
+      refetch,
+    });
     
     render(<TypefaceManager themeId="theme-1" />);
 
@@ -336,6 +366,9 @@ describe('TypefaceManager', () => {
       expect(screen.getByText('Failed to load typefaces')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Retry/ })).toBeInTheDocument();
     });
+
+    fireEvent.click(screen.getByRole('button', { name: /Retry/ }));
+    expect(refetch).toHaveBeenCalled();
   });
 
   it('Add Typeface button is disabled when all 4 roles are assigned', async () => {
@@ -344,7 +377,12 @@ describe('TypefaceManager', () => {
       { id: 'tf-3', role: 'mono', family: 'JetBrains Mono', fallback: 'monospace', source_type: 'google', weights: [400], is_variable: false, font_files: [] },
       { id: 'tf-4', role: 'accent', family: 'Dancing Script', fallback: 'cursive', source_type: 'google', weights: [400, 700], is_variable: false, font_files: [] }
     ];
-    typefaceService.getTypefacesByTheme.mockResolvedValue(allAssigned);
+    useTypefaces.mockReturnValue({
+      data: allAssigned,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
 
     render(<TypefaceManager themeId="theme-1" />);
 

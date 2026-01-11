@@ -11,6 +11,23 @@ import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
 
 /**
+ * Type scale presets - combined size/weight/line-height/letter-spacing
+ */
+const TYPE_SCALE_PRESETS = [
+  { label: 'Display', size: '3rem', weight: 700, lineHeight: '1.1', letterSpacing: '-0.02em' },
+  { label: 'Heading XL', size: '2.25rem', weight: 700, lineHeight: '1.2', letterSpacing: '-0.01em' },
+  { label: 'Heading LG', size: '1.875rem', weight: 600, lineHeight: '1.25', letterSpacing: '-0.01em' },
+  { label: 'Heading MD', size: '1.5rem', weight: 600, lineHeight: '1.3', letterSpacing: 'normal' },
+  { label: 'Heading SM', size: '1.25rem', weight: 600, lineHeight: '1.4', letterSpacing: 'normal' },
+  { label: 'Body Large', size: '1.125rem', weight: 400, lineHeight: '1.6', letterSpacing: 'normal' },
+  { label: 'Body', size: '1rem', weight: 400, lineHeight: '1.5', letterSpacing: 'normal' },
+  { label: 'Body Small', size: '0.875rem', weight: 400, lineHeight: '1.5', letterSpacing: 'normal' },
+  { label: 'Label', size: '0.875rem', weight: 500, lineHeight: '1.4', letterSpacing: '0.01em' },
+  { label: 'Caption', size: '0.75rem', weight: 400, lineHeight: '1.4', letterSpacing: '0.02em' },
+  { label: 'Code', size: '0.875rem', weight: 400, lineHeight: '1.6', letterSpacing: 'normal' },
+];
+
+/**
  * Available font weights
  */
 const FONT_WEIGHTS = [
@@ -40,13 +57,15 @@ const TYPEFACE_ROLES = [
  * @param {Object} props
  * @param {Object} props.role - Typography role to edit
  * @param {Array} props.typefaces - Available typefaces
+ * @param {string} [props.defaultTypefaceRole] - Suggested default if role.typeface_role is missing
  * @param {Function} props.onClose - Close modal callback
  * @param {Function} props.onSave - Save role callback
+ * @param {Function} [props.onDelete] - Delete role callback (only for existing roles)
  */
-export default function TypographyRoleModal({ role, typefaces, onClose, onSave }) {
+export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRole, onClose, onSave, onDelete }) {
   const [formData, setFormData] = useState({
     role_name: role.role_name || '',
-    typeface_role: role.typeface_role || 'text',
+    typeface_role: role.typeface_role || defaultTypefaceRole || 'text',
     font_size: role.font_size || '1rem',
     font_weight: role.font_weight || 400,
     line_height: role.line_height || '1.5',
@@ -82,12 +101,46 @@ export default function TypographyRoleModal({ role, typefaces, onClose, onSave }
   };
 
   /**
+   * Find matching preset for current values
+   */
+  const getCurrentPreset = () => {
+    return TYPE_SCALE_PRESETS.find(
+      p => p.size === formData.font_size && p.weight === parseInt(formData.font_weight, 10)
+    )?.label || '';
+  };
+
+  /**
+   * Apply preset values
+   */
+  const handlePresetChange = (presetLabel) => {
+    const preset = TYPE_SCALE_PRESETS.find(p => p.label === presetLabel);
+    if (preset) {
+      setFormData(prev => ({
+        ...prev,
+        font_size: preset.size,
+        font_weight: preset.weight,
+        line_height: preset.lineHeight,
+        letter_spacing: preset.letterSpacing,
+      }));
+    }
+    setError(null);
+  };
+
+  /**
    * Handle form submission
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validation
+    if (!formData.role_name?.trim()) {
+      setError('Role name is required');
+      return;
+    }
+    if (!/^[a-z][a-z0-9-]*$/.test(formData.role_name.trim())) {
+      setError('Role name must be lowercase and use dashes only (e.g., body-md, heading-xl)');
+      return;
+    }
     if (!formData.font_size) {
       setError('Font size is required');
       return;
@@ -120,9 +173,25 @@ export default function TypographyRoleModal({ role, typefaces, onClose, onSave }
     <Modal 
       open={true} 
       onClose={onClose}
-      title={`Edit "${formData.role_name}" Role`}
+      title={`${role?.id ? 'Edit' : 'Create'} "${formData.role_name || 'new-role'}" Role`}
     >
       <form onSubmit={handleSubmit} className="typography-role-form">
+        {/* Role Name */}
+        <div className="form-group">
+          <label htmlFor="role_name">Role name</label>
+          <input
+            id="role_name"
+            type="text"
+            value={formData.role_name}
+            onChange={(e) => handleChange('role_name', e.target.value)}
+            placeholder="e.g., body-md, hero, button-sm"
+            disabled={isSaving}
+          />
+          <p className="form-hint">
+            Lowercase with dashes. This becomes the token: <code>--typography-&lt;role&gt;</code>
+          </p>
+        </div>
+
         {/* Live Preview */}
         <div className="typography-role-preview-section">
           <label className="form-label">Preview</label>
@@ -162,6 +231,31 @@ export default function TypographyRoleModal({ role, typefaces, onClose, onSave }
               Using {currentTypeface.family} from {currentTypeface.source_type || 'custom'} fonts
             </p>
           )}
+          {!currentTypeface && (
+            <p className="form-hint">
+              No typeface configured for this role yet. Add it in <strong>Typefaces</strong> above to enable accurate previews.
+            </p>
+          )}
+        </div>
+
+        {/* Type Scale Preset */}
+        <div className="form-group">
+          <label htmlFor="preset">Type Scale Preset</label>
+          <select
+            id="preset"
+            value={getCurrentPreset()}
+            onChange={(e) => handlePresetChange(e.target.value)}
+          >
+            <option value="">Custom...</option>
+            {TYPE_SCALE_PRESETS.map(preset => (
+              <option key={preset.label} value={preset.label}>
+                {preset.label} — {preset.size} / {preset.weight}
+              </option>
+            ))}
+          </select>
+          <p className="form-hint">
+            Select a preset to set size, weight, and line height together
+          </p>
         </div>
 
         {/* Font Size */}
@@ -236,6 +330,24 @@ export default function TypographyRoleModal({ role, typefaces, onClose, onSave }
 
         {/* Actions */}
         <div className="modal-footer">
+          {role?.id && onDelete && (
+            <Button
+              type="button"
+              variant="danger"
+              onClick={async () => {
+                if (!window.confirm(`Delete "${role.role_name}" role? This will remove its generated token too.`)) return;
+                try {
+                  setIsSaving(true);
+                  await onDelete(role);
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              disabled={isSaving}
+            >
+              Delete Role
+            </Button>
+          )}
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

@@ -55,6 +55,23 @@ describe('TypographyEditor', () => {
       expect(valueInput.value).toBe('18');
     });
 
+    it('loads font-family string values without coercing to px', () => {
+      const fontFamilyToken = {
+        ...mockToken,
+        name: 'font-family-body',
+        path: 'typography/font-family/body',
+        css_variable: '--font-family-body',
+        value: 'Inter, sans-serif'
+      };
+
+      render(<TypographyEditor token={fontFamilyToken} onUpdate={mockOnUpdate} />);
+
+      // Font-family tokens hide the numeric input and show the selected family
+      expect(screen.queryByLabelText('Value')).not.toBeInTheDocument();
+      const previewLabel = screen.getByText(/Inter, sans-serif/);
+      expect(previewLabel).toBeInTheDocument();
+    });
+
     it('loads token with number value format', () => {
       const tokenWithNumberValue = {
         ...mockToken,

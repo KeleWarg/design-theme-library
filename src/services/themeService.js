@@ -45,7 +45,7 @@ export const themeService = {
     const tokenPromises = themeIds.map(async (themeId) => {
       const { data, error } = await supabase
         .from('tokens')
-        .select('id, theme_id, name, category, value')
+        .select('id, theme_id, name, path, category, value, css_variable')
         .eq('theme_id', themeId)
         .eq('category', 'color')
         .limit(5);

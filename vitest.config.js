@@ -4,6 +4,9 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  // Load env vars for tests from a committed, sandbox-readable location.
+  // This avoids Vitest/Vite trying to read the developer’s ignored `.env.local`.
+  envDir: './tests/env',
   test: {
     environment: 'jsdom',
     globals: true,

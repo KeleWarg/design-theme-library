@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Settings, Edit3, Check, X, Save, RotateCcw } from 'lucide-react';
 import ColorEditor from './ColorEditor';
-import TypographyEditor from './TypographyEditor';
+import CompositeTypographyEditor from './CompositeTypographyEditor';
 import SpacingEditor from './SpacingEditor';
 import ShadowEditor from './ShadowEditor';
 import RadiusEditor from './RadiusEditor';
@@ -104,8 +104,16 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate, o
     return { ...token, ...pendingChanges };
   }, [token, pendingChanges]);
 
+  // Role-derived composite tokens are generated from Typography Scale and should be read-only here.
+  const isReadOnlyToken =
+    category === 'typography' &&
+    token?.type === 'typography-composite' &&
+    typeof token?.path === 'string' &&
+    token.path.startsWith('typography/role/');
+
   // Start editing the name
   const handleStartEditName = () => {
+    if (isReadOnlyToken) return;
     setEditedName(token.name || '');
     setIsEditingName(true);
   };
@@ -148,13 +156,103 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate, o
   // Get the display token with pending changes merged
   const displayToken = getDisplayToken();
 
+  const isGeneratedTypographyRoleToken =
+    category === 'typography' &&
+    displayToken?.type === 'typography-composite' &&
+    typeof displayToken?.path === 'string' &&
+    displayToken.path.startsWith('typography/role/');
+
   // Render category-specific editor - uses handleLocalChange for pending changes
   const renderEditor = () => {
     switch (category) {
       case 'color':
         return <ColorEditor token={displayToken} onUpdate={handleLocalChange} />;
       case 'typography':
-        return <TypographyEditor token={displayToken} themeId={themeId} onUpdate={handleLocalChange} />;
+        // Role-derived composite tokens are generated from Typography Scale (typography_roles).
+        // Treat them as read-only in the token editor to prevent drift/confusion.
+        if (isGeneratedTypographyRoleToken) {
+          const roleName = displayToken.path.split('/').pop();
+          const composite = displayToken.value || {};
+          return (
+            <div className="token-editor-content">
+              <div className="token-editor-placeholder-notice">
+                <p style={{ margin: 0 }}>
+                  This is a <strong>generated</strong> composite typography token sourced from <strong>Typography Scale</strong>.
+                  Edit it on the Typography page and it will sync back here automatically.
+                </p>
+              </div>
+
+              <div className="token-editor-field">
+                <label className="token-editor-label">Role</label>
+                <input
+                  type="text"
+                  className="token-editor-input"
+                  value={roleName || ''}
+                  disabled
+                  readOnly
+                />
+              </div>
+
+              <div className="token-editor-field">
+                <label className="token-editor-label">Font Family</label>
+                <input
+                  type="text"
+                  className="token-editor-input"
+                  value={composite.fontFamily || ''}
+                  disabled
+                  readOnly
+                />
+              </div>
+
+              <div className="token-editor-field">
+                <label className="token-editor-label">Font Size</label>
+                <input
+                  type="text"
+                  className="token-editor-input"
+                  value={typeof composite.fontSize === 'string' ? composite.fontSize : JSON.stringify(composite.fontSize ?? '')}
+                  disabled
+                  readOnly
+                />
+              </div>
+
+              <div className="token-editor-field">
+                <label className="token-editor-label">Font Weight</label>
+                <input
+                  type="text"
+                  className="token-editor-input"
+                  value={composite.fontWeight ?? ''}
+                  disabled
+                  readOnly
+                />
+              </div>
+
+              <div className="token-editor-field">
+                <label className="token-editor-label">Line Height</label>
+                <input
+                  type="text"
+                  className="token-editor-input"
+                  value={composite.lineHeight ?? ''}
+                  disabled
+                  readOnly
+                />
+              </div>
+
+              <div className="token-editor-field">
+                <label className="token-editor-label">Letter Spacing</label>
+                <input
+                  type="text"
+                  className="token-editor-input"
+                  value={typeof composite.letterSpacing === 'string' ? composite.letterSpacing : JSON.stringify(composite.letterSpacing ?? '')}
+                  disabled
+                  readOnly
+                />
+              </div>
+            </div>
+          );
+        }
+
+        // For non-generated typography tokens, use the composite editor (it can convert legacy simple tokens).
+        return <CompositeTypographyEditor token={displayToken} themeId={themeId} onUpdate={handleLocalChange} />;
       case 'spacing':
         return <SpacingEditor token={displayToken} onUpdate={handleLocalChange} />;
       case 'shadow':
@@ -248,7 +346,11 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate, o
         >
           <X size={18} />
         </button>
-        {isEditingName ? (
+        {isReadOnlyToken ? (
+          <div className="token-name-display-row">
+            <h3 className="token-editor-title">{displayToken.name}</h3>
+          </div>
+        ) : isEditingName ? (
           <div className="token-name-edit-row">
             <input
               type="text"
@@ -291,7 +393,7 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate, o
       {renderEditor()}
       
       {/* Save/Cancel buttons - shown when there are pending changes */}
-      {hasChanges && (
+      {hasChanges && !isReadOnlyToken && (
         <div className="token-editor-actions">
           <div className="token-editor-actions-hint">
             You have unsaved changes

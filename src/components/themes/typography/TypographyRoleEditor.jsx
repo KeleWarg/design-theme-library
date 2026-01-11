@@ -5,16 +5,16 @@
  * Manages the 11 standard typography roles mapped to typeface roles.
  */
 
-import { useState } from 'react';
-import { RotateCcw, Loader2, AlertCircle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Plus, RotateCcw, Loader2, AlertCircle } from 'lucide-react';
 import { useTypographyRoles } from '../../../hooks/useTypographyRoles';
+import { useThemeContext } from '../../../contexts/ThemeContext';
 import { typefaceService } from '../../../services/typefaceService';
 import TypographyRoleModal from './TypographyRoleModal';
 import Button from '../../ui/Button';
 
 /**
- * Standard typography role definitions
- * Each role maps to a typeface role (display, text, mono)
+ * Standard typography role definitions (used for defaults + descriptions)
  */
 const ROLE_DEFINITIONS = [
   { name: 'display', typefaceRole: 'display', defaultSize: '3rem', defaultWeight: 700, description: 'Hero headlines' },
@@ -56,8 +56,27 @@ function getWeightLabel(weight) {
  */
 export default function TypographyRoleEditor({ themeId, typefaces }) {
   const { data: roles, isLoading, error, refetch } = useTypographyRoles(themeId);
+  const { refreshTheme } = useThemeContext();
   const [editingRole, setEditingRole] = useState(null);
   const [isResetting, setIsResetting] = useState(false);
+
+  const standardRoleMap = useMemo(() => {
+    return ROLE_DEFINITIONS.reduce((acc, def) => {
+      acc[def.name] = def;
+      return acc;
+    }, {});
+  }, []);
+
+  const sortedRoles = useMemo(() => {
+    const roleList = roles || [];
+    const orderIndex = new Map(ROLE_DEFINITIONS.map((d, i) => [d.name, i]));
+    return [...roleList].sort((a, b) => {
+      const ai = orderIndex.has(a.role_name) ? orderIndex.get(a.role_name) : 999;
+      const bi = orderIndex.has(b.role_name) ? orderIndex.get(b.role_name) : 999;
+      if (ai !== bi) return ai - bi;
+      return String(a.role_name).localeCompare(String(b.role_name));
+    });
+  }, [roles]);
 
   /**
    * Get typeface by role (display, text, mono, accent)
@@ -71,13 +90,28 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
    */
   const handleSave = async (roleData) => {
     try {
-      await typefaceService.upsertTypographyRole(themeId, roleData);
+      // If editing an existing role, update by id (supports renaming role_name safely).
+      if (editingRole?.id) {
+        await typefaceService.updateTypographyRole(editingRole.id, roleData);
+      } else {
+        await typefaceService.createTypographyRole(themeId, roleData);
+      }
       refetch();
+      // Ensure ThemeContext + CSS variables pick up the newly synced composite tokens
+      await refreshTheme();
       setEditingRole(null);
     } catch (err) {
       console.error('Failed to save typography role:', err);
       throw err;
     }
+  };
+
+  const handleDelete = async (role) => {
+    if (!role?.id) return;
+    await typefaceService.deleteTypographyRole(role.id);
+    refetch();
+    await refreshTheme();
+    setEditingRole(null);
   };
 
   /**
@@ -97,6 +131,7 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
       // Create default roles
       await typefaceService.createDefaultTypographyRoles(themeId);
       refetch();
+      await refreshTheme();
     } catch (err) {
       console.error('Failed to reset typography roles:', err);
       alert('Failed to reset typography roles. Please try again.');
@@ -113,6 +148,7 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
     try {
       await typefaceService.createDefaultTypographyRoles(themeId);
       refetch();
+      await refreshTheme();
     } catch (err) {
       console.error('Failed to initialize typography roles:', err);
       alert('Failed to initialize typography roles. Please try again.');
@@ -141,22 +177,41 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
         <div>
           <h3 className="section-title">Typography Scale</h3>
           <p className="section-description">
-            Define semantic typography styles for consistent text hierarchy.
+            Define semantic typography roles. These generate the composite typography tokens for this theme.
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={roles?.length ? handleResetToDefaults : handleInitialize}
-          disabled={isResetting || isLoading}
-        >
-          {isResetting ? (
-            <Loader2 size={16} className="spin" />
-          ) : (
-            <RotateCcw size={16} />
-          )}
-          {roles?.length ? 'Reset to Defaults' : 'Initialize Defaults'}
-        </Button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => setEditingRole({
+              role_name: '',
+              typeface_role: 'text',
+              font_size: '1rem',
+              font_weight: 400,
+              line_height: '1.5',
+              letter_spacing: 'normal',
+            })}
+            disabled={isResetting || isLoading}
+          >
+            <Plus size={16} />
+            Add Role
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={roles?.length ? handleResetToDefaults : handleInitialize}
+            disabled={isResetting || isLoading}
+          >
+            {isResetting ? (
+              <Loader2 size={16} className="spin" />
+            ) : (
+              <RotateCcw size={16} />
+            )}
+            {roles?.length ? 'Reset to Defaults' : 'Initialize Defaults'}
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -174,23 +229,16 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
         </div>
       ) : (
         <div className="typography-role-list">
-          {ROLE_DEFINITIONS.map(def => {
-            const role = roles?.find(r => r.role_name === def.name);
-            const typeface = getTypeface(role?.typeface_role || def.typefaceRole);
-            
+          {sortedRoles.map(role => {
+            const def = standardRoleMap[role.role_name];
+            const typeface = getTypeface(role.typeface_role || def?.typefaceRole || 'text');
             return (
               <TypographyRoleRow
-                key={def.name}
+                key={role.id}
                 definition={def}
                 role={role}
                 typeface={typeface}
-                onEdit={() => setEditingRole(role || {
-                  role_name: def.name,
-                  typeface_role: def.typefaceRole,
-                  font_size: def.defaultSize,
-                  font_weight: def.defaultWeight,
-                  line_height: '1.5'
-                })}
+                onEdit={() => setEditingRole(role)}
               />
             );
           })}
@@ -201,8 +249,10 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
         <TypographyRoleModal
           role={editingRole}
           typefaces={typefaces}
+          defaultTypefaceRole={standardRoleMap[editingRole.role_name]?.typefaceRole}
           onClose={() => setEditingRole(null)}
           onSave={handleSave}
+          onDelete={handleDelete}
         />
       )}
     </div>
@@ -213,8 +263,8 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
  * Individual typography role row
  */
 function TypographyRoleRow({ definition, role, typeface, onEdit }) {
-  const fontSize = role?.font_size || definition.defaultSize;
-  const fontWeight = role?.font_weight || definition.defaultWeight;
+  const fontSize = role?.font_size || definition?.defaultSize || '1rem';
+  const fontWeight = role?.font_weight || definition?.defaultWeight || 400;
   const lineHeight = role?.line_height || '1.5';
   const letterSpacing = role?.letter_spacing || 'normal';
   
@@ -226,8 +276,11 @@ function TypographyRoleRow({ definition, role, typeface, onEdit }) {
   return (
     <div className="typography-role-row" onClick={onEdit} role="button" tabIndex={0}>
       <div className="typography-role-info">
-        <span className="typography-role-name">{definition.name}</span>
-        <span className="typography-role-desc">{definition.description}</span>
+        <span className="typography-role-name">
+          {role.role_name}
+          {!definition && <span className="typography-role-custom-tag">Custom</span>}
+        </span>
+        <span className="typography-role-desc">{definition?.description || 'Custom role'}</span>
       </div>
       
       <div 

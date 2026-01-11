@@ -70,6 +70,36 @@ export default function ComponentCard({ component, onRefresh }) {
     }
   };
 
+  const handleUnarchive = async (e) => {
+    e.stopPropagation();
+    setIsProcessing(true);
+    try {
+      await componentService.unarchiveComponent(component.id);
+      onRefresh?.();
+      toast.success('Component unarchived');
+    } catch (error) {
+      console.error('Failed to unarchive component:', error);
+      toast.error('Failed to unarchive component');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUnpublish = async (e) => {
+    e.stopPropagation();
+    setIsProcessing(true);
+    try {
+      await componentService.unpublishComponent(component.id);
+      onRefresh?.();
+      toast.success('Component unpublished');
+    } catch (error) {
+      console.error('Failed to unpublish component:', error);
+      toast.error('Failed to unpublish component');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleDelete = async (e) => {
     e.stopPropagation();
     if (!confirm(`Delete "${component.name}"? This cannot be undone.`)) return;
@@ -153,7 +183,6 @@ export default function ComponentCard({ component, onRefresh }) {
           trigger={
             <button 
               className="component-card-actions-trigger" 
-              onClick={(e) => e.stopPropagation()}
               aria-label="Component actions"
             >
               <MoreVertical size={16} />
@@ -174,10 +203,22 @@ export default function ComponentCard({ component, onRefresh }) {
               Publish
             </DropdownMenu.Item>
           )}
+          {component.status === 'published' && (
+            <DropdownMenu.Item onClick={handleUnpublish} disabled={isProcessing}>
+              <Send size={14} />
+              Unpublish
+            </DropdownMenu.Item>
+          )}
           {component.status !== 'archived' && (
             <DropdownMenu.Item onClick={handleArchive} disabled={isProcessing}>
               <Archive size={14} />
               Archive
+            </DropdownMenu.Item>
+          )}
+          {component.status === 'archived' && (
+            <DropdownMenu.Item onClick={handleUnarchive} disabled={isProcessing}>
+              <Archive size={14} />
+              Unarchive
             </DropdownMenu.Item>
           )}
           <DropdownMenu.Separator />

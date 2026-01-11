@@ -301,6 +301,15 @@ export const componentService = {
   },
 
   /**
+   * Unpublish component (shorthand for updateComponentStatus to draft)
+   * @param {string} id - Component UUID
+   * @returns {Promise<Object>} - Updated component
+   */
+  async unpublishComponent(id) {
+    return this.updateComponentStatus(id, 'draft');
+  },
+
+  /**
    * Archive component (shorthand for updateComponentStatus)
    * @param {string} id - Component UUID
    * @returns {Promise<Object>} - Updated component

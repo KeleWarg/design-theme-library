@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { typographyTokenService } from './typographyTokenService';
 
 /**
  * Get file format from file name
@@ -31,6 +32,10 @@ function getMimeType(format) {
   };
   return mimes[format] || 'application/octet-stream';
 }
+
+// NOTE: We intentionally do NOT create standalone "font family tokens".
+// Typeface selection is stored in `typefaces`, and typography role composite tokens
+// embed the resolved font stack via typographyTokenService.
 
 export const typefaceService = {
   /**
@@ -122,6 +127,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Typeface affects composite typography tokens (fontFamily); resync
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after createTypeface:', syncErr);
+    }
+    
     return typeface;
   },
 
@@ -143,6 +156,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Typeface affects composite typography tokens (fontFamily); resync
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(data.theme_id);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after updateTypeface:', syncErr);
+    }
+    
     return data;
   },
 
@@ -168,6 +189,14 @@ export const typefaceService = {
       .eq('id', id);
     
     if (error) throw error;
+
+    // Typeface removal affects composite typography tokens (fontFamily); resync
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(typeface?.theme_id);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after deleteTypeface:', syncErr);
+    }
+
     return true;
   },
 
@@ -216,6 +245,27 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep typeface.weights in sync with actual uploaded font file weights.
+    // This improves TypographyRoleModal weight filtering and avoids "fixed" weight UX.
+    try {
+      const currentWeights = Array.isArray(typeface?.weights) ? typeface.weights : [];
+      const nextWeights = Array.from(new Set([...currentWeights, weight])).sort((a, b) => a - b);
+      const didChange =
+        currentWeights.length !== nextWeights.length ||
+        currentWeights.some((w, i) => w !== nextWeights[i]);
+
+      if (didChange) {
+        await supabase
+          .from('typefaces')
+          .update({ weights: nextWeights })
+          .eq('id', typefaceId);
+      }
+    } catch (weightsErr) {
+      // Non-fatal: upload succeeded, but weights may be stale until next edit.
+      console.error('Failed to sync typeface weights after uploadFontFile:', weightsErr);
+    }
+
     return data;
   },
 
@@ -341,6 +391,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Ensure generated composite typography tokens exist for this theme (incl. custom roles)
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after createTypographyRole:', syncErr);
+    }
+
     return data;
   },
 
@@ -359,6 +417,15 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync with role changes
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(data.theme_id);
+    } catch (syncErr) {
+      // Non-fatal for the role update; log for visibility
+      console.error('Failed to sync composite typography tokens after updateTypographyRole:', syncErr);
+    }
+
     return data;
   },
 
@@ -379,6 +446,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync with role changes
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after updateTypographyRoleByName:', syncErr);
+    }
+
     return data;
   },
 
@@ -388,12 +463,29 @@ export const typefaceService = {
    * @returns {Promise<boolean>} - True if successful
    */
   async deleteTypographyRole(id) {
+    // Fetch role first so we can sync tokens for its theme after deletion
+    const { data: role, error: fetchError } = await supabase
+      .from('typography_roles')
+      .select('id, theme_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
     const { error } = await supabase
       .from('typography_roles')
       .delete()
       .eq('id', id);
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync after deletion
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(role.theme_id);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after deleteTypographyRole:', syncErr);
+    }
+
     return true;
   },
 
@@ -416,6 +508,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync with role changes
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after upsertTypographyRole:', syncErr);
+    }
+
     return data;
   },
 
@@ -448,6 +548,14 @@ export const typefaceService = {
       .select();
     
     if (error) throw error;
+
+    // After creating defaults, ensure composite typography tokens exist and are wired up
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after createDefaultTypographyRoles:', syncErr);
+    }
+
     return data;
   },
 

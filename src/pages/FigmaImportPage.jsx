@@ -115,6 +115,10 @@ export default function FigmaImportPage() {
               slug: comp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
               description: comp.description || `Imported from Figma: ${comp.figma_id}`,
               category: comp.category || 'other',
+              code: comp.code || '',
+              props: comp.props || comp.properties || [],
+              variants: comp.variants || [],
+              linked_tokens: comp.linked_tokens || [],
               figma_id: comp.figma_id,
               figma_structure: comp.structure,
               status: 'draft'
@@ -181,6 +185,10 @@ export default function FigmaImportPage() {
               slug: comp.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
               description: comp.description || `Imported from Figma: ${comp.figma_id}`,
               category: comp.category || 'other',
+              code: comp.code || '',
+              props: comp.props || comp.properties || [],
+              variants: comp.variants || [],
+              linked_tokens: comp.linked_tokens || [],
               figma_id: comp.figma_id,
               figma_structure: comp.structure,
               status: 'draft'
@@ -225,6 +233,25 @@ export default function FigmaImportPage() {
     } catch (error) {
       toast.error('Failed to import components: ' + (error.message || 'Unknown error'));
       console.error('Import error:', error);
+    }
+  };
+
+  const handleResetImport = async (importRecord) => {
+    try {
+      await supabase
+        .from('figma_imports')
+        .update({
+          status: 'pending',
+          imported_count: 0,
+          failed_count: 0,
+        })
+        .eq('id', importRecord.id);
+
+      toast.success('Import reset to pending');
+      refetch();
+    } catch (error) {
+      console.error('Failed to reset import:', error);
+      toast.error('Failed to reset import');
     }
   };
 
@@ -311,6 +338,8 @@ export default function FigmaImportPage() {
                 import={importRecord}
                 onReview={handleReview}
                 onImport={handleImportAll}
+                onRetry={handleImportAll}
+                onReset={handleResetImport}
               />
             ))}
           </div>

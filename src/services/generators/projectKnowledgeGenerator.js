@@ -348,3 +348,5 @@ function generateComponentExample(component) {
   return `<${componentName}${propsStr}>${children}${closing}`;
 }
 
+
+
