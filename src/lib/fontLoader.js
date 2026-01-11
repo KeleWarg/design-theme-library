@@ -191,7 +191,12 @@ export async function loadGoogleFont(family, weights = [400]) {
   
   // Check if already loaded
   const existing = document.querySelector(`link[href^="https://fonts.googleapis.com"][href*="${encodeURIComponent(family)}"]`);
-  if (existing) return;
+  if (existing) {
+    // Update with new weights if needed (prevents "add weight but nothing changes" dead-ends)
+    existing.href = url;
+    await waitForFontsReady();
+    return;
+  }
   
   // Create and inject link element
   const link = document.createElement('link');

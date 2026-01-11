@@ -86,7 +86,7 @@ describe('TypefaceForm', () => {
       />
     );
 
-    expect(screen.getByLabelText('Font Family')).toBeDisabled();
+    expect(screen.getByLabelText(/font family/i)).toBeDisabled();
   });
 });
 

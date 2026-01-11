@@ -8,17 +8,9 @@
  */
 
 import { Input, Select, Textarea } from '../../../ui';
+import { COMPONENT_CATEGORIES } from '../../../../lib/componentCategories';
 
-const CATEGORIES = [
-  { value: 'buttons', label: 'Buttons' },
-  { value: 'forms', label: 'Forms' },
-  { value: 'layout', label: 'Layout' },
-  { value: 'navigation', label: 'Navigation' },
-  { value: 'feedback', label: 'Feedback' },
-  { value: 'data-display', label: 'Data Display' },
-  { value: 'overlay', label: 'Overlay' },
-  { value: 'other', label: 'Other' },
-];
+const CATEGORIES = COMPONENT_CATEGORIES;
 
 /**
  * Validate if name follows PascalCase convention

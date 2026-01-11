@@ -173,6 +173,27 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate, o
         if (isGeneratedTypographyRoleToken) {
           const roleName = displayToken.path.split('/').pop();
           const composite = displayToken.value || {};
+          const previewStyle = {
+            fontFamily: composite.fontFamily || 'var(--font-family-text, system-ui, sans-serif)',
+            fontSize: typeof composite.fontSize === 'string'
+              ? composite.fontSize
+              : (composite.fontSize?.value !== undefined
+                ? `${composite.fontSize.value}${composite.fontSize.unit ?? 'rem'}`
+                : '1rem'),
+            fontWeight: composite.fontWeight ?? 400,
+            lineHeight: composite.lineHeight ?? 1.5,
+            letterSpacing:
+              composite.letterSpacing && composite.letterSpacing !== 'normal'
+                ? (typeof composite.letterSpacing === 'string'
+                  ? composite.letterSpacing
+                  : (composite.letterSpacing?.value !== undefined
+                    ? `${composite.letterSpacing.value}${composite.letterSpacing.unit ?? 'em'}`
+                    : undefined))
+                : undefined,
+            color: 'var(--foreground-heading, var(--foreground-body, currentColor))',
+            margin: 0,
+          };
+
           return (
             <div className="token-editor-content">
               <div className="token-editor-placeholder-notice">
@@ -180,6 +201,20 @@ export default function TokenEditorPanel({ token, category, themeId, onUpdate, o
                   This is a <strong>generated</strong> composite typography token sourced from <strong>Typography Scale</strong>.
                   Edit it on the Typography page and it will sync back here automatically.
                 </p>
+              </div>
+
+              <div className="token-editor-field">
+                <label className="token-editor-label">Preview</label>
+                <div
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(0,0,0,0.03)',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                  }}
+                >
+                  <p style={previewStyle}>The quick brown fox jumps over the lazy dog</p>
+                </div>
               </div>
 
               <div className="token-editor-field">

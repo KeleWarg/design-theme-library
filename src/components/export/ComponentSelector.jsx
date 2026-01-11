@@ -8,18 +8,9 @@
 import { useState } from 'react';
 import { useComponents } from '../../hooks/useComponents';
 import { Checkbox, Select } from '../ui';
+import { COMPONENT_CATEGORY_OPTIONS_ALL } from '../../lib/componentCategories';
 
-const CATEGORIES = [
-  { value: 'all', label: 'All Categories' },
-  { value: 'buttons', label: 'Buttons' },
-  { value: 'forms', label: 'Forms' },
-  { value: 'layout', label: 'Layout' },
-  { value: 'navigation', label: 'Navigation' },
-  { value: 'feedback', label: 'Feedback' },
-  { value: 'data-display', label: 'Data Display' },
-  { value: 'overlay', label: 'Overlay' },
-  { value: 'other', label: 'Other' },
-];
+const CATEGORIES = COMPONENT_CATEGORY_OPTIONS_ALL;
 
 export default function ComponentSelector({ selected, onChange }) {
   const { data: components, isLoading, error } = useComponents({ status: 'published' });

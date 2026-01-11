@@ -10,23 +10,7 @@
  */
 
 import { supabase } from '../lib/supabase';
-
-/**
- * Stable ordering + defaults for roles (mirrors TypographyRoleEditor)
- */
-export const TYPOGRAPHY_ROLE_DEFINITIONS = [
-  { role_name: 'display', typeface_role: 'display', font_size: '3rem', font_weight: 700, line_height: '1.1', letter_spacing: '-0.02em' },
-  { role_name: 'heading-xl', typeface_role: 'display', font_size: '2.25rem', font_weight: 700, line_height: '1.2', letter_spacing: '-0.01em' },
-  { role_name: 'heading-lg', typeface_role: 'display', font_size: '1.875rem', font_weight: 600, line_height: '1.25', letter_spacing: '-0.01em' },
-  { role_name: 'heading-md', typeface_role: 'display', font_size: '1.5rem', font_weight: 600, line_height: '1.3', letter_spacing: 'normal' },
-  { role_name: 'heading-sm', typeface_role: 'display', font_size: '1.25rem', font_weight: 600, line_height: '1.4', letter_spacing: 'normal' },
-  { role_name: 'body-lg', typeface_role: 'text', font_size: '1.125rem', font_weight: 400, line_height: '1.6', letter_spacing: 'normal' },
-  { role_name: 'body-md', typeface_role: 'text', font_size: '1rem', font_weight: 400, line_height: '1.5', letter_spacing: 'normal' },
-  { role_name: 'body-sm', typeface_role: 'text', font_size: '0.875rem', font_weight: 400, line_height: '1.5', letter_spacing: 'normal' },
-  { role_name: 'label', typeface_role: 'text', font_size: '0.875rem', font_weight: 500, line_height: '1.4', letter_spacing: '0.01em' },
-  { role_name: 'caption', typeface_role: 'text', font_size: '0.75rem', font_weight: 400, line_height: '1.4', letter_spacing: '0.02em' },
-  { role_name: 'mono', typeface_role: 'mono', font_size: '0.875rem', font_weight: 400, line_height: '1.5', letter_spacing: 'normal' },
-];
+import { TYPOGRAPHY_ROLE_REGISTRY } from '../lib/typographyRoleRegistry';
 
 function normalizeTypefaceRole(typefaceRole) {
   const r = String(typefaceRole || '').toLowerCase();
@@ -43,16 +27,19 @@ function buildFontStack(typeface) {
   return `${familyPart}, ${fallback}`;
 }
 
-function buildCompositeToken(themeId, role, sortOrder, typefaceMap) {
-  const roleName = role?.role_name;
-  const typefaceRole = normalizeTypefaceRole(role?.typeface_role);
+function buildCompositeToken(themeId, roleName, roleOverride, sortOrder, typefaceMap) {
+  const registry = TYPOGRAPHY_ROLE_REGISTRY.find(r => r.name === roleName);
+  const effectiveTypefaceRole = normalizeTypefaceRole(roleOverride?.typeface_role ?? registry?.typefaceRole);
 
-  const fontSize = role?.font_size ?? '1rem';
-  const fontWeight = role?.font_weight ?? 400;
-  const lineHeight = role?.line_height ?? '1.5';
-  const letterSpacing = role?.letter_spacing ?? 'normal';
+  const desktopSize = roleOverride?.font_size ?? registry?.defaultSize ?? '1rem';
+  const tabletSize = roleOverride?.font_size_tablet ?? registry?.defaultSizeTablet ?? desktopSize;
+  const mobileSize = roleOverride?.font_size_mobile ?? registry?.defaultSizeMobile ?? tabletSize ?? desktopSize;
 
-  const resolvedFontFamily = buildFontStack(typefaceMap?.[typefaceRole]) || 'inherit';
+  const fontWeight = roleOverride?.font_weight ?? registry?.defaultWeight ?? 400;
+  const lineHeight = roleOverride?.line_height ?? registry?.defaultLineHeight ?? '1.5';
+  const letterSpacing = roleOverride?.letter_spacing ?? registry?.defaultLetterSpacing ?? 'normal';
+
+  const resolvedFontFamily = buildFontStack(typefaceMap?.[effectiveTypefaceRole]) || 'inherit';
 
   return {
     theme_id: themeId,
@@ -64,7 +51,8 @@ function buildCompositeToken(themeId, role, sortOrder, typefaceMap) {
     value: {
       // Self-contained + always follows the theme's selected typeface for this role.
       fontFamily: resolvedFontFamily,
-      fontSize,
+      // Responsive: desktop/tablet/mobile
+      fontSize: { desktop: desktopSize, tablet: tabletSize, mobile: mobileSize },
       fontWeight,
       lineHeight,
       letterSpacing,
@@ -94,28 +82,26 @@ export const typographyTokenService = {
     if (rolesError) throw rolesError;
     if (typefacesError) throw typefacesError;
 
-    if (!roles?.length) {
-      return { themeId, upserted: 0, skipped: true };
-    }
-
     const typefaceMap = (typefaces || []).reduce((acc, tf) => {
       acc[normalizeTypefaceRole(tf.role)] = tf;
       return acc;
     }, {});
 
-    // Ensure stable ordering even if DB returns unordered roles.
-    const definitionIndex = new Map(
-      TYPOGRAPHY_ROLE_DEFINITIONS.map((d, i) => [d.role_name, i])
+    const overridesByName = new Map((roles || []).map(r => [r.role_name, r]));
+
+    // 1) Universal registry roles (always generated)
+    const registryTokens = TYPOGRAPHY_ROLE_REGISTRY.map((r, idx) =>
+      buildCompositeToken(themeId, r.name, overridesByName.get(r.name), idx, typefaceMap)
     );
 
-    const sortedRoles = [...roles].sort((a, b) => {
-      const ai = definitionIndex.has(a.role_name) ? definitionIndex.get(a.role_name) : 999;
-      const bi = definitionIndex.has(b.role_name) ? definitionIndex.get(b.role_name) : 999;
-      if (ai !== bi) return ai - bi;
-      return String(a.role_name).localeCompare(String(b.role_name));
-    });
+    // 2) Any custom/legacy roles not in the registry (still generate to avoid breaking existing themes)
+    const registryNames = new Set(TYPOGRAPHY_ROLE_REGISTRY.map(r => r.name));
+    const customRoles = (roles || []).filter(r => !registryNames.has(r.role_name));
+    const customTokens = customRoles.map((r, i) =>
+      buildCompositeToken(themeId, r.role_name, r, registryTokens.length + i, typefaceMap)
+    );
 
-    const tokenRecords = sortedRoles.map((role, idx) => buildCompositeToken(themeId, role, idx, typefaceMap));
+    const tokenRecords = [...registryTokens, ...customTokens];
 
     const { data: upserted, error: upsertError } = await supabase
       .from('tokens')

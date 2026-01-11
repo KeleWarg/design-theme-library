@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabase';
 import { typographyTokenService } from './typographyTokenService';
+import { TYPOGRAPHY_ROLE_REGISTRY } from '../lib/typographyRoleRegistry';
 
 /**
  * Get file format from file name
@@ -278,7 +279,7 @@ export const typefaceService = {
     // Get file record first
     const { data: fontFile, error: fetchError } = await supabase
       .from('font_files')
-      .select('storage_path')
+      .select('storage_path, typeface_id')
       .eq('id', id)
       .single();
     
@@ -296,6 +297,31 @@ export const typefaceService = {
       .eq('id', id);
     
     if (error) throw error;
+
+    // Keep typeface.weights in sync after deletions too.
+    // If no files remain, clear weights so UI doesn't incorrectly filter available weights.
+    try {
+      if (fontFile?.typeface_id) {
+        const { data: remaining, error: remainingErr } = await supabase
+          .from('font_files')
+          .select('weight')
+          .eq('typeface_id', fontFile.typeface_id);
+
+        if (!remainingErr) {
+          const nextWeights = Array.from(
+            new Set((remaining || []).map(r => r.weight).filter(w => typeof w === 'number'))
+          ).sort((a, b) => a - b);
+
+          await supabase
+            .from('typefaces')
+            .update({ weights: nextWeights })
+            .eq('id', fontFile.typeface_id);
+        }
+      }
+    } catch (weightsErr) {
+      console.error('Failed to sync typeface weights after deleteFontFile:', weightsErr);
+    }
+
     return true;
   },
 
@@ -526,25 +552,22 @@ export const typefaceService = {
    * @returns {Promise<Array>} - Created typography roles
    */
   async createDefaultTypographyRoles(themeId) {
-    const defaultRoles = [
-      { role_name: 'display', typeface_role: 'display', font_size: '3rem', font_weight: 700, line_height: '1.1' },
-      { role_name: 'heading-xl', typeface_role: 'display', font_size: '2.25rem', font_weight: 700, line_height: '1.2' },
-      { role_name: 'heading-lg', typeface_role: 'display', font_size: '1.875rem', font_weight: 600, line_height: '1.25' },
-      { role_name: 'heading-md', typeface_role: 'display', font_size: '1.5rem', font_weight: 600, line_height: '1.3' },
-      { role_name: 'heading-sm', typeface_role: 'display', font_size: '1.25rem', font_weight: 600, line_height: '1.4' },
-      { role_name: 'body-lg', typeface_role: 'text', font_size: '1.125rem', font_weight: 400, line_height: '1.6' },
-      { role_name: 'body-md', typeface_role: 'text', font_size: '1rem', font_weight: 400, line_height: '1.5' },
-      { role_name: 'body-sm', typeface_role: 'text', font_size: '0.875rem', font_weight: 400, line_height: '1.5' },
-      { role_name: 'label', typeface_role: 'text', font_size: '0.875rem', font_weight: 500, line_height: '1.4' },
-      { role_name: 'caption', typeface_role: 'text', font_size: '0.75rem', font_weight: 400, line_height: '1.4' },
-      { role_name: 'mono', typeface_role: 'mono', font_size: '0.875rem', font_weight: 400, line_height: '1.5' },
-    ];
-
-    const roles = defaultRoles.map(r => ({ ...r, theme_id: themeId }));
+    // Universal titles: create/upsert the canonical registry roles for the theme.
+    const roles = TYPOGRAPHY_ROLE_REGISTRY.map(r => ({
+      theme_id: themeId,
+      role_name: r.name,
+      typeface_role: r.typefaceRole,
+      font_size: r.defaultSize ?? null,
+      font_size_tablet: null,
+      font_size_mobile: null,
+      font_weight: r.defaultWeight ?? 400,
+      line_height: r.defaultLineHeight ?? '1.5',
+      letter_spacing: r.defaultLetterSpacing ?? 'normal',
+    }));
     
     const { data, error } = await supabase
       .from('typography_roles')
-      .insert(roles)
+      .upsert(roles, { onConflict: 'theme_id,role_name' })
       .select();
     
     if (error) throw error;

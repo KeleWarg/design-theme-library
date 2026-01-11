@@ -5,7 +5,7 @@
  * Supports single theme, multi-theme, and font-face generation.
  */
 
-import { tokenToCssValue, isCompositeTypographyToken, expandCompositeTypographyToken } from '../../lib/cssVariableInjector.js';
+import { tokenToCssValue, isCompositeTypographyToken, expandCompositeTypographyToken, buildResponsiveTypographyCss } from '../../lib/cssVariableInjector.js';
 import { generateFontFaceCss } from '../../lib/fontLoader.js';
 
 /**
@@ -98,6 +98,16 @@ export function generateCSS(tokens, options = {}) {
   }
 
   css += '}\n';
+
+  // Responsive typography overrides (media queries)
+  // These override `--typography-<role>-size` for tablet/mobile when the composite token provides responsive sizes.
+  if (!minify) {
+    const responsiveCss = buildResponsiveTypographyCss(tokens, { selector: actualSelector });
+    if (responsiveCss) {
+      css += '\n';
+      css += responsiveCss;
+    }
+  }
 
   if (minify) {
     css = minifyCss(css);

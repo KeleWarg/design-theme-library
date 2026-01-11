@@ -12,6 +12,39 @@ import TokenListItem from './TokenListItem';
 import AddTokenModal from './AddTokenModal';
 
 /**
+ * Best-effort parse of a typography token's fontSize into pixels for sorting.
+ * Supports composite typography tokens: value.fontSize as string or { value, unit }.
+ */
+function fontSizeToPx(token) {
+  if (!token || token.category !== 'typography') return 0;
+
+  const fontSize = token?.value?.fontSize;
+  if (!fontSize) return 0;
+
+  // { value, unit } shape
+  if (typeof fontSize === 'object' && fontSize !== null && fontSize.value !== undefined) {
+    const n = Number(fontSize.value);
+    if (!Number.isFinite(n)) return 0;
+    const unit = String(fontSize.unit ?? 'rem').toLowerCase();
+    if (unit === 'px') return n;
+    if (unit === 'rem' || unit === 'em') return n * 16;
+    return n; // unknown unit, fall back to raw number
+  }
+
+  // string/number
+  const raw = typeof fontSize === 'number' ? `${fontSize}px` : String(fontSize);
+  const match = raw.trim().match(/^(-?\d*\.?\d+)\s*(px|rem|em)?$/i);
+  if (!match) return 0;
+
+  const n = Number(match[1]);
+  const unit = (match[2] || 'px').toLowerCase();
+  if (!Number.isFinite(n)) return 0;
+  if (unit === 'px') return n;
+  if (unit === 'rem' || unit === 'em') return n * 16;
+  return n;
+}
+
+/**
  * List of tokens in the current category with search and CRUD operations
  * @param {Object} props
  * @param {Array} props.tokens - Tokens to display
@@ -37,15 +70,25 @@ export default function TokenList({
 
   // Filter tokens based on search query
   const filteredTokens = useMemo(() => {
-    if (!searchQuery.trim()) return tokens;
+    const base = (() => {
+      if (!searchQuery.trim()) return tokens;
+      
+      const query = searchQuery.toLowerCase();
+      return tokens.filter(token =>
+        token.name?.toLowerCase().includes(query) ||
+        token.path?.toLowerCase().includes(query) ||
+        token.css_variable?.toLowerCase().includes(query)
+      );
+    })();
     
-    const query = searchQuery.toLowerCase();
-    return tokens.filter(token =>
-      token.name?.toLowerCase().includes(query) ||
-      token.path?.toLowerCase().includes(query) ||
-      token.css_variable?.toLowerCase().includes(query)
-    );
-  }, [tokens, searchQuery]);
+    // Typography (preview) should be ordered by font size, biggest -> smallest.
+    // This makes the preview list feel like an actual typographic scale.
+    if (isTypographyPreview) {
+      return [...base].sort((a, b) => fontSizeToPx(b) - fontSizeToPx(a));
+    }
+
+    return base;
+  }, [tokens, searchQuery, isTypographyPreview]);
 
   // Handle adding a new token
   const handleAddToken = (tokenData) => {

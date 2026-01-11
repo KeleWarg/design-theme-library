@@ -55,6 +55,36 @@ function formatDimensionValue(value) {
 }
 
 /**
+ * Convert a dimension string/object into a px number for sorting.
+ * Best-effort: supports px/rem/em. Unknown units fall back to numeric value.
+ */
+function dimensionToPx(value) {
+  if (value === undefined || value === null) return 0;
+
+  // { value, unit }
+  if (typeof value === 'object' && value !== null && value.value !== undefined) {
+    const n = Number(value.value);
+    if (!Number.isFinite(n)) return 0;
+    const unit = String(value.unit ?? 'rem').toLowerCase();
+    if (unit === 'px') return n;
+    if (unit === 'rem' || unit === 'em') return n * 16;
+    return n;
+  }
+
+  if (typeof value === 'number') return value;
+
+  const str = String(value).trim();
+  const match = str.match(/^(-?\d*\.?\d+)\s*(px|rem|em)?$/i);
+  if (!match) return 0;
+  const n = Number(match[1]);
+  const unit = (match[2] || 'px').toLowerCase();
+  if (!Number.isFinite(n)) return 0;
+  if (unit === 'px') return n;
+  if (unit === 'rem' || unit === 'em') return n * 16;
+  return n;
+}
+
+/**
  * Format line height value for display
  */
 function formatLineHeightValue(value) {
@@ -207,6 +237,17 @@ export default function PreviewTypography({ theme }) {
     !t.path?.toLowerCase().includes('family') &&
     !t.css_variable?.toLowerCase().includes('family')
   );
+
+  // Sort preview scales largest -> smallest for better scanning
+  const sortedCompositeTokens = [...compositeTokens].sort((a, b) => {
+    const aSize = a?.value?.fontSize;
+    const bSize = b?.value?.fontSize;
+    return dimensionToPx(bSize) - dimensionToPx(aSize);
+  });
+
+  const sortedFontSizes = [...fontSizes].sort((a, b) => {
+    return dimensionToPx(b?.value) - dimensionToPx(a?.value);
+  });
   
   const fontWeights = simpleTypographyTokens.filter(t => 
     t.path?.toLowerCase().includes('weight') ||
@@ -434,7 +475,7 @@ export default function PreviewTypography({ theme }) {
             Typography Scale ({compositeTokens.length})
           </h5>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {compositeTokens.map(token => {
+            {sortedCompositeTokens.map(token => {
               const values = getCompositeValues(token);
               if (!values) return null;
               
@@ -524,7 +565,7 @@ export default function PreviewTypography({ theme }) {
             Font Sizes ({fontSizes.length})
           </h5>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {fontSizes.map(token => {
+            {sortedFontSizes.map(token => {
               const sizeValue = getTokenValue(token);
               // Check if this token has its own fontFamily in the value
               const tokenFont = token.value?.fontFamily || displayFont;

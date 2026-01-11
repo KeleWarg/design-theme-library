@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { COMPONENT_CATEGORY_VALUES } from '../lib/componentCategories';
 
 /**
  * Generate URL-friendly slug from name
@@ -193,8 +194,7 @@ export const componentService = {
     }
 
     // Validate category if provided
-    const validCategories = ['buttons', 'forms', 'layout', 'navigation', 'feedback', 'data-display', 'overlay', 'other'];
-    if (data.category && !validCategories.includes(data.category)) {
+    if (data.category && !COMPONENT_CATEGORY_VALUES.includes(data.category)) {
       console.warn(`Invalid category "${data.category}". Using "other" instead.`);
       data.category = 'other';
     }

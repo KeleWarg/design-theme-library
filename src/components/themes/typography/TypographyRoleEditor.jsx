@@ -6,29 +6,27 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Plus, RotateCcw, Loader2, AlertCircle } from 'lucide-react';
+import { RotateCcw, Loader2, AlertCircle } from 'lucide-react';
 import { useTypographyRoles } from '../../../hooks/useTypographyRoles';
 import { useThemeContext } from '../../../contexts/ThemeContext';
 import { typefaceService } from '../../../services/typefaceService';
 import TypographyRoleModal from './TypographyRoleModal';
 import Button from '../../ui/Button';
+import { TYPOGRAPHY_ROLE_REGISTRY } from '../../../lib/typographyRoleRegistry';
 
 /**
- * Standard typography role definitions (used for defaults + descriptions)
+ * Universal role definitions (titles) — same for all themes.
+ * Theme-specific overrides live in `typography_roles`.
  */
-const ROLE_DEFINITIONS = [
-  { name: 'display', typefaceRole: 'display', defaultSize: '3rem', defaultWeight: 700, description: 'Hero headlines' },
-  { name: 'heading-xl', typefaceRole: 'display', defaultSize: '2.25rem', defaultWeight: 700, description: 'Page titles' },
-  { name: 'heading-lg', typefaceRole: 'display', defaultSize: '1.875rem', defaultWeight: 600, description: 'Section headers' },
-  { name: 'heading-md', typefaceRole: 'display', defaultSize: '1.5rem', defaultWeight: 600, description: 'Card headers' },
-  { name: 'heading-sm', typefaceRole: 'display', defaultSize: '1.25rem', defaultWeight: 600, description: 'Subheadings' },
-  { name: 'body-lg', typefaceRole: 'text', defaultSize: '1.125rem', defaultWeight: 400, description: 'Intro paragraphs' },
-  { name: 'body-md', typefaceRole: 'text', defaultSize: '1rem', defaultWeight: 400, description: 'Body copy' },
-  { name: 'body-sm', typefaceRole: 'text', defaultSize: '0.875rem', defaultWeight: 400, description: 'Secondary text' },
-  { name: 'label', typefaceRole: 'text', defaultSize: '0.875rem', defaultWeight: 500, description: 'Form labels' },
-  { name: 'caption', typefaceRole: 'text', defaultSize: '0.75rem', defaultWeight: 400, description: 'Image captions' },
-  { name: 'mono', typefaceRole: 'mono', defaultSize: '0.875rem', defaultWeight: 400, description: 'Code blocks' },
-];
+const ROLE_DEFINITIONS = TYPOGRAPHY_ROLE_REGISTRY.map(r => ({
+  name: r.name,
+  typefaceRole: r.typefaceRole,
+  defaultSize: r.defaultSize,
+  defaultWeight: r.defaultWeight,
+  defaultLineHeight: r.defaultLineHeight,
+  defaultLetterSpacing: r.defaultLetterSpacing,
+  description: r.description,
+}));
 
 /**
  * Get font weight label from numeric value
@@ -68,15 +66,36 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
   }, []);
 
   const sortedRoles = useMemo(() => {
-    const roleList = roles || [];
-    const orderIndex = new Map(ROLE_DEFINITIONS.map((d, i) => [d.name, i]));
-    return [...roleList].sort((a, b) => {
-      const ai = orderIndex.has(a.role_name) ? orderIndex.get(a.role_name) : 999;
-      const bi = orderIndex.has(b.role_name) ? orderIndex.get(b.role_name) : 999;
-      if (ai !== bi) return ai - bi;
-      return String(a.role_name).localeCompare(String(b.role_name));
+    const existing = roles || [];
+    const byName = new Map(existing.map(r => [r.role_name, r]));
+
+    // Always show the universal registry roles, even if not yet created in DB.
+    const registryRows = ROLE_DEFINITIONS.map(def => {
+      const row = byName.get(def.name);
+      if (row) return row;
+      // Placeholder role (not yet created). Values intentionally left null
+      // so UI can show defaults and user can "leave blank" to keep defaults.
+      return {
+        id: null,
+        theme_id: themeId,
+        role_name: def.name,
+        typeface_role: def.typefaceRole,
+        font_size: null,
+        font_size_tablet: null,
+        font_size_mobile: null,
+        font_weight: def.defaultWeight ?? 400,
+        line_height: def.defaultLineHeight ?? '1.5',
+        letter_spacing: def.defaultLetterSpacing ?? 'normal',
+        __isPlaceholder: true,
+      };
     });
-  }, [roles]);
+
+    // Append any legacy/custom roles not in registry at the bottom.
+    const registryNames = new Set(ROLE_DEFINITIONS.map(d => d.name));
+    const custom = existing.filter(r => !registryNames.has(r.role_name));
+
+    return [...registryRows, ...custom];
+  }, [roles, themeId]);
 
   /**
    * Get typeface by role (display, text, mono, accent)
@@ -94,6 +113,7 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
       if (editingRole?.id) {
         await typefaceService.updateTypographyRole(editingRole.id, roleData);
       } else {
+        // Creating a placeholder or new role
         await typefaceService.createTypographyRole(themeId, roleData);
       }
       refetch();
@@ -184,23 +204,6 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
           <Button
             variant="secondary"
             size="small"
-            onClick={() => setEditingRole({
-              role_name: '',
-              typeface_role: 'text',
-              font_size: '1rem',
-              font_weight: 400,
-              line_height: '1.5',
-              letter_spacing: 'normal',
-            })}
-            disabled={isResetting || isLoading}
-          >
-            <Plus size={16} />
-            Add Role
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="small"
             onClick={roles?.length ? handleResetToDefaults : handleInitialize}
             disabled={isResetting || isLoading}
           >
@@ -219,14 +222,6 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
           <Loader2 size={24} className="spin" />
           <span>Loading typography roles...</span>
         </div>
-      ) : !roles?.length ? (
-        <div className="typography-role-empty">
-          <p>No typography roles configured yet.</p>
-          <Button variant="primary" onClick={handleInitialize} disabled={isResetting}>
-            {isResetting ? <Loader2 size={16} className="spin" /> : null}
-            Initialize Default Roles
-          </Button>
-        </div>
       ) : (
         <div className="typography-role-list">
           {sortedRoles.map(role => {
@@ -234,7 +229,7 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
             const typeface = getTypeface(role.typeface_role || def?.typefaceRole || 'text');
             return (
               <TypographyRoleRow
-                key={role.id}
+                key={role.id || role.role_name}
                 definition={def}
                 role={role}
                 typeface={typeface}
@@ -265,8 +260,8 @@ export default function TypographyRoleEditor({ themeId, typefaces }) {
 function TypographyRoleRow({ definition, role, typeface, onEdit }) {
   const fontSize = role?.font_size || definition?.defaultSize || '1rem';
   const fontWeight = role?.font_weight || definition?.defaultWeight || 400;
-  const lineHeight = role?.line_height || '1.5';
-  const letterSpacing = role?.letter_spacing || 'normal';
+  const lineHeight = role?.line_height || definition?.defaultLineHeight || '1.5';
+  const letterSpacing = role?.letter_spacing || definition?.defaultLetterSpacing || 'normal';
   
   // Build font family string
   const fontFamily = typeface 

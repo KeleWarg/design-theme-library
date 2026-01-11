@@ -5,6 +5,8 @@
  * Used by ThemeContext to inject theme tokens into document.documentElement.
  */
 
+import { TYPOGRAPHY_BREAKPOINTS } from './typographyRoleRegistry';
+
 /**
  * Inject CSS variables into a target element
  * @param {Array} tokens - Array of token objects with css_variable and value
@@ -116,10 +118,76 @@ export function expandCompositeTypographyToken(token) {
 function formatDimensionForComposite(value) {
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return `${value}px`;
+  // Responsive shape: { desktop, tablet, mobile }
+  if (typeof value === 'object' && value && value.desktop !== undefined) {
+    return formatDimensionForComposite(value.desktop);
+  }
   if (typeof value === 'object' && value.value !== undefined) {
     return `${value.value}${value.unit ?? 'rem'}`;
   }
   return '1rem';
+}
+
+function getResponsiveFontSize(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.desktop === undefined && value.tablet === undefined && value.mobile === undefined) return null;
+  return {
+    desktop: value.desktop,
+    tablet: value.tablet,
+    mobile: value.mobile,
+  };
+}
+
+/**
+ * Build responsive typography CSS overrides (@media blocks) for composite typography tokens.
+ *
+ * We only override `--typography-<role>-size` today (font size), because that’s
+ * what your Desktop/Tablet/Mobile token sets adapt. This can be extended later
+ * for line-height/letter-spacing if needed.
+ *
+ * @param {Array} tokens - Array of token objects
+ * @param {Object} options
+ * @param {string} options.selector - Selector to apply overrides to (default ':root')
+ * @returns {string}
+ */
+export function buildResponsiveTypographyCss(tokens, options = {}) {
+  const { selector = ':root' } = options;
+  if (!Array.isArray(tokens) || tokens.length === 0) return '';
+
+  const tablet = [];
+  const mobile = [];
+
+  for (const token of tokens) {
+    if (!isCompositeTypographyToken(token)) continue;
+    const baseVar = token.css_variable;
+    const responsive = getResponsiveFontSize(token?.value?.fontSize);
+    if (!responsive) continue;
+
+    const desktopValue = responsive.desktop;
+    const tabletValue = responsive.tablet ?? desktopValue;
+    const mobileValue = responsive.mobile ?? tabletValue ?? desktopValue;
+
+    const desktopCss = desktopValue !== undefined ? formatDimensionForComposite(desktopValue) : null;
+    const tabletCss = tabletValue !== undefined ? formatDimensionForComposite(tabletValue) : null;
+    const mobileCss = mobileValue !== undefined ? formatDimensionForComposite(mobileValue) : null;
+
+    if (tabletCss && tabletCss !== desktopCss) {
+      tablet.push(`  ${baseVar}-size: ${tabletCss};`);
+    }
+    if (mobileCss && mobileCss !== (tabletCss || desktopCss)) {
+      mobile.push(`  ${baseVar}-size: ${mobileCss};`);
+    }
+  }
+
+  let css = '';
+  if (tablet.length) {
+    css += `@media (max-width: ${TYPOGRAPHY_BREAKPOINTS.tabletMaxWidthPx}px) {\n${selector} {\n${tablet.join('\n')}\n}\n}\n`;
+  }
+  if (mobile.length) {
+    css += `@media (max-width: ${TYPOGRAPHY_BREAKPOINTS.mobileMaxWidthPx}px) {\n${selector} {\n${mobile.join('\n')}\n}\n}\n`;
+  }
+
+  return css;
 }
 
 /**

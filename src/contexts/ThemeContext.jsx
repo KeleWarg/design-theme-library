@@ -8,6 +8,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { themeService } from '../services/themeService';
 import { loadThemeFonts } from '../lib/fontLoader';
+import { buildResponsiveTypographyCss } from '../lib/cssVariableInjector';
 
 const ThemeContext = createContext(null);
 
@@ -28,8 +29,17 @@ export function ThemeProvider({ children }) {
       try {
         setError(null);
 
-        // Check localStorage for saved active theme and user's default preference from Settings
-        const savedThemeId = localStorage.getItem('activeThemeId');
+        // IMPORTANT:
+        // The admin shell should use the "system default" theme (DB `is_default`) consistently.
+        // Do NOT restore a "last active theme" on startup, since that makes the whole app
+        // appear to randomly default to whatever was last selected/viewed (e.g. "comparecoverage").
+        //
+        // Cleanup legacy key if it exists from older behavior.
+        if (localStorage.getItem('activeThemeId')) {
+          localStorage.removeItem('activeThemeId');
+        }
+
+        // User preference from Settings (single-user app: this should be the primary startup choice)
         const userDefaultThemeId = localStorage.getItem('ds-admin-default-theme');
 
         // Get all themes
@@ -40,21 +50,32 @@ export function ThemeProvider({ children }) {
           return;
         }
 
-        // Find theme to load (saved > user preference > database default > first)
+        // Find theme to load.
+        // Priority:
+        // 1) User preference from Settings (localStorage)
+        // 2) DB `is_default` theme
+        // 3) Stable deterministic fallback (name asc) to avoid "random" defaulting based on created_at ordering
+        const userPreferredTheme = userDefaultThemeId
+          ? themes.find(t => t.id === userDefaultThemeId)
+          : null;
+
+        // If the saved preference points to a deleted theme, clear it so we don't keep falling back forever.
+        if (userDefaultThemeId && !userPreferredTheme) {
+          try {
+            localStorage.removeItem('ds-admin-default-theme');
+          } catch (e) {
+            // ignore storage failures
+          }
+        }
+
         const defaultTheme = themes.find(t => t.is_default);
-        const firstTheme = themes[0];
+        const stableFallbackTheme = [...themes].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))[0];
 
         let themeToLoad =
-          themes.find(t => t.id === savedThemeId) ||
-          themes.find(t => t.id === userDefaultThemeId) ||
+          userPreferredTheme ||
           defaultTheme ||
-          firstTheme;
+          stableFallbackTheme;
 
-        let selectionSource = 'first';
-        if (themeToLoad?.id === savedThemeId) selectionSource = 'saved';
-        else if (themeToLoad?.id === userDefaultThemeId) selectionSource = 'user-default';
-        else if (themeToLoad?.id === defaultTheme?.id) selectionSource = 'db-default';
-        
         if (themeToLoad) {
           await loadThemeInternal(themeToLoad.id);
         }
@@ -80,7 +101,6 @@ export function ThemeProvider({ children }) {
       const theme = await themeService.getTheme(themeId);
       setActiveTheme(theme);
       setTokens(groupTokensByCategory(theme.tokens || []));
-      localStorage.setItem('activeThemeId', themeId);
       
       // Load custom fonts
       if (theme.typefaces?.length) {
@@ -117,7 +137,6 @@ export function ThemeProvider({ children }) {
     setActiveTheme(null);
     setTokens({});
     setFontsLoaded(false);
-    localStorage.removeItem('activeThemeId');
   }, []);
 
   // Compute CSS variables from tokens
@@ -181,6 +200,24 @@ export function ThemeProvider({ children }) {
       console.warn(`Failed to inject ${failedVariables.length} CSS variables:`, failedVariables);
     }
 
+    // Inject responsive typography overrides (media queries) as a style tag.
+    // This allows Desktop/Tablet/Mobile font sizes to adapt without trying to
+    // express media queries via inline styles.
+    const responsiveCss = buildResponsiveTypographyCss(activeTheme.tokens || [], { selector: ':root' });
+    const styleId = 'theme-typography-responsive';
+    let styleEl = document.getElementById(styleId);
+    if (responsiveCss) {
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = responsiveCss;
+    } else if (styleEl) {
+      styleEl.remove();
+      styleEl = null;
+    }
+
     // Cleanup: remove variables when theme changes or unmounts
     return () => {
       Object.keys(cssVariables).forEach(key => {
@@ -190,6 +227,12 @@ export function ThemeProvider({ children }) {
           // Silently ignore cleanup errors
         }
       });
+
+      try {
+        document.getElementById(styleId)?.remove();
+      } catch (err) {
+        // ignore
+      }
     };
   }, [cssVariables, activeTheme]);
 

@@ -5,10 +5,11 @@
  * Allows customizing font size, weight, line height, and letter spacing.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
+import { getTypographyRoleDefinition } from '../../../lib/typographyRoleRegistry';
 
 /**
  * Type scale presets - combined size/weight/line-height/letter-spacing
@@ -63,10 +64,16 @@ const TYPEFACE_ROLES = [
  * @param {Function} [props.onDelete] - Delete role callback (only for existing roles)
  */
 export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRole, onClose, onSave, onDelete }) {
+  const definition = useMemo(() => getTypographyRoleDefinition(role?.role_name), [role?.role_name]);
+  const isRegistryRole = Boolean(definition);
+
   const [formData, setFormData] = useState({
     role_name: role.role_name || '',
     typeface_role: role.typeface_role || defaultTypefaceRole || 'text',
-    font_size: role.font_size || '1rem',
+    // Desktop/Tablet/Mobile font sizes (blank/null => falls back to registry defaults)
+    font_size: role.font_size ?? '',
+    font_size_tablet: role.font_size_tablet ?? '',
+    font_size_mobile: role.font_size_mobile ?? '',
     font_weight: role.font_weight || 400,
     line_height: role.line_height || '1.5',
     letter_spacing: role.letter_spacing || 'normal',
@@ -118,6 +125,8 @@ export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRo
       setFormData(prev => ({
         ...prev,
         font_size: preset.size,
+        font_size_tablet: preset.size,
+        font_size_mobile: preset.size,
         font_weight: preset.weight,
         line_height: preset.lineHeight,
         letter_spacing: preset.letterSpacing,
@@ -141,18 +150,22 @@ export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRo
       setError('Role name must be lowercase and use dashes only (e.g., body-md, heading-xl)');
       return;
     }
-    if (!formData.font_size) {
-      setError('Font size is required');
-      return;
-    }
 
     setIsSaving(true);
     setError(null);
 
     try {
+      const normalizeOptional = (v) => {
+        const s = String(v ?? '').trim();
+        return s.length ? s : null;
+      };
+
       await onSave({
         ...formData,
-        font_weight: parseInt(formData.font_weight, 10)
+        font_size: normalizeOptional(formData.font_size),
+        font_size_tablet: normalizeOptional(formData.font_size_tablet),
+        font_size_mobile: normalizeOptional(formData.font_size_mobile),
+        font_weight: parseInt(formData.font_weight, 10),
       });
     } catch (err) {
       setError(err.message || 'Failed to save typography role');
@@ -168,6 +181,11 @@ export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRo
   const previewFontFamily = currentTypeface 
     ? `'${currentTypeface.family}', ${currentTypeface.fallback || 'sans-serif'}` 
     : 'inherit';
+
+  const previewFontSize =
+    String(formData.font_size || '').trim() ||
+    definition?.defaultSize ||
+    '1rem';
 
   return (
     <Modal 
@@ -185,11 +203,16 @@ export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRo
             value={formData.role_name}
             onChange={(e) => handleChange('role_name', e.target.value)}
             placeholder="e.g., body-md, hero, button-sm"
-            disabled={isSaving}
+            disabled={isSaving || isRegistryRole}
           />
           <p className="form-hint">
             Lowercase with dashes. This becomes the token: <code>--typography-&lt;role&gt;</code>
           </p>
+          {isRegistryRole && (
+            <p className="form-hint">
+              This is a <strong>universal</strong> role title; role names are locked to prevent cross-theme drift.
+            </p>
+          )}
         </div>
 
         {/* Live Preview */}
@@ -199,7 +222,7 @@ export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRo
             className="typography-role-preview-text"
             style={{
               fontFamily: previewFontFamily,
-              fontSize: formData.font_size,
+              fontSize: previewFontSize,
               fontWeight: formData.font_weight,
               lineHeight: formData.line_height,
               letterSpacing: formData.letter_spacing !== 'normal' ? formData.letter_spacing : undefined
@@ -258,20 +281,43 @@ export default function TypographyRoleModal({ role, typefaces, defaultTypefaceRo
           </p>
         </div>
 
-        {/* Font Size */}
+        {/* Font Size (Responsive) */}
         <div className="form-group">
-          <label htmlFor="font_size">Font Size</label>
-          <div className="input-with-unit">
-            <input
-              id="font_size"
-              type="text"
-              value={formData.font_size}
-              onChange={(e) => handleChange('font_size', e.target.value)}
-              placeholder="1rem"
-            />
+          <label>Font Size (Responsive)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            <div>
+              <label className="form-label" htmlFor="font_size">Desktop</label>
+              <input
+                id="font_size"
+                type="text"
+                value={formData.font_size}
+                onChange={(e) => handleChange('font_size', e.target.value)}
+                placeholder={definition?.defaultSize || '1rem'}
+              />
+            </div>
+            <div>
+              <label className="form-label" htmlFor="font_size_tablet">Tablet</label>
+              <input
+                id="font_size_tablet"
+                type="text"
+                value={formData.font_size_tablet}
+                onChange={(e) => handleChange('font_size_tablet', e.target.value)}
+                placeholder="(optional)"
+              />
+            </div>
+            <div>
+              <label className="form-label" htmlFor="font_size_mobile">Mobile</label>
+              <input
+                id="font_size_mobile"
+                type="text"
+                value={formData.font_size_mobile}
+                onChange={(e) => handleChange('font_size_mobile', e.target.value)}
+                placeholder="(optional)"
+              />
+            </div>
           </div>
           <p className="form-hint">
-            Use rem, em, or px (e.g., 1rem, 16px, 1.125rem)
+            Desktop is the base. Tablet and Mobile override via media queries. Leave blank to fall back to defaults.
           </p>
         </div>
 
