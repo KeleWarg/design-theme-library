@@ -1,10 +1,32 @@
 /**
- * @chunk 7.17 - QA Page Shell
- * Placeholder IssueLog component
- * Full implementation in chunk 7.22
+ * @chunk 7.22 - IssueLog
+ * Scrollable list of issues with bidirectional sync to markers
  */
+import { useRef, useEffect } from 'react';
+import { IssueItem } from './IssueItem';
+import { useQAStore } from '../../../stores/qaStore';
 
 export function IssueLog({ issues }) {
+  const listRef = useRef(null);
+  const { activeIssueId, setActiveIssue, panToIssueHandler, setScrollToIssueHandler } = useQAStore();
+
+  // Register scroll handler
+  useEffect(() => {
+    const scrollToIssue = (issueId) => {
+      const element = document.getElementById(`issue-${issueId}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    setScrollToIssueHandler(scrollToIssue);
+    return () => setScrollToIssueHandler(null);
+  }, [setScrollToIssueHandler]);
+
+  const handleIssueClick = (issueId) => {
+    setActiveIssue(issueId);
+    // Pan to marker
+    panToIssueHandler?.(issueId);
+  };
+
   const failCount = issues.filter(i => i.status === 'fail').length;
   const warnCount = issues.filter(i => i.status === 'warn').length;
 
@@ -18,22 +40,19 @@ export function IssueLog({ issues }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
-        {issues.length === 0 ? (
+      <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-2">
+        {issues.map(issue => (
+          <IssueItem
+            key={issue.id}
+            issue={issue}
+            isActive={activeIssueId === issue.id}
+            onClick={() => handleIssueClick(issue.id)}
+          />
+        ))}
+
+        {issues.length === 0 && (
           <div className="text-center text-gray-500 py-8">
             No issues found
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {issues.map(issue => (
-              <div
-                key={issue.id}
-                className="p-3 rounded-lg border bg-gray-50"
-              >
-                <span className="font-medium">#{issue.number}</span>
-                <span className="ml-2 text-sm text-gray-600">{issue.message}</span>
-              </div>
-            ))}
           </div>
         )}
       </div>
