@@ -15,7 +15,7 @@ export interface ClusterResult {
   clusters: MarkerCluster[];
 }
 
-const CLUSTER_DISTANCE = 40; // pixels
+const CLUSTER_DISTANCE = 30; // pixels
 
 /**
  * Calculate distance between two points
