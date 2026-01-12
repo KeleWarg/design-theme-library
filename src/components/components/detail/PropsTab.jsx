@@ -13,9 +13,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '../../ui';
-import { PlusIcon, HelpCircleIcon, RotateCcw, Save } from 'lucide-react';
+import { PlusIcon, HelpCircleIcon, RotateCcw, Save, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import PropEditor from '../wizard/PropEditor';
+import { generatePropsForComponent } from '../../../lib/propGenerator';
 
 /**
  * Create a new empty prop object
@@ -64,6 +65,16 @@ export default function PropsTab({ component, onSave }) {
 
   const addProp = () => {
     setProps([...props, createEmptyProp()]);
+  };
+
+  const generateProps = () => {
+    const { props: nextProps, report } = generatePropsForComponent({
+      category: component?.category,
+      code: component?.code,
+      existingProps: props,
+    });
+    setProps(nextProps);
+    toast.success(`Generated props (added ${report.addedCount})`);
   };
 
   const updateProp = (index, updates) => {
@@ -120,10 +131,16 @@ export default function PropsTab({ component, onSave }) {
             Define the props your component accepts. Each prop should have a name, type, and optional default value.
           </p>
         </div>
-        <Button size="small" onClick={addProp} className="props-add-btn">
-          <PlusIcon size={16} />
-          Add Prop
-        </Button>
+        <div className="props-tab-header-actions">
+          <Button size="small" variant="secondary" onClick={generateProps} className="props-generate-btn">
+            <Sparkles size={16} />
+            Generate Props
+          </Button>
+          <Button size="small" onClick={addProp} className="props-add-btn">
+            <PlusIcon size={16} />
+            Add Prop
+          </Button>
+        </div>
       </div>
 
       {props.length === 0 ? (
@@ -140,6 +157,10 @@ export default function PropsTab({ component, onSave }) {
             <PlusIcon size={16} />
             Add First Prop
           </Button>
+          <Button size="small" variant="secondary" onClick={generateProps}>
+            <Sparkles size={16} />
+            Generate Props
+          </Button>
 
           <div className="props-empty-hint">
             <strong>Tip:</strong> Common props include <code>children</code> (ReactNode), 
@@ -147,7 +168,7 @@ export default function PropsTab({ component, onSave }) {
           </div>
           <div className="props-empty-hint props-empty-hint--secondary">
             <strong>Best Practice:</strong> Use <code>enum</code> type for props like 
-            <code>size</code>, <code>variant</code>, and <code>icon</code> to show a dropdown in the preview.
+            <code>size</code> and <code>variant</code>, and <code>icon</code> type for icon props to show a picker in the preview.
             Free text fields should only be used for truly open-ended values.
           </div>
         </div>
@@ -221,6 +242,13 @@ export default function PropsTab({ component, onSave }) {
           align-items: flex-start;
           justify-content: space-between;
           gap: var(--spacing-md);
+        }
+
+        .props-tab-header-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+          flex-shrink: 0;
         }
 
         .props-tab-header-content {

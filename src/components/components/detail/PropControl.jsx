@@ -29,6 +29,7 @@ function getPlaceholder(prop) {
       if (name.toLowerCase().includes('count')) return 'e.g. 5';
       return 'Enter number...';
     case 'ReactNode':
+    case 'node':
       return 'Enter text or JSX content...';
     default:
       return `Enter ${name}...`;
@@ -49,6 +50,7 @@ function getTypeHint(prop) {
     case 'number':
       return 'Numeric value';
     case 'ReactNode':
+    case 'node':
       return 'Text or React content (renders as text in preview)';
     case 'string':
       return 'Text value';
@@ -123,6 +125,7 @@ export default function PropControl({ prop, value, onChange }) {
       );
     
     case 'ReactNode':
+    case 'node':
       return (
         <div className="prop-control prop-control--reactnode">
           <Textarea

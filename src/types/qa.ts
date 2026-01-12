@@ -91,13 +91,21 @@ export interface IssueSource {
   rgb?: { r: number; g: number; b: number };
 }
 
+export interface IssueBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface Issue {
   id: string;
   number: number;
-  type: 'color' | 'typography' | 'spacing' | 'other';
+  type: 'color' | 'font' | 'typography' | 'spacing' | 'other';
   status: 'fail' | 'warn' | 'pass';
   message: string;
   marker: MarkerPosition;
+  bounds: IssueBounds;
   source: IssueSource;
   suggestion?: IssueSuggestion;
 }
