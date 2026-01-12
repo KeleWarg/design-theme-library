@@ -96,7 +96,7 @@ describe('IconsPage', () => {
 
     fireEvent.click(screen.getByText('Import'));
 
-    expect(await screen.findByText('Import Icon')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Import Icon' })).toBeInTheDocument();
     expect(screen.getByText('Icons8 (Coming Soon)')).toBeInTheDocument();
     expect(screen.getByText('Icons8 integration is coming soon')).toBeInTheDocument();
   });
