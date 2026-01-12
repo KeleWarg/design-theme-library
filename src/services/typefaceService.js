@@ -6,6 +6,8 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { typographyTokenService } from './typographyTokenService';
+import { TYPOGRAPHY_ROLE_REGISTRY } from '../lib/typographyRoleRegistry';
 
 /**
  * Get file format from file name
@@ -31,6 +33,10 @@ function getMimeType(format) {
   };
   return mimes[format] || 'application/octet-stream';
 }
+
+// NOTE: We intentionally do NOT create standalone "font family tokens".
+// Typeface selection is stored in `typefaces`, and typography role composite tokens
+// embed the resolved font stack via typographyTokenService.
 
 export const typefaceService = {
   /**
@@ -122,6 +128,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Typeface affects composite typography tokens (fontFamily); resync
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after createTypeface:', syncErr);
+    }
+    
     return typeface;
   },
 
@@ -143,6 +157,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Typeface affects composite typography tokens (fontFamily); resync
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(data.theme_id);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after updateTypeface:', syncErr);
+    }
+    
     return data;
   },
 
@@ -168,6 +190,14 @@ export const typefaceService = {
       .eq('id', id);
     
     if (error) throw error;
+
+    // Typeface removal affects composite typography tokens (fontFamily); resync
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(typeface?.theme_id);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after deleteTypeface:', syncErr);
+    }
+
     return true;
   },
 
@@ -216,6 +246,27 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep typeface.weights in sync with actual uploaded font file weights.
+    // This improves TypographyRoleModal weight filtering and avoids "fixed" weight UX.
+    try {
+      const currentWeights = Array.isArray(typeface?.weights) ? typeface.weights : [];
+      const nextWeights = Array.from(new Set([...currentWeights, weight])).sort((a, b) => a - b);
+      const didChange =
+        currentWeights.length !== nextWeights.length ||
+        currentWeights.some((w, i) => w !== nextWeights[i]);
+
+      if (didChange) {
+        await supabase
+          .from('typefaces')
+          .update({ weights: nextWeights })
+          .eq('id', typefaceId);
+      }
+    } catch (weightsErr) {
+      // Non-fatal: upload succeeded, but weights may be stale until next edit.
+      console.error('Failed to sync typeface weights after uploadFontFile:', weightsErr);
+    }
+
     return data;
   },
 
@@ -228,7 +279,7 @@ export const typefaceService = {
     // Get file record first
     const { data: fontFile, error: fetchError } = await supabase
       .from('font_files')
-      .select('storage_path')
+      .select('storage_path, typeface_id')
       .eq('id', id)
       .single();
     
@@ -246,6 +297,31 @@ export const typefaceService = {
       .eq('id', id);
     
     if (error) throw error;
+
+    // Keep typeface.weights in sync after deletions too.
+    // If no files remain, clear weights so UI doesn't incorrectly filter available weights.
+    try {
+      if (fontFile?.typeface_id) {
+        const { data: remaining, error: remainingErr } = await supabase
+          .from('font_files')
+          .select('weight')
+          .eq('typeface_id', fontFile.typeface_id);
+
+        if (!remainingErr) {
+          const nextWeights = Array.from(
+            new Set((remaining || []).map(r => r.weight).filter(w => typeof w === 'number'))
+          ).sort((a, b) => a - b);
+
+          await supabase
+            .from('typefaces')
+            .update({ weights: nextWeights })
+            .eq('id', fontFile.typeface_id);
+        }
+      }
+    } catch (weightsErr) {
+      console.error('Failed to sync typeface weights after deleteFontFile:', weightsErr);
+    }
+
     return true;
   },
 
@@ -341,6 +417,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Ensure generated composite typography tokens exist for this theme (incl. custom roles)
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after createTypographyRole:', syncErr);
+    }
+
     return data;
   },
 
@@ -359,6 +443,15 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync with role changes
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(data.theme_id);
+    } catch (syncErr) {
+      // Non-fatal for the role update; log for visibility
+      console.error('Failed to sync composite typography tokens after updateTypographyRole:', syncErr);
+    }
+
     return data;
   },
 
@@ -379,6 +472,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync with role changes
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after updateTypographyRoleByName:', syncErr);
+    }
+
     return data;
   },
 
@@ -388,12 +489,29 @@ export const typefaceService = {
    * @returns {Promise<boolean>} - True if successful
    */
   async deleteTypographyRole(id) {
+    // Fetch role first so we can sync tokens for its theme after deletion
+    const { data: role, error: fetchError } = await supabase
+      .from('typography_roles')
+      .select('id, theme_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
     const { error } = await supabase
       .from('typography_roles')
       .delete()
       .eq('id', id);
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync after deletion
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(role.theme_id);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after deleteTypographyRole:', syncErr);
+    }
+
     return true;
   },
 
@@ -416,6 +534,14 @@ export const typefaceService = {
       .single();
     
     if (error) throw error;
+
+    // Keep composite typography tokens in sync with role changes
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after upsertTypographyRole:', syncErr);
+    }
+
     return data;
   },
 
@@ -426,28 +552,33 @@ export const typefaceService = {
    * @returns {Promise<Array>} - Created typography roles
    */
   async createDefaultTypographyRoles(themeId) {
-    const defaultRoles = [
-      { role_name: 'display', typeface_role: 'display', font_size: '3rem', font_weight: 700, line_height: '1.1' },
-      { role_name: 'heading-xl', typeface_role: 'display', font_size: '2.25rem', font_weight: 700, line_height: '1.2' },
-      { role_name: 'heading-lg', typeface_role: 'display', font_size: '1.875rem', font_weight: 600, line_height: '1.25' },
-      { role_name: 'heading-md', typeface_role: 'display', font_size: '1.5rem', font_weight: 600, line_height: '1.3' },
-      { role_name: 'heading-sm', typeface_role: 'display', font_size: '1.25rem', font_weight: 600, line_height: '1.4' },
-      { role_name: 'body-lg', typeface_role: 'text', font_size: '1.125rem', font_weight: 400, line_height: '1.6' },
-      { role_name: 'body-md', typeface_role: 'text', font_size: '1rem', font_weight: 400, line_height: '1.5' },
-      { role_name: 'body-sm', typeface_role: 'text', font_size: '0.875rem', font_weight: 400, line_height: '1.5' },
-      { role_name: 'label', typeface_role: 'text', font_size: '0.875rem', font_weight: 500, line_height: '1.4' },
-      { role_name: 'caption', typeface_role: 'text', font_size: '0.75rem', font_weight: 400, line_height: '1.4' },
-      { role_name: 'mono', typeface_role: 'mono', font_size: '0.875rem', font_weight: 400, line_height: '1.5' },
-    ];
-
-    const roles = defaultRoles.map(r => ({ ...r, theme_id: themeId }));
+    // Universal titles: create/upsert the canonical registry roles for the theme.
+    const roles = TYPOGRAPHY_ROLE_REGISTRY.map(r => ({
+      theme_id: themeId,
+      role_name: r.name,
+      typeface_role: r.typefaceRole,
+      font_size: r.defaultSize ?? null,
+      font_size_tablet: null,
+      font_size_mobile: null,
+      font_weight: r.defaultWeight ?? 400,
+      line_height: r.defaultLineHeight ?? '1.5',
+      letter_spacing: r.defaultLetterSpacing ?? 'normal',
+    }));
     
     const { data, error } = await supabase
       .from('typography_roles')
-      .insert(roles)
+      .upsert(roles, { onConflict: 'theme_id,role_name' })
       .select();
     
     if (error) throw error;
+
+    // After creating defaults, ensure composite typography tokens exist and are wired up
+    try {
+      await typographyTokenService.syncCompositeTypographyTokensForTheme(themeId);
+    } catch (syncErr) {
+      console.error('Failed to sync composite typography tokens after createDefaultTypographyRoles:', syncErr);
+    }
+
     return data;
   },
 

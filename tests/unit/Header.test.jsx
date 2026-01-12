@@ -11,14 +11,6 @@ vi.mock('lucide-react', () => ({
   Layers: () => <span data-testid="icon-layers">Layers</span>,
   Menu: () => <span data-testid="icon-menu">Menu</span>,
   Download: () => <span data-testid="icon-download">Download</span>,
-  Palette: () => <span data-testid="icon-palette">Palette</span>,
-  ChevronDown: () => <span data-testid="icon-chevron">Chevron</span>,
-  Check: () => <span data-testid="icon-check">Check</span>,
-}));
-
-// Mock ThemeSelector component
-vi.mock('../../src/components/layout/ThemeSelector', () => ({
-  default: () => <div data-testid="theme-selector">Theme Selector</div>,
 }));
 
 // Mock ExportModal component
@@ -77,13 +69,6 @@ describe('Header', () => {
     it('renders menu icon', () => {
       renderWithRouter(<Header onMenuToggle={mockOnMenuToggle} />);
       expect(screen.getByTestId('icon-menu')).toBeInTheDocument();
-    });
-  });
-
-  describe('Theme Selector', () => {
-    it('renders ThemeSelector component', () => {
-      renderWithRouter(<Header onMenuToggle={mockOnMenuToggle} />);
-      expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
     });
   });
 

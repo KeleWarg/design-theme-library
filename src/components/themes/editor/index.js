@@ -20,6 +20,7 @@ export { default as TokenEditorPanel } from './TokenEditorPanel';
 export { default as EditorSkeleton } from './EditorSkeleton';
 export { default as ColorEditor } from './ColorEditor';
 export { default as TypographyEditor } from './TypographyEditor';
+export { default as CompositeTypographyEditor } from './CompositeTypographyEditor';
 export { default as SpacingEditor } from './SpacingEditor';
 export { default as ShadowEditor } from './ShadowEditor';
 export { default as RadiusEditor } from './RadiusEditor';

@@ -6,8 +6,7 @@ import { NavLink } from 'react-router-dom'
 import { 
   LayoutDashboard,
   Palette, 
-  Box, 
-  FigmaIcon,
+  Box,
   Settings 
 } from 'lucide-react'
 
@@ -15,7 +14,6 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/themes', icon: Palette, label: 'Themes' },
   { to: '/components', icon: Box, label: 'Components' },
-  { to: '/figma-import', icon: FigmaIcon, label: 'Figma Import' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 

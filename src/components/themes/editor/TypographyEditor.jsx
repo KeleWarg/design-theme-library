@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { Input, Select } from '../../ui';
 import { cn } from '../../../lib/utils';
 import { useTypefaces } from '../../../hooks/useTypefaces';
@@ -52,6 +51,11 @@ const WEIGHT_LABELS = {
 function parseTokenValue(value) {
   if (!value) {
     return { value: 16, unit: 'px', fontFamily: null };
+  }
+  
+  // Handle raw font-family strings (e.g., "Inter, sans-serif")
+  if (typeof value === 'string' && /[a-zA-Z]/.test(value) && !/^-?[\d.]+(px|rem|em|%)?$/.test(value)) {
+    return { value: 16, unit: 'px', fontFamily: value };
   }
   
   // Handle object format { value, unit, fontFamily }
@@ -218,9 +222,10 @@ export default function TypographyEditor({ token, themeId, onUpdate }) {
     setUnit(newUnit);
     // Save immediately when unit changes
     setTimeout(() => {
-      onUpdate?.({
-        value: { value, unit: newUnit }
-      });
+      const nextValue = fontFamily
+        ? { value, unit: newUnit, fontFamily }
+        : { value, unit: newUnit };
+      onUpdate?.({ value: nextValue });
     }, 0);
   };
   
@@ -232,7 +237,10 @@ export default function TypographyEditor({ token, themeId, onUpdate }) {
       if (isWeightToken) {
         onUpdate?.({ value: presetValue });
       } else {
-        onUpdate?.({ value: { value: presetValue, unit } });
+        const nextValue = fontFamily
+          ? { value: presetValue, unit, fontFamily }
+          : { value: presetValue, unit };
+        onUpdate?.({ value: nextValue });
       }
     }, 0);
   };
@@ -328,10 +336,7 @@ export default function TypographyEditor({ token, themeId, onUpdate }) {
           />
           {fontFamilyOptions.length === 0 && themeId && (
             <p className="typography-font-hint">
-              No typefaces configured.{' '}
-              <Link to={`/themes/${themeId}/typography`} className="typography-font-link">
-                Add typefaces →
-              </Link>
+              No typefaces configured. Use the <strong>Typography</strong> tab for this theme to add fonts.
             </p>
           )}
         </div>

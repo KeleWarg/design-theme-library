@@ -24,14 +24,19 @@ function generateCSSVariable(name, category) {
 }
 
 /**
- * Get default value for a token based on its category
+ * Get default value for a token based on its category and type
  */
-function getDefaultValue(category) {
+function getDefaultValue(category, type) {
+  // For composite typography tokens, return the structured default
+  if (category === 'typography' && type === 'typography-composite') {
+    return DEFAULT_COMPOSITE_TYPOGRAPHY;
+  }
+  
   switch (category) {
     case 'color':
       return '#000000';
     case 'typography':
-      return { fontFamily: 'sans-serif', fontSize: '16px' };
+      return { value: 16, unit: 'px' };
     case 'spacing':
       return '16px';
     case 'shadow':
@@ -50,12 +55,35 @@ function getDefaultValue(category) {
  */
 const TOKEN_TYPES = {
   color: ['color', 'gradient'],
-  typography: ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'],
+  typography: ['typography-composite', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'],
   spacing: ['spacing', 'margin', 'padding', 'gap'],
   shadow: ['shadow', 'boxShadow', 'textShadow'],
   radius: ['borderRadius'],
   grid: ['columns', 'gutter', 'container'],
   other: ['custom']
+};
+
+/**
+ * Type labels for display
+ */
+const TYPE_LABELS = {
+  'typography-composite': 'Composite (All Properties)',
+  'fontFamily': 'Font Family',
+  'fontSize': 'Font Size',
+  'fontWeight': 'Font Weight',
+  'lineHeight': 'Line Height',
+  'letterSpacing': 'Letter Spacing',
+};
+
+/**
+ * Default composite typography value
+ */
+const DEFAULT_COMPOSITE_TYPOGRAPHY = {
+  fontFamily: 'Inter, sans-serif',
+  fontSize: { value: 1, unit: 'rem' },
+  fontWeight: 400,
+  lineHeight: 1.5,
+  letterSpacing: 'normal',
 };
 
 /**
@@ -80,7 +108,7 @@ export default function AddTokenModal({ open, category, onClose, onAdd }) {
   useEffect(() => {
     if (open) {
       const defaultType = TOKEN_TYPES[category]?.[0] || 'custom';
-      const defaultValue = getDefaultValue(category);
+      const defaultValue = getDefaultValue(category, defaultType);
       
       setFormData({
         name: '',
@@ -91,6 +119,16 @@ export default function AddTokenModal({ open, category, onClose, onAdd }) {
       setErrors({});
     }
   }, [open, category]);
+
+  // Update default value when type changes
+  const handleTypeChange = (newType) => {
+    const defaultValue = getDefaultValue(category, newType);
+    setFormData(prev => ({
+      ...prev,
+      type: newType,
+      value: typeof defaultValue === 'object' ? JSON.stringify(defaultValue, null, 2) : defaultValue,
+    }));
+  };
 
   // Update CSS variable preview when name changes
   const cssVariable = generateCSSVariable(formData.name, category);
@@ -162,7 +200,7 @@ export default function AddTokenModal({ open, category, onClose, onAdd }) {
 
   const typeOptions = (TOKEN_TYPES[category] || TOKEN_TYPES.other).map(type => ({
     value: type,
-    label: type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1')
+    label: TYPE_LABELS[type] || type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, ' $1')
   }));
 
   return (
@@ -195,8 +233,13 @@ export default function AddTokenModal({ open, category, onClose, onAdd }) {
           <Select
             options={typeOptions}
             value={formData.type}
-            onChange={handleChange('type')}
+            onChange={handleTypeChange}
           />
+          {category === 'typography' && formData.type === 'typography-composite' && (
+            <p className="form-hint" style={{ marginTop: '4px', fontSize: '12px', color: 'var(--color-muted-foreground)' }}>
+              Composite tokens bundle font family, size, weight, line height, and letter spacing together.
+            </p>
+          )}
         </div>
 
         {category === 'color' ? (
@@ -225,9 +268,9 @@ export default function AddTokenModal({ open, category, onClose, onAdd }) {
             <textarea
               value={formData.value}
               onChange={handleChange('value')}
-              placeholder={getValuePlaceholder(category)}
+              placeholder={getValuePlaceholder(category, formData.type)}
               className="form-textarea"
-              rows={category === 'typography' || category === 'grid' ? 4 : 2}
+              rows={(category === 'typography' && formData.type === 'typography-composite') ? 8 : (category === 'typography' || category === 'grid' ? 4 : 2)}
             />
             {errors.value && <span className="form-error">{errors.value}</span>}
           </div>
@@ -268,14 +311,19 @@ export default function AddTokenModal({ open, category, onClose, onAdd }) {
 }
 
 /**
- * Get placeholder text for value input based on category
+ * Get placeholder text for value input based on category and type
  */
-function getValuePlaceholder(category) {
+function getValuePlaceholder(category, type) {
+  // Handle composite typography
+  if (category === 'typography' && type === 'typography-composite') {
+    return '{\n  "fontFamily": "Inter, sans-serif",\n  "fontSize": {"value": 1, "unit": "rem"},\n  "fontWeight": 400,\n  "lineHeight": 1.5,\n  "letterSpacing": "normal"\n}';
+  }
+  
   switch (category) {
     case 'color':
       return '#3b82f6 or rgb(59, 130, 246)';
     case 'typography':
-      return '{"fontFamily": "Inter", "fontSize": "16px"}';
+      return '{"value": 16, "unit": "px"}';
     case 'spacing':
       return '16px or 1rem';
     case 'shadow':

@@ -170,9 +170,11 @@ export default function ImportListModal({
           images={componentImages(reviewingComponent.id)}
           onClose={() => setReviewingComponent(null)}
           onImport={(result) => {
-            // Handle component import
             setReviewingComponent(null);
-            // Could trigger parent onImport or handle separately
+            onImport?.({
+              importId: importRecord.id,
+              components: [result],
+            });
           }}
         />
       )}

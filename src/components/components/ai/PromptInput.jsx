@@ -7,17 +7,9 @@
 
 import { Textarea, Select } from '../../ui';
 import { Sparkles, Info } from 'lucide-react';
+import { COMPONENT_CATEGORIES } from '../../../lib/componentCategories';
 
-const CATEGORY_OPTIONS = [
-  { value: 'buttons', label: 'Buttons' },
-  { value: 'forms', label: 'Forms' },
-  { value: 'layout', label: 'Layout' },
-  { value: 'navigation', label: 'Navigation' },
-  { value: 'feedback', label: 'Feedback' },
-  { value: 'data-display', label: 'Data Display' },
-  { value: 'overlay', label: 'Overlay' },
-  { value: 'other', label: 'Other' }
-];
+const CATEGORY_OPTIONS = COMPONENT_CATEGORIES;
 
 const PROMPT_SUGGESTIONS = [
   'A primary button with hover and active states, supporting an optional icon on the left',

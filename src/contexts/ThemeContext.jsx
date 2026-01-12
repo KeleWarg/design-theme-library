@@ -8,6 +8,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { themeService } from '../services/themeService';
 import { loadThemeFonts } from '../lib/fontLoader';
+import { buildResponsiveTypographyCss } from '../lib/cssVariableInjector';
 
 const ThemeContext = createContext(null);
 
@@ -28,44 +29,53 @@ export function ThemeProvider({ children }) {
       try {
         setError(null);
 
-        // Check localStorage for saved active theme and user's default preference from Settings
-        const savedThemeId = localStorage.getItem('activeThemeId');
-        const userDefaultThemeId = localStorage.getItem('ds-admin-default-theme');
+        // IMPORTANT:
+        // The admin shell should use the "system default" theme (DB `is_default`) consistently.
+        // Do NOT restore a "last active theme" on startup, since that makes the whole app
+        // appear to randomly default to whatever was last selected/viewed (e.g. "comparecoverage").
+        //
+        // Cleanup legacy key if it exists from older behavior.
+        if (localStorage.getItem('activeThemeId')) {
+          localStorage.removeItem('activeThemeId');
+        }
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H1',location:'ThemeContext.jsx:loadInitialTheme',message:'localStorage theme ids read',data:{savedThemeId,userDefaultThemeId},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
+        // User preference from Settings (single-user app: this should be the primary startup choice)
+        const userDefaultThemeId = localStorage.getItem('ds-admin-default-theme');
 
         // Get all themes
         const themes = await themeService.getThemes();
 
         if (!themes.length) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H3',location:'ThemeContext.jsx:loadInitialTheme',message:'no themes found',data:{savedThemeId,userDefaultThemeId},timestamp:Date.now()})}).catch(()=>{});
-          // #endregion
           setIsLoading(false);
           return;
         }
 
-        // Find theme to load (saved > user preference > database default > first)
+        // Find theme to load.
+        // Priority:
+        // 1) User preference from Settings (localStorage)
+        // 2) DB `is_default` theme
+        // 3) Stable deterministic fallback (name asc) to avoid "random" defaulting based on created_at ordering
+        const userPreferredTheme = userDefaultThemeId
+          ? themes.find(t => t.id === userDefaultThemeId)
+          : null;
+
+        // If the saved preference points to a deleted theme, clear it so we don't keep falling back forever.
+        if (userDefaultThemeId && !userPreferredTheme) {
+          try {
+            localStorage.removeItem('ds-admin-default-theme');
+          } catch (e) {
+            // ignore storage failures
+          }
+        }
+
         const defaultTheme = themes.find(t => t.is_default);
-        const firstTheme = themes[0];
+        const stableFallbackTheme = [...themes].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))[0];
 
         let themeToLoad =
-          themes.find(t => t.id === savedThemeId) ||
-          themes.find(t => t.id === userDefaultThemeId) ||
+          userPreferredTheme ||
           defaultTheme ||
-          firstTheme;
+          stableFallbackTheme;
 
-        let selectionSource = 'first';
-        if (themeToLoad?.id === savedThemeId) selectionSource = 'saved';
-        else if (themeToLoad?.id === userDefaultThemeId) selectionSource = 'user-default';
-        else if (themeToLoad?.id === defaultTheme?.id) selectionSource = 'db-default';
-
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H1',location:'ThemeContext.jsx:loadInitialTheme',message:'theme selection decision',data:{themesCount:themes.length,themeIds:themes.map(t=>t.id),savedThemeId,userDefaultThemeId,selectedThemeId:themeToLoad?.id,isDefaultMatch:Boolean(themes.find(t=>t.is_default)),selectionSource,defaultThemeId:defaultTheme?.id,firstThemeId:firstTheme?.id},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
-        
         if (themeToLoad) {
           await loadThemeInternal(themeToLoad.id);
         }
@@ -88,29 +98,17 @@ export function ThemeProvider({ children }) {
     setError(null);
     
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H2',location:'ThemeContext.jsx:loadThemeInternal',message:'loadThemeInternal start',data:{themeId},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-
       const theme = await themeService.getTheme(themeId);
       setActiveTheme(theme);
       setTokens(groupTokensByCategory(theme.tokens || []));
-      localStorage.setItem('activeThemeId', themeId);
       
       // Load custom fonts
       if (theme.typefaces?.length) {
         await loadThemeFonts(theme);
       }
       setFontsLoaded(true);
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H2',location:'ThemeContext.jsx:loadThemeInternal',message:'loadThemeInternal success',data:{loadedThemeId:themeId,themeName:theme.name,tokenCount:theme.tokens?.length || 0,typefaceCount:theme.typefaces?.length || 0},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
     } catch (err) {
       console.error('Failed to load theme:', err);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/cedf6f1e-83a3-4c87-b2f6-ee5968ab2749',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'prefix-1',hypothesisId:'H2',location:'ThemeContext.jsx:loadThemeInternal',message:'loadThemeInternal error',data:{themeId,error:err?.message},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       setError(err.message);
       throw err;
     }
@@ -139,19 +137,34 @@ export function ThemeProvider({ children }) {
     setActiveTheme(null);
     setTokens({});
     setFontsLoaded(false);
-    localStorage.removeItem('activeThemeId');
   }, []);
 
   // Compute CSS variables from tokens
   const cssVariables = useMemo(() => {
     if (!activeTheme?.tokens) return {};
     
-    return activeTheme.tokens.reduce((vars, token) => {
+    const rawVars = activeTheme.tokens.reduce((vars, token) => {
       if (token.css_variable) {
-        vars[token.css_variable] = tokenToCssValue(token);
+        // Check if this is a composite typography token
+        if (isCompositeTypographyToken(token)) {
+          // Expand composite token into multiple CSS variables
+          const compositeVars = expandCompositeTypographyToken(token);
+          Object.assign(vars, compositeVars);
+        } else {
+          vars[token.css_variable] = tokenToCssValue(token);
+        }
       }
       return vars;
     }, {});
+
+    // Bridge common token naming schemes to the app’s semantic CSS vars.
+    // The app’s base UI primarily uses `--color-*` (see `src/styles/variables.css`).
+    // Many imported themes use domain vars like `--background-*`, `--foreground-*`, `--button-*`.
+    // These aliases keep the UI themed even when the theme doesn’t define `--color-*` explicitly.
+    const aliasVars = deriveSemanticColorAliases(rawVars);
+
+    // Ensure explicit tokens always win over derived aliases.
+    return { ...aliasVars, ...rawVars };
   }, [activeTheme]);
 
   // Inject CSS variables into :root
@@ -187,6 +200,24 @@ export function ThemeProvider({ children }) {
       console.warn(`Failed to inject ${failedVariables.length} CSS variables:`, failedVariables);
     }
 
+    // Inject responsive typography overrides (media queries) as a style tag.
+    // This allows Desktop/Tablet/Mobile font sizes to adapt without trying to
+    // express media queries via inline styles.
+    const responsiveCss = buildResponsiveTypographyCss(activeTheme.tokens || [], { selector: ':root' });
+    const styleId = 'theme-typography-responsive';
+    let styleEl = document.getElementById(styleId);
+    if (responsiveCss) {
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = responsiveCss;
+    } else if (styleEl) {
+      styleEl.remove();
+      styleEl = null;
+    }
+
     // Cleanup: remove variables when theme changes or unmounts
     return () => {
       Object.keys(cssVariables).forEach(key => {
@@ -196,6 +227,12 @@ export function ThemeProvider({ children }) {
           // Silently ignore cleanup errors
         }
       });
+
+      try {
+        document.getElementById(styleId)?.remove();
+      } catch (err) {
+        // ignore
+      }
     };
   }, [cssVariables, activeTheme]);
 
@@ -287,27 +324,39 @@ function colorToCss(value) {
   if (typeof value === 'string') {
     return value;
   }
-  
-  if (value.opacity !== undefined && value.opacity < 1) {
-    // Handle rgba colors
-    if (value.rgb) {
-      const { r, g, b } = value.rgb;
-      return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${value.opacity})`;
+
+  if (!value || typeof value !== 'object') return '#000000';
+
+  // Normalize into { hex?, rgb?, opacity? }
+  const opacity = clamp01(value.opacity ?? 1);
+  const rgb = normalizeRgb(value.rgb) || (value.hex ? hexToRgbSafe(value.hex) : null);
+  const hex = value.hex || (rgb ? rgbToHex(rgb) : null);
+
+  if (opacity < 1) {
+    if (rgb) {
+      return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
     }
-    // Handle hex with alpha
-    if (value.hex) {
-      return hexToRgba(value.hex, value.opacity);
+    if (hex) {
+      return hexToRgba(hex, opacity);
     }
   }
-  
-  return value.hex || '#000000';
+
+  return hex || '#000000';
 }
 
 /**
  * Convert hex color to rgba
  */
 function hexToRgba(hex, opacity) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const cleaned = String(hex || '').trim().replace(/^#/, '');
+  const fullHex = cleaned.length === 3
+    ? cleaned.split('').map(c => c + c).join('')
+    : cleaned.length === 8
+      // If hex includes alpha (#RRGGBBAA), drop alpha here (opacity handled separately)
+      ? cleaned.slice(0, 6)
+      : cleaned;
+
+  const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
   if (!result) return hex;
   
   const r = parseInt(result[1], 16);
@@ -315,6 +364,85 @@ function hexToRgba(hex, opacity) {
   const b = parseInt(result[3], 16);
   
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+function clamp01(n) {
+  const x = Number(n);
+  if (Number.isNaN(x)) return 1;
+  return Math.max(0, Math.min(1, x));
+}
+
+function normalizeRgb(rgb) {
+  if (!rgb || typeof rgb !== 'object') return null;
+  if (rgb.r === undefined || rgb.g === undefined || rgb.b === undefined) return null;
+  return {
+    r: Math.max(0, Math.min(255, Math.round(rgb.r))),
+    g: Math.max(0, Math.min(255, Math.round(rgb.g))),
+    b: Math.max(0, Math.min(255, Math.round(rgb.b))),
+  };
+}
+
+function hexToRgbSafe(hex) {
+  const cleaned = String(hex || '').trim().replace(/^#/, '');
+  const fullHex = cleaned.length === 3
+    ? cleaned.split('').map(c => c + c).join('')
+    : cleaned.length === 8
+      ? cleaned.slice(0, 6)
+      : cleaned;
+
+  const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  if (!result) return null;
+  return {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16),
+  };
+}
+
+function rgbToHex(rgb) {
+  const toHex = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+  return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
+}
+
+function deriveSemanticColorAliases(vars) {
+  const pick = (keys) => {
+    for (const k of keys) {
+      const v = vars[k];
+      if (typeof v === 'string' && v.trim() !== '') return v;
+    }
+    return undefined;
+  };
+
+  const aliases = {};
+
+  // Backgrounds
+  aliases['--color-background'] = pick(['--color-background', '--background-white', '--background-default', '--background-neutral-subtle']);
+  aliases['--color-surface'] = pick(['--color-surface', '--background-white', '--background-default', '--color-background']);
+  aliases['--color-muted'] = pick(['--color-muted', '--background-neutral-subtle', '--background-neutral-light', '--background-neutral']);
+
+  // Foregrounds
+  aliases['--color-foreground'] = pick(['--color-foreground', '--foreground-heading', '--foreground-body']);
+  aliases['--color-muted-foreground'] = pick(['--color-muted-foreground', '--foreground-caption', '--foreground-body']);
+
+  // Borders
+  aliases['--color-border'] = pick(['--color-border', '--foreground-divider', '--foreground-stroke-default', '--foreground-table-border']);
+
+  // Primary/secondary (buttons/brand)
+  aliases['--color-primary'] = pick(['--color-primary', '--background-brand', '--button-primary-bg']);
+  aliases['--color-primary-hover'] = pick(['--color-primary-hover', '--button-primary-hover-bg', '--button-primary-pressed-bg']);
+  aliases['--color-secondary'] = pick(['--color-secondary', '--button-secondary-bg', '--background-secondary']);
+
+  // Status
+  aliases['--color-success'] = pick(['--color-success', '--foreground-feedback-success']);
+  aliases['--color-warning'] = pick(['--color-warning', '--foreground-feedback-warning']);
+  aliases['--color-error'] = pick(['--color-error', '--foreground-feedback-error']);
+
+  // Drop undefined entries to avoid “Skipping CSS variable ... value is undefined”
+  Object.keys(aliases).forEach((k) => {
+    if (aliases[k] === undefined) delete aliases[k];
+  });
+
+  return aliases;
 }
 
 /**
@@ -414,6 +542,105 @@ function defaultToCss(value) {
     return JSON.stringify(value);
   }
   return String(value);
+}
+
+/**
+ * Check if a token is a composite typography token
+ * @param {Object} token - Token object
+ * @returns {boolean}
+ */
+function isCompositeTypographyToken(token) {
+  return token.category === 'typography' && 
+         token.type === 'typography-composite' &&
+         typeof token.value === 'object' &&
+         token.value !== null &&
+         (token.value.fontFamily !== undefined || 
+          token.value.fontSize !== undefined || 
+          token.value.fontWeight !== undefined);
+}
+
+/**
+ * Expand a composite typography token into multiple CSS variables
+ * @param {Object} token - Composite typography token
+ * @returns {Object} - Map of CSS variable names to values
+ */
+function expandCompositeTypographyToken(token) {
+  const baseVar = token.css_variable;
+  const { value } = token;
+  const variables = {};
+
+  // Font Family
+  if (value.fontFamily) {
+    const family = typeof value.fontFamily === 'string' 
+      ? value.fontFamily 
+      : Array.isArray(value.fontFamily)
+        ? value.fontFamily.map(f => f.includes(' ') ? `"${f}"` : f).join(', ')
+        : value.fontFamily;
+    variables[`${baseVar}-family`] = family;
+  }
+
+  // Font Size
+  if (value.fontSize !== undefined) {
+    variables[`${baseVar}-size`] = formatDimensionForComposite(value.fontSize);
+  }
+
+  // Font Weight
+  if (value.fontWeight !== undefined) {
+    variables[`${baseVar}-weight`] = String(value.fontWeight);
+  }
+
+  // Line Height
+  if (value.lineHeight !== undefined) {
+    variables[`${baseVar}-line-height`] = formatLineHeightForComposite(value.lineHeight);
+  }
+
+  // Letter Spacing
+  if (value.letterSpacing !== undefined) {
+    variables[`${baseVar}-letter-spacing`] = formatLetterSpacingForComposite(value.letterSpacing);
+  }
+
+  return variables;
+}
+
+/**
+ * Format dimension value for composite tokens (fontSize, etc.)
+ */
+function formatDimensionForComposite(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return `${value}px`;
+  if (typeof value === 'object' && value.value !== undefined) {
+    return `${value.value}${value.unit ?? 'rem'}`;
+  }
+  return '1rem';
+}
+
+/**
+ * Format line height value (unitless or with unit)
+ */
+function formatLineHeightForComposite(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object' && value.value !== undefined) {
+    // Line height is typically unitless
+    if (value.unit === '' || value.unit === undefined) {
+      return String(value.value);
+    }
+    return `${value.value}${value.unit}`;
+  }
+  return '1.5';
+}
+
+/**
+ * Format letter spacing value
+ */
+function formatLetterSpacingForComposite(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return `${value}em`;
+  if (value === 'normal') return 'normal';
+  if (typeof value === 'object' && value.value !== undefined) {
+    return `${value.value}${value.unit ?? 'em'}`;
+  }
+  return 'normal';
 }
 
 export default ThemeProvider;

@@ -55,8 +55,12 @@ function parseTokenValue(value) {
  */
 function initializeColor(tokenValue) {
   const parsed = parseTokenValue(tokenValue);
-  const rgb = parsed.rgb || hexToRgb(parsed.hex);
-  const hsl = parsed.hsl || rgbToHsl(rgb.r, rgb.g, rgb.b);
+  
+  // Prefer deriving RGB/HSL from HEX to avoid stale/incorrect stored rgb/hsl
+  // (we’ve seen scripts/data where value.rgb exists but doesn’t match value.hex)
+  const canUseHex = isValidHex(parsed.hex);
+  const rgb = canUseHex ? hexToRgb(parsed.hex) : (parsed.rgb || { r: 0, g: 0, b: 0 });
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
   
   return {
     hex: parsed.hex,

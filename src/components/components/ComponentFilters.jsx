@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { FilterBar, FilterButton } from '../ui/FilterBar';
 import Button from '../ui/Button';
+import { COMPONENT_CATEGORY_OPTIONS_ALL } from '../../lib/componentCategories';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -18,19 +19,7 @@ const STATUS_OPTIONS = [
   { value: 'archived', label: 'Archived' }
 ];
 
-const CATEGORY_OPTIONS = [
-  { value: 'all', label: 'All Categories' },
-  { value: 'buttons', label: 'Buttons' },
-  { value: 'forms', label: 'Forms' },
-  { value: 'cards', label: 'Cards' },
-  { value: 'modals', label: 'Modals' },
-  { value: 'navigation', label: 'Navigation' },
-  { value: 'data-display', label: 'Data Display' },
-  { value: 'feedback', label: 'Feedback' },
-  { value: 'layout', label: 'Layout' },
-  { value: 'overlay', label: 'Overlay' },
-  { value: 'other', label: 'Other' }
-];
+const CATEGORY_OPTIONS = COMPONENT_CATEGORY_OPTIONS_ALL;
 
 const DEFAULT_FILTERS = {
   status: 'all',

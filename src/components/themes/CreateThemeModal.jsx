@@ -51,7 +51,7 @@ export default function CreateThemeModal({ open, onClose }) {
       if (mode === 'import') {
         navigate(`/themes/import?themeId=${theme.id}`);
       } else {
-        navigate(`/themes/${theme.id}/edit`);
+        navigate(`/themes/${theme.id}`);
       }
     } catch (error) {
       console.error('Failed to create theme:', error);

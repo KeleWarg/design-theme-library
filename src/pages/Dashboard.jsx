@@ -3,6 +3,7 @@
  * Dashboard page - overview of design system
  */
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Palette, Box, Download, Activity } from 'lucide-react'
 import { themeService } from '../services/themeService'
 import { componentService } from '../services/componentService'
@@ -102,21 +103,21 @@ export default function Dashboard() {
         <section className="dashboard-section">
           <h2>Quick Actions</h2>
           <div className="quick-actions">
-            <a href="/themes" className="card action-card">
+            <Link to="/themes" className="card action-card">
               <Palette size={32} />
               <h3>Create Theme</h3>
               <p>Start a new design theme from scratch</p>
-            </a>
-            <a href="/figma-import" className="card action-card">
+            </Link>
+            <Link to="/components/new?mode=ai" className="card action-card">
               <Box size={32} />
-              <h3>Import from Figma</h3>
-              <p>Sync components from your Figma files</p>
-            </a>
-            <a href="/components" className="card action-card">
+              <h3>Generate Component</h3>
+              <p>Use AI to create a new component</p>
+            </Link>
+            <Link to="/components" className="card action-card">
               <Activity size={32} />
               <h3>Manage Components</h3>
               <p>View and edit your component library</p>
-            </a>
+            </Link>
           </div>
         </section>
       </main>

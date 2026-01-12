@@ -77,8 +77,8 @@ export default function TypographyPage() {
       </header>
       
       <main className="page-content typography-sections">
-        {/* Typeface Manager - handles its own Add button */}
-        <TypefaceManager themeId={id} />
+        {/* Typeface Manager - uses the same typefaces/refetch as the role editor to avoid stale UI */}
+        <TypefaceManager themeId={id} typefaces={typefaces || []} onRefresh={refetch} isLoading={isLoading} error={error} />
         
         {/* Typography Role Editor - needs typefaces for font preview */}
         <TypographyRoleEditor themeId={id} typefaces={typefaces || []} />

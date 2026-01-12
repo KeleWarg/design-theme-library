@@ -6,11 +6,43 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Search, Type } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '../../ui';
 import TokenListItem from './TokenListItem';
 import AddTokenModal from './AddTokenModal';
+
+/**
+ * Best-effort parse of a typography token's fontSize into pixels for sorting.
+ * Supports composite typography tokens: value.fontSize as string or { value, unit }.
+ */
+function fontSizeToPx(token) {
+  if (!token || token.category !== 'typography') return 0;
+
+  const fontSize = token?.value?.fontSize;
+  if (!fontSize) return 0;
+
+  // { value, unit } shape
+  if (typeof fontSize === 'object' && fontSize !== null && fontSize.value !== undefined) {
+    const n = Number(fontSize.value);
+    if (!Number.isFinite(n)) return 0;
+    const unit = String(fontSize.unit ?? 'rem').toLowerCase();
+    if (unit === 'px') return n;
+    if (unit === 'rem' || unit === 'em') return n * 16;
+    return n; // unknown unit, fall back to raw number
+  }
+
+  // string/number
+  const raw = typeof fontSize === 'number' ? `${fontSize}px` : String(fontSize);
+  const match = raw.trim().match(/^(-?\d*\.?\d+)\s*(px|rem|em)?$/i);
+  if (!match) return 0;
+
+  const n = Number(match[1]);
+  const unit = (match[2] || 'px').toLowerCase();
+  if (!Number.isFinite(n)) return 0;
+  if (unit === 'px') return n;
+  if (unit === 'rem' || unit === 'em') return n * 16;
+  return n;
+}
 
 /**
  * List of tokens in the current category with search and CRUD operations
@@ -34,18 +66,29 @@ export default function TokenList({
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const isTypographyPreview = category === 'typography';
 
   // Filter tokens based on search query
   const filteredTokens = useMemo(() => {
-    if (!searchQuery.trim()) return tokens;
+    const base = (() => {
+      if (!searchQuery.trim()) return tokens;
+      
+      const query = searchQuery.toLowerCase();
+      return tokens.filter(token =>
+        token.name?.toLowerCase().includes(query) ||
+        token.path?.toLowerCase().includes(query) ||
+        token.css_variable?.toLowerCase().includes(query)
+      );
+    })();
     
-    const query = searchQuery.toLowerCase();
-    return tokens.filter(token =>
-      token.name?.toLowerCase().includes(query) ||
-      token.path?.toLowerCase().includes(query) ||
-      token.css_variable?.toLowerCase().includes(query)
-    );
-  }, [tokens, searchQuery]);
+    // Typography (preview) should be ordered by font size, biggest -> smallest.
+    // This makes the preview list feel like an actual typographic scale.
+    if (isTypographyPreview) {
+      return [...base].sort((a, b) => fontSizeToPx(b) - fontSizeToPx(a));
+    }
+
+    return base;
+  }, [tokens, searchQuery, isTypographyPreview]);
 
   // Handle adding a new token
   const handleAddToken = (tokenData) => {
@@ -61,29 +104,21 @@ export default function TokenList({
       {/* Header with title and add button */}
       <div className="token-list-header">
         <h3 className="token-list-title">
-          {categoryLabel} Tokens
+          {categoryLabel} Tokens{isTypographyPreview ? ' (Preview)' : ''}
         </h3>
         <div className="token-list-actions">
-          {category === 'typography' && themeId && (
-            <Link 
-              to={`/themes/${themeId}/typography`}
-              className="btn btn-ghost btn-sm token-list-link"
-              title="Manage typefaces"
+          {!isTypographyPreview && (
+            <Button 
+              size="small" 
+              variant="ghost"
+              onClick={() => setShowAddModal(true)}
+              title="Add token"
+              aria-label={`Add ${category} token`}
             >
-              <Type size={14} />
-              Manage Fonts
-            </Link>
+              <Plus size={16} />
+              Add
+            </Button>
           )}
-          <Button 
-            size="small" 
-            variant="ghost"
-            onClick={() => setShowAddModal(true)}
-            title="Add token"
-            aria-label={`Add ${category} token`}
-          >
-            <Plus size={16} />
-            Add
-          </Button>
         </div>
       </div>
 
@@ -127,15 +162,21 @@ export default function TokenList({
             </>
           ) : (
             <>
-              <p>No {category} tokens yet.</p>
-              <Button 
-                size="small" 
-                variant="secondary"
-                onClick={() => setShowAddModal(true)}
-              >
-                <Plus size={14} />
-                Add first token
-              </Button>
+              <p>
+                {isTypographyPreview
+                  ? 'No typography tokens to preview yet. Create roles on the Typography tab.'
+                  : `No ${category} tokens yet.`}
+              </p>
+              {!isTypographyPreview && (
+                <Button 
+                  size="small" 
+                  variant="secondary"
+                  onClick={() => setShowAddModal(true)}
+                >
+                  <Plus size={14} />
+                  Add first token
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -147,7 +188,7 @@ export default function TokenList({
               token={token}
               isSelected={selectedToken?.id === token.id}
               onSelect={() => onSelectToken?.(token)}
-              onDelete={() => onDeleteToken?.(token.id)}
+              onDelete={isTypographyPreview ? undefined : () => onDeleteToken?.(token.id)}
             />
           ))}
         </ul>
@@ -163,12 +204,14 @@ export default function TokenList({
       )}
 
       {/* Add Token Modal */}
-      <AddTokenModal
-        open={showAddModal}
-        category={category}
-        onClose={() => setShowAddModal(false)}
-        onAdd={handleAddToken}
-      />
+      {!isTypographyPreview && (
+        <AddTokenModal
+          open={showAddModal}
+          category={category}
+          onClose={() => setShowAddModal(false)}
+          onAdd={handleAddToken}
+        />
+      )}
     </div>
   );
 }

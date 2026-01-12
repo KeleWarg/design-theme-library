@@ -137,7 +137,6 @@ export default function ThemeCard({ theme, onRefresh }) {
           trigger={
             <button 
               className="theme-card-actions-trigger" 
-              onClick={(e) => e.stopPropagation()}
               aria-label="Theme actions"
             >
               <MoreVertical size={16} />

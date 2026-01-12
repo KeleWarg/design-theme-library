@@ -32,7 +32,7 @@ import '../styles/theme-editor.css';
 export default function ThemeEditorPage() {
   const { id } = useParams();
   const { data: theme, isLoading, error, refetch } = useTheme(id);
-  const { refreshTheme } = useThemeContext();
+  const { activeTheme, refreshTheme } = useThemeContext();
   
   // UI state
   const [activeCategory, setActiveCategory] = useState('color');
@@ -49,6 +49,11 @@ export default function ThemeEditorPage() {
       setTokens(theme.tokens);
     }
   }, [theme?.tokens]);
+
+  // IMPORTANT:
+  // Do NOT auto-switch the app-wide ThemeContext when viewing/editing a theme.
+  // The admin shell should remain on the user's selected/default theme.
+  // Theme-specific previews are handled via scoped CSS variables (ThemePreview).
 
   // Get tokens for active category
   const categoryTokens = tokens.filter(t => t.category === activeCategory);
@@ -75,8 +80,11 @@ export default function ThemeEditorPage() {
 
     try {
       await tokenService.updateToken(tokenId, updates);
-      // Refresh ThemeContext to update CSS variables across the app
-      await refreshTheme();
+      // Only refresh global ThemeContext if we're editing the currently active theme.
+      // This prevents "viewing a theme" from re-skinning the entire app.
+      if (activeTheme?.id === id) {
+        await refreshTheme();
+      }
       toast.success('Token updated');
     } catch (err) {
       console.error('Failed to update token:', err);
@@ -85,19 +93,20 @@ export default function ThemeEditorPage() {
       setTokens(previousTokens);
       setSelectedToken(previousSelectedToken);
     }
-  }, [tokens, selectedToken, refreshTheme]);
+  }, [tokens, selectedToken, refreshTheme, activeTheme?.id, id]);
 
   /**
    * Add a new token
    */
   const handleAddToken = useCallback(async (tokenData) => {
+    // Use data from the modal form if provided, with sensible defaults
     const newToken = {
-      name: `New ${tokenData.category} token`,
-      path: `${tokenData.category}/new-token`,
+      name: tokenData.name || `New ${tokenData.category} token`,
+      path: tokenData.path || `${tokenData.category}/${(tokenData.name || 'new-token').toLowerCase().replace(/\s+/g, '-')}`,
       category: tokenData.category,
-      type: tokenData.category,
-      value: tokenData.category === 'color' ? { hex: '#000000' } : '',
-      css_variable: `--${tokenData.category}-new-token`,
+      type: tokenData.type || tokenData.category,
+      value: tokenData.value !== undefined ? tokenData.value : (tokenData.category === 'color' ? { hex: '#000000' } : ''),
+      css_variable: tokenData.css_variable || `--${tokenData.category}-new-token`,
       theme_id: id
     };
 
@@ -106,12 +115,15 @@ export default function ThemeEditorPage() {
       setTokens(prev => [...prev, created]);
       setSelectedToken(created);
       setHasChanges(true);
+      if (activeTheme?.id === id) {
+        await refreshTheme();
+      }
       toast.success('Token created');
     } catch (err) {
       console.error('Failed to create token:', err);
       toast.error('Failed to create token');
     }
-  }, [id]);
+  }, [id, refreshTheme, activeTheme?.id]);
 
   /**
    * Delete a token
@@ -132,6 +144,9 @@ export default function ThemeEditorPage() {
 
     try {
       await tokenService.deleteToken(tokenId);
+      if (activeTheme?.id === id) {
+        await refreshTheme();
+      }
       toast.success('Token deleted');
     } catch (err) {
       console.error('Failed to delete token:', err);
@@ -140,7 +155,7 @@ export default function ThemeEditorPage() {
       setTokens(previousTokens);
       setSelectedToken(previousSelectedToken);
     }
-  }, [tokens, selectedToken]);
+  }, [tokens, selectedToken, refreshTheme, activeTheme?.id, id]);
 
   /**
    * Select a token for editing
@@ -263,7 +278,7 @@ export default function ThemeEditorPage() {
       )}
 
       {showPreview && (
-        <ThemePreview theme={{ ...theme, tokens }} />
+        <ThemePreview theme={{ ...theme, tokens }} initialCollapsed={true} />
       )}
     </div>
   );

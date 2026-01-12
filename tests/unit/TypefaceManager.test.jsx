@@ -7,6 +7,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
+const mockRefreshTheme = vi.fn().mockResolvedValue(undefined);
+
 // Mock Supabase client before importing services
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
@@ -28,10 +30,16 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
+// Mock ThemeContext (TypefaceManager expects refreshTheme from context)
+vi.mock('../../src/contexts/ThemeContext', () => ({
+  useThemeContext: () => ({
+    refreshTheme: mockRefreshTheme,
+  }),
+}));
+
 // Mock the typefaceService
 vi.mock('../../src/services/typefaceService', () => ({
   typefaceService: {
-    getTypefacesByTheme: vi.fn(),
     getTypeface: vi.fn(),
     createTypeface: vi.fn(),
     updateTypeface: vi.fn(),
@@ -222,12 +230,19 @@ describe('TypefaceManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    typefaceService.getTypefacesByTheme.mockResolvedValue(mockTypefaces);
     typefaceService.deleteTypeface.mockResolvedValue(true);
   });
 
   it('shows all 4 role slots', async () => {
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={mockTypefaces}
+        isLoading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Display')).toBeInTheDocument();
@@ -238,7 +253,15 @@ describe('TypefaceManager', () => {
   });
 
   it('shows assigned typefaces', async () => {
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={mockTypefaces}
+        isLoading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     await waitFor(() => {
       // Font family appears in both preview and details, so use getAllByText
@@ -250,7 +273,15 @@ describe('TypefaceManager', () => {
   });
 
   it('shows empty state for unassigned roles', async () => {
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={mockTypefaces}
+        isLoading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     await waitFor(() => {
       // Mono and Accent are not assigned in mockTypefaces
@@ -260,7 +291,15 @@ describe('TypefaceManager', () => {
   });
 
   it('edit opens modal', async () => {
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={mockTypefaces}
+        isLoading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     await waitFor(() => {
       const playfairElements = screen.getAllByText('Playfair Display');
@@ -281,7 +320,16 @@ describe('TypefaceManager', () => {
     // Mock window.confirm
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    render(<TypefaceManager themeId="theme-1" />);
+    const onRefresh = vi.fn();
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={mockTypefaces}
+        isLoading={false}
+        error={null}
+        onRefresh={onRefresh}
+      />
+    );
 
     await waitFor(() => {
       const playfairElements = screen.getAllByText('Playfair Display');
@@ -303,7 +351,15 @@ describe('TypefaceManager', () => {
     // Mock window.confirm to return false
     vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={mockTypefaces}
+        isLoading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     await waitFor(() => {
       const playfairElements = screen.getAllByText('Playfair Display');
@@ -320,22 +376,38 @@ describe('TypefaceManager', () => {
   });
 
   it('shows loading state', () => {
-    typefaceService.getTypefacesByTheme.mockImplementation(() => new Promise(() => {}));
-    
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={[]}
+        isLoading={true}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     expect(screen.getByText('Loading typefaces...')).toBeInTheDocument();
   });
 
   it('shows error state with retry button', async () => {
-    typefaceService.getTypefacesByTheme.mockRejectedValue(new Error('Failed to load'));
-    
-    render(<TypefaceManager themeId="theme-1" />);
+    const onRefresh = vi.fn();
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={[]}
+        isLoading={false}
+        error={new Error('Failed to load')}
+        onRefresh={onRefresh}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Failed to load typefaces')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Retry/ })).toBeInTheDocument();
     });
+
+    fireEvent.click(screen.getByRole('button', { name: /Retry/ }));
+    expect(onRefresh).toHaveBeenCalled();
   });
 
   it('Add Typeface button is disabled when all 4 roles are assigned', async () => {
@@ -344,9 +416,15 @@ describe('TypefaceManager', () => {
       { id: 'tf-3', role: 'mono', family: 'JetBrains Mono', fallback: 'monospace', source_type: 'google', weights: [400], is_variable: false, font_files: [] },
       { id: 'tf-4', role: 'accent', family: 'Dancing Script', fallback: 'cursive', source_type: 'google', weights: [400, 700], is_variable: false, font_files: [] }
     ];
-    typefaceService.getTypefacesByTheme.mockResolvedValue(allAssigned);
-
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={allAssigned}
+        isLoading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     await waitFor(() => {
       const addButton = screen.getByRole('button', { name: /Add Typeface/ });
@@ -355,7 +433,15 @@ describe('TypefaceManager', () => {
   });
 
   it('clicking Add Typeface opens modal for adding new typeface', async () => {
-    render(<TypefaceManager themeId="theme-1" />);
+    render(
+      <TypefaceManager
+        themeId="theme-1"
+        typefaces={mockTypefaces}
+        isLoading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />
+    );
 
     await waitFor(() => {
       const playfairElements = screen.getAllByText('Playfair Display');

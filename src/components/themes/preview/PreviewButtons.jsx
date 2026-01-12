@@ -1,237 +1,243 @@
 /**
  * @chunk 2.27 - Preview Components
  * 
- * Button preview section showing button variants.
+ * Button preview section showing button variants using the theme's
+ * actual button color tokens.
  */
+
+/**
+ * Extract color value from token
+ */
+function getColorValue(token) {
+  if (!token) return null;
+  const { value } = token;
+  if (typeof value === 'string') return value;
+  if (value?.hex) return value.hex;
+  return null;
+}
 
 /**
  * Preview button variants with theme styles applied
  */
-export default function PreviewButtons() {
+export default function PreviewButtons({ theme }) {
+  const tokens = theme?.tokens || [];
+  const colorTokens = tokens.filter(t => t.category === 'color');
+  
+  // Find button tokens by css_variable name
+  const findToken = (cssVar) => colorTokens.find(t => t.css_variable === cssVar);
+  
+  // Primary button tokens
+  const primaryBg = getColorValue(findToken('--button-primary-bg'));
+  const primaryText = getColorValue(findToken('--button-primary-text'));
+  const primaryHoverBg = getColorValue(findToken('--button-primary-hover-bg'));
+  const primaryDisabledBg = getColorValue(findToken('--button-primary-disabled-bg'));
+  
+  // Secondary button tokens
+  const secondaryBg = getColorValue(findToken('--button-secondary-bg'));
+  const secondaryText = getColorValue(findToken('--button-secondary-text'));
+  const secondaryBorder = getColorValue(findToken('--button-secondary-border'));
+  const secondaryHoverBg = getColorValue(findToken('--button-secondary-hover-bg'));
+  
+  // Ghost button tokens
+  const ghostBg = getColorValue(findToken('--button-ghost-bg'));
+  const ghostText = getColorValue(findToken('--button-ghost-text'));
+  const ghostHoverBg = getColorValue(findToken('--button-ghost-hover-bg'));
+  
+  // Fallback colors if no button tokens exist
+  const hasPrimaryTokens = primaryBg || primaryText;
+  const hasSecondaryTokens = secondaryBg || secondaryText || secondaryBorder;
+  const hasGhostTokens = ghostText || ghostHoverBg;
+  
+  // Use theme's general colors as fallbacks
+  const fallbackPrimary = getColorValue(findToken('--background-button')) || 
+                          getColorValue(findToken('--background-brand')) || 
+                          'var(--background-button, var(--background-brand, transparent))';
+  const fallbackPrimaryText = 'var(--foreground-on-primary, var(--foreground-body-inverse, currentColor))';
+  const fallbackBorder = getColorValue(findToken('--foreground-stroke-default')) || 'var(--foreground-stroke-default, currentColor)';
+  const fallbackText = getColorValue(findToken('--foreground-body')) || 'var(--foreground-body, currentColor)';
+  
+  // Common button styles
+  const baseButtonStyle = {
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    fontWeight: 500,
+    fontSize: '14px',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  };
+
+  // If no button tokens at all, show a message
+  if (!hasPrimaryTokens && !hasSecondaryTokens && !hasGhostTokens) {
+    return (
+      <div className="preview-buttons-container">
+        <p style={{ color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', fontSize: '14px', marginBottom: '16px' }}>
+          No button-specific tokens found. Showing buttons with theme colors.
+        </p>
+        
+        {/* Show generic buttons using available colors */}
+        <div className="preview-button-row" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', minWidth: '80px' }}>Primary</span>
+            <button style={{ ...baseButtonStyle, backgroundColor: fallbackPrimary, color: fallbackPrimaryText }}>
+              Button
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', minWidth: '80px' }}>Secondary</span>
+            <button style={{ ...baseButtonStyle, backgroundColor: 'var(--background-white, transparent)', color: fallbackText, border: `1px solid ${fallbackBorder}` }}>
+              Button
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', minWidth: '80px' }}>Ghost</span>
+            <button style={{ ...baseButtonStyle, backgroundColor: 'transparent', color: fallbackText }}>
+              Button
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="preview-buttons-container">
       {/* Primary buttons */}
-      <div className="preview-button-row">
-        <span className="preview-button-label">Primary</span>
-        <div className="preview-button-variants">
-          <button 
-            className="preview-btn preview-btn-primary"
-            style={{
-              backgroundColor: 'var(--color-primary, #3b82f6)',
-              color: 'var(--color-primary-foreground, #ffffff)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Primary
-          </button>
-          <button 
-            className="preview-btn preview-btn-primary preview-btn-hover"
-            style={{
-              backgroundColor: 'var(--color-primary-hover, #2563eb)',
-              color: 'var(--color-primary-foreground, #ffffff)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Hover
-          </button>
-          <button 
-            className="preview-btn preview-btn-primary preview-btn-disabled"
-            disabled
-            style={{
-              backgroundColor: 'var(--color-primary, #3b82f6)',
-              color: 'var(--color-primary-foreground, #ffffff)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-              opacity: 0.5,
-            }}
-          >
-            Disabled
-          </button>
+      {hasPrimaryTokens && (
+        <div className="preview-button-row" style={{ marginBottom: '16px' }}>
+          <span style={{ fontSize: '13px', color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', display: 'block', marginBottom: '8px' }}>Primary</span>
+          <div className="preview-button-variants" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button 
+              style={{
+                ...baseButtonStyle,
+                backgroundColor: primaryBg || fallbackPrimary,
+                color: primaryText || fallbackPrimaryText,
+              }}
+            >
+              Primary
+            </button>
+            {primaryHoverBg && (
+              <button 
+                style={{
+                  ...baseButtonStyle,
+                  backgroundColor: primaryHoverBg,
+                  color: primaryText || fallbackPrimaryText,
+                }}
+              >
+                Hover
+              </button>
+            )}
+            {primaryDisabledBg && (
+              <button 
+                disabled
+                style={{
+                  ...baseButtonStyle,
+                  backgroundColor: primaryDisabledBg,
+                  color: primaryText || fallbackPrimaryText,
+                  opacity: 0.5,
+                  cursor: 'not-allowed',
+                }}
+              >
+                Disabled
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Secondary buttons */}
-      <div className="preview-button-row">
-        <span className="preview-button-label">Secondary</span>
-        <div className="preview-button-variants">
-          <button 
-            className="preview-btn preview-btn-secondary"
-            style={{
-              backgroundColor: 'var(--color-secondary, #f3f4f6)',
-              color: 'var(--color-secondary-foreground, #1f2937)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Secondary
-          </button>
-          <button 
-            className="preview-btn preview-btn-secondary preview-btn-hover"
-            style={{
-              backgroundColor: 'var(--color-secondary-hover, #e5e7eb)',
-              color: 'var(--color-secondary-foreground, #1f2937)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Hover
-          </button>
+      {hasSecondaryTokens && (
+        <div className="preview-button-row" style={{ marginBottom: '16px' }}>
+          <span style={{ fontSize: '13px', color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', display: 'block', marginBottom: '8px' }}>Secondary</span>
+          <div className="preview-button-variants" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button 
+              style={{
+                ...baseButtonStyle,
+                backgroundColor: secondaryBg || 'var(--background-white, transparent)',
+                color: secondaryText || fallbackText,
+                border: secondaryBorder ? `1px solid ${secondaryBorder}` : `1px solid ${fallbackBorder}`,
+              }}
+            >
+              Secondary
+            </button>
+            {secondaryHoverBg && (
+              <button 
+                style={{
+                  ...baseButtonStyle,
+                  backgroundColor: secondaryHoverBg,
+                  color: secondaryText || fallbackText,
+                  border: secondaryBorder ? `1px solid ${secondaryBorder}` : `1px solid ${fallbackBorder}`,
+                }}
+              >
+                Hover
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Outline buttons */}
-      <div className="preview-button-row">
-        <span className="preview-button-label">Outline</span>
-        <div className="preview-button-variants">
-          <button 
-            className="preview-btn preview-btn-outline"
-            style={{
-              backgroundColor: 'transparent',
-              color: 'var(--color-foreground, #1a1a1a)',
-              border: '1px solid var(--color-border, #e5e7eb)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Outline
-          </button>
-          <button 
-            className="preview-btn preview-btn-outline preview-btn-hover"
-            style={{
-              backgroundColor: 'var(--color-muted, #f5f5f5)',
-              color: 'var(--color-foreground, #1a1a1a)',
-              border: '1px solid var(--color-border, #e5e7eb)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Hover
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Ghost buttons */}
-      <div className="preview-button-row">
-        <span className="preview-button-label">Ghost</span>
-        <div className="preview-button-variants">
-          <button 
-            className="preview-btn preview-btn-ghost"
-            style={{
-              backgroundColor: 'transparent',
-              color: 'var(--color-foreground, #1a1a1a)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Ghost
-          </button>
-          <button 
-            className="preview-btn preview-btn-ghost preview-btn-hover"
-            style={{
-              backgroundColor: 'var(--color-muted, #f5f5f5)',
-              color: 'var(--color-foreground, #1a1a1a)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Hover
-          </button>
+      {hasGhostTokens && (
+        <div className="preview-button-row" style={{ marginBottom: '16px' }}>
+          <span style={{ fontSize: '13px', color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', display: 'block', marginBottom: '8px' }}>Ghost</span>
+          <div className="preview-button-variants" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button 
+              style={{
+                ...baseButtonStyle,
+                backgroundColor: ghostBg || 'transparent',
+                color: ghostText || fallbackText,
+              }}
+            >
+              Ghost
+            </button>
+            {ghostHoverBg && (
+              <button 
+                style={{
+                  ...baseButtonStyle,
+                  backgroundColor: ghostHoverBg,
+                  color: ghostText || fallbackText,
+                }}
+              >
+                Hover
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Destructive buttons */}
+      {/* Button sizes showcase */}
       <div className="preview-button-row">
-        <span className="preview-button-label">Destructive</span>
-        <div className="preview-button-variants">
+        <span style={{ fontSize: '13px', color: 'var(--foreground-caption, var(--foreground-muted, currentColor))', display: 'block', marginBottom: '8px' }}>Sizes</span>
+        <div className="preview-button-variants preview-button-sizes" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button 
-            className="preview-btn preview-btn-destructive"
             style={{
-              backgroundColor: 'var(--color-error, #ef4444)',
-              color: 'var(--color-error-foreground, #ffffff)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Delete
-          </button>
-          <button 
-            className="preview-btn preview-btn-destructive-outline"
-            style={{
-              backgroundColor: 'transparent',
-              color: 'var(--color-error, #ef4444)',
-              border: '1px solid var(--color-error, #ef4444)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-
-      {/* Button sizes */}
-      <div className="preview-button-row">
-        <span className="preview-button-label">Sizes</span>
-        <div className="preview-button-variants preview-button-sizes">
-          <button 
-            className="preview-btn preview-btn-primary preview-btn-sm"
-            style={{
-              backgroundColor: 'var(--color-primary, #3b82f6)',
-              color: 'var(--color-primary-foreground, #ffffff)',
-              borderRadius: 'var(--radius-sm, 4px)',
-              padding: 'var(--spacing-xs, 4px) var(--spacing-sm, 8px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-xs, 12px)',
+              ...baseButtonStyle,
+              backgroundColor: primaryBg || fallbackPrimary,
+              color: primaryText || fallbackPrimaryText,
+              padding: '4px 8px',
+              fontSize: '12px',
+              borderRadius: '4px',
             }}
           >
             Small
           </button>
           <button 
-            className="preview-btn preview-btn-primary preview-btn-md"
             style={{
-              backgroundColor: 'var(--color-primary, #3b82f6)',
-              color: 'var(--color-primary-foreground, #ffffff)',
-              borderRadius: 'var(--radius-md, 6px)',
-              padding: 'var(--spacing-sm, 8px) var(--spacing-md, 16px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-sm, 14px)',
+              ...baseButtonStyle,
+              backgroundColor: primaryBg || fallbackPrimary,
+              color: primaryText || fallbackPrimaryText,
             }}
           >
             Medium
           </button>
           <button 
-            className="preview-btn preview-btn-primary preview-btn-lg"
             style={{
-              backgroundColor: 'var(--color-primary, #3b82f6)',
-              color: 'var(--color-primary-foreground, #ffffff)',
-              borderRadius: 'var(--radius-lg, 8px)',
-              padding: 'var(--spacing-md, 16px) var(--spacing-lg, 24px)',
-              fontWeight: 'var(--font-weight-medium, 500)',
-              fontSize: 'var(--font-size-base, 16px)',
+              ...baseButtonStyle,
+              backgroundColor: primaryBg || fallbackPrimary,
+              color: primaryText || fallbackPrimaryText,
+              padding: '12px 24px',
+              fontSize: '16px',
+              borderRadius: '8px',
             }}
           >
             Large
@@ -241,4 +247,3 @@ export default function PreviewButtons() {
     </div>
   );
 }
-

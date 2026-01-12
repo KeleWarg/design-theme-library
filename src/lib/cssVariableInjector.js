@@ -5,6 +5,8 @@
  * Used by ThemeContext to inject theme tokens into document.documentElement.
  */
 
+import { TYPOGRAPHY_BREAKPOINTS } from './typographyRoleRegistry';
+
 /**
  * Inject CSS variables into a target element
  * @param {Array} tokens - Array of token objects with css_variable and value
@@ -22,10 +24,24 @@ export function injectCssVariables(tokens, options = {}) {
   const variables = {};
 
   tokens.forEach(token => {
-    const cssValue = tokenToCssValue(token);
     const varName = token.css_variable;
-    
     if (!varName) return;
+
+    // Handle composite typography tokens - generate multiple CSS variables
+    if (isCompositeTypographyToken(token)) {
+      const compositeVars = expandCompositeTypographyToken(token);
+      Object.entries(compositeVars).forEach(([name, value]) => {
+        if (debug) {
+          console.log(`[CSS Composite] ${name}: ${value}`);
+        }
+        target.style.setProperty(name, value);
+        variables[name] = value;
+      });
+      return;
+    }
+
+    // Standard single-value token
+    const cssValue = tokenToCssValue(token);
     
     if (debug) {
       console.log(`[CSS] ${varName}: ${cssValue}`);
@@ -36,6 +52,171 @@ export function injectCssVariables(tokens, options = {}) {
   });
 
   return variables;
+}
+
+/**
+ * Check if a token is a composite typography token
+ * @param {Object} token - Token object
+ * @returns {boolean}
+ */
+export function isCompositeTypographyToken(token) {
+  return token.category === 'typography' && 
+         token.type === 'typography-composite' &&
+         typeof token.value === 'object' &&
+         token.value !== null &&
+         (token.value.fontFamily !== undefined || 
+          token.value.fontSize !== undefined || 
+          token.value.fontWeight !== undefined);
+}
+
+/**
+ * Expand a composite typography token into multiple CSS variables
+ * @param {Object} token - Composite typography token
+ * @returns {Object} - Map of CSS variable names to values
+ */
+export function expandCompositeTypographyToken(token) {
+  const baseVar = token.css_variable;
+  const { value } = token;
+  const variables = {};
+
+  // Font Family
+  if (value.fontFamily) {
+    const family = typeof value.fontFamily === 'string' 
+      ? value.fontFamily 
+      : Array.isArray(value.fontFamily)
+        ? value.fontFamily.map(f => f.includes(' ') ? `"${f}"` : f).join(', ')
+        : value.fontFamily;
+    variables[`${baseVar}-family`] = family;
+  }
+
+  // Font Size
+  if (value.fontSize !== undefined) {
+    variables[`${baseVar}-size`] = formatDimensionForComposite(value.fontSize);
+  }
+
+  // Font Weight
+  if (value.fontWeight !== undefined) {
+    variables[`${baseVar}-weight`] = String(value.fontWeight);
+  }
+
+  // Line Height
+  if (value.lineHeight !== undefined) {
+    variables[`${baseVar}-line-height`] = formatLineHeight(value.lineHeight);
+  }
+
+  // Letter Spacing
+  if (value.letterSpacing !== undefined) {
+    variables[`${baseVar}-letter-spacing`] = formatLetterSpacing(value.letterSpacing);
+  }
+
+  return variables;
+}
+
+/**
+ * Format dimension value for composite tokens (fontSize, etc.)
+ */
+function formatDimensionForComposite(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return `${value}px`;
+  // Responsive shape: { desktop, tablet, mobile }
+  if (typeof value === 'object' && value && value.desktop !== undefined) {
+    return formatDimensionForComposite(value.desktop);
+  }
+  if (typeof value === 'object' && value.value !== undefined) {
+    return `${value.value}${value.unit ?? 'rem'}`;
+  }
+  return '1rem';
+}
+
+function getResponsiveFontSize(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.desktop === undefined && value.tablet === undefined && value.mobile === undefined) return null;
+  return {
+    desktop: value.desktop,
+    tablet: value.tablet,
+    mobile: value.mobile,
+  };
+}
+
+/**
+ * Build responsive typography CSS overrides (@media blocks) for composite typography tokens.
+ *
+ * We only override `--typography-<role>-size` today (font size), because that’s
+ * what your Desktop/Tablet/Mobile token sets adapt. This can be extended later
+ * for line-height/letter-spacing if needed.
+ *
+ * @param {Array} tokens - Array of token objects
+ * @param {Object} options
+ * @param {string} options.selector - Selector to apply overrides to (default ':root')
+ * @returns {string}
+ */
+export function buildResponsiveTypographyCss(tokens, options = {}) {
+  const { selector = ':root' } = options;
+  if (!Array.isArray(tokens) || tokens.length === 0) return '';
+
+  const tablet = [];
+  const mobile = [];
+
+  for (const token of tokens) {
+    if (!isCompositeTypographyToken(token)) continue;
+    const baseVar = token.css_variable;
+    const responsive = getResponsiveFontSize(token?.value?.fontSize);
+    if (!responsive) continue;
+
+    const desktopValue = responsive.desktop;
+    const tabletValue = responsive.tablet ?? desktopValue;
+    const mobileValue = responsive.mobile ?? tabletValue ?? desktopValue;
+
+    const desktopCss = desktopValue !== undefined ? formatDimensionForComposite(desktopValue) : null;
+    const tabletCss = tabletValue !== undefined ? formatDimensionForComposite(tabletValue) : null;
+    const mobileCss = mobileValue !== undefined ? formatDimensionForComposite(mobileValue) : null;
+
+    if (tabletCss && tabletCss !== desktopCss) {
+      tablet.push(`  ${baseVar}-size: ${tabletCss};`);
+    }
+    if (mobileCss && mobileCss !== (tabletCss || desktopCss)) {
+      mobile.push(`  ${baseVar}-size: ${mobileCss};`);
+    }
+  }
+
+  let css = '';
+  if (tablet.length) {
+    css += `@media (max-width: ${TYPOGRAPHY_BREAKPOINTS.tabletMaxWidthPx}px) {\n${selector} {\n${tablet.join('\n')}\n}\n}\n`;
+  }
+  if (mobile.length) {
+    css += `@media (max-width: ${TYPOGRAPHY_BREAKPOINTS.mobileMaxWidthPx}px) {\n${selector} {\n${mobile.join('\n')}\n}\n}\n`;
+  }
+
+  return css;
+}
+
+/**
+ * Format line height value (unitless or with unit)
+ */
+function formatLineHeight(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object' && value.value !== undefined) {
+    // Line height is typically unitless
+    if (value.unit === '' || value.unit === undefined) {
+      return String(value.value);
+    }
+    return `${value.value}${value.unit}`;
+  }
+  return '1.5';
+}
+
+/**
+ * Format letter spacing value
+ */
+function formatLetterSpacing(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return `${value}em`;
+  if (value === 'normal') return 'normal';
+  if (typeof value === 'object' && value.value !== undefined) {
+    return `${value.value}${value.unit ?? 'em'}`;
+  }
+  return 'normal';
 }
 
 /**
@@ -214,6 +395,39 @@ function formatSingleShadow(s) {
  */
 function formatTypographyValue(value) {
   if (typeof value === 'string') return value;
+
+  // Handle font-family objects (common in imports): { family: "Inter" } or { fontFamily: "Inter, sans-serif" }
+  if (value && typeof value === 'object') {
+    const rawFamily =
+      value.fontFamily ??
+      value.family ??
+      value.font_family ??
+      (value.value && (value.value.fontFamily ?? value.value.family)) ??
+      null;
+
+    if (rawFamily) {
+      const toStack = (f) =>
+        f
+          .map((name) => {
+            const s = String(name).trim();
+            if (!s) return null;
+            // If already a stack item or quoted, keep as-is.
+            if (s.includes(',') || (s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+              return s;
+            }
+            return s.includes(' ') ? `"${s}"` : s;
+          })
+          .filter(Boolean)
+          .join(', ');
+
+      if (typeof rawFamily === 'string') return rawFamily;
+      if (Array.isArray(rawFamily)) return toStack(rawFamily);
+      if (rawFamily && typeof rawFamily === 'object') {
+        if (typeof rawFamily.family === 'string') return rawFamily.family;
+        if (Array.isArray(rawFamily.stack)) return toStack(rawFamily.stack);
+      }
+    }
+  }
   
   if (typeof value === 'object' && value.value !== undefined) {
     const unit = value.unit;
@@ -278,5 +492,49 @@ export function batchUpdateCssVariables(updates, target = document.documentEleme
 export function hasCssVariable(varName, target = document.documentElement) {
   const value = getComputedStyle(target).getPropertyValue(varName);
   return value.trim() !== '';
+}
+
+/**
+ * Get all CSS variable names that would be generated from a token
+ * (handles both simple and composite tokens)
+ * @param {Object} token - Token object
+ * @returns {Array<string>} - Array of CSS variable names
+ */
+export function getTokenCssVariableNames(token) {
+  if (!token.css_variable) return [];
+  
+  if (isCompositeTypographyToken(token)) {
+    const baseVar = token.css_variable;
+    const names = [];
+    const { value } = token;
+    
+    if (value.fontFamily !== undefined) names.push(`${baseVar}-family`);
+    if (value.fontSize !== undefined) names.push(`${baseVar}-size`);
+    if (value.fontWeight !== undefined) names.push(`${baseVar}-weight`);
+    if (value.lineHeight !== undefined) names.push(`${baseVar}-line-height`);
+    if (value.letterSpacing !== undefined) names.push(`${baseVar}-letter-spacing`);
+    
+    return names;
+  }
+  
+  return [token.css_variable];
+}
+
+/**
+ * Get composite typography token value as a flat object for display/editing
+ * @param {Object} token - Composite typography token
+ * @returns {Object} - Flat object with all typography properties
+ */
+export function getCompositeTypographyValues(token) {
+  if (!isCompositeTypographyToken(token)) return null;
+  
+  const { value } = token;
+  return {
+    fontFamily: value.fontFamily || '',
+    fontSize: formatDimensionForComposite(value.fontSize),
+    fontWeight: value.fontWeight || 400,
+    lineHeight: formatLineHeight(value.lineHeight),
+    letterSpacing: formatLetterSpacing(value.letterSpacing),
+  };
 }
 

@@ -5,7 +5,7 @@
  * Displays token preview, name, path, and delete action.
  */
 
-import { MoreHorizontal, Trash2, Copy, Edit3 } from 'lucide-react';
+import { MoreHorizontal, Trash2, Copy } from 'lucide-react';
 import { DropdownMenu } from '../../ui';
 import { cn } from '../../../lib/utils';
 
@@ -38,9 +38,28 @@ function getTokenPreview(token) {
 
   // Typography tokens show font info
   if (token.category === 'typography') {
-    const fontValue = typeof token.value === 'object' 
-      ? token.value.fontFamily || token.value.fontSize
-      : value;
+    let fontValue;
+    if (typeof token.value === 'object') {
+      // Handle composite typography tokens
+      if (token.value.fontFamily) {
+        fontValue = token.value.fontFamily;
+      } else if (token.value.family) {
+        // Common font token format from imports: { family: "Inter" }
+        fontValue = token.value.family;
+      } else if (token.value.fontSize) {
+        // fontSize might be an object { value, unit } or a string
+        fontValue = typeof token.value.fontSize === 'object' 
+          ? `${token.value.fontSize.value}${token.value.fontSize.unit || ''}`
+          : token.value.fontSize;
+      } else if (token.value.value !== undefined) {
+        // Simple dimension token { value, unit }
+        fontValue = `${token.value.value}${token.value.unit || ''}`;
+      } else {
+        fontValue = JSON.stringify(token.value).slice(0, 20);
+      }
+    } else {
+      fontValue = value;
+    }
     return <span className="token-value-text">{fontValue}</span>;
   }
 
@@ -114,6 +133,8 @@ export default function TokenListItem({ token, isSelected, onSelect, onDelete })
     }
   };
 
+  const isDeletable = typeof onDelete === 'function';
+
   return (
     <li className="token-list-item-wrapper" role="option" aria-selected={isSelected}>
       <button
@@ -149,10 +170,14 @@ export default function TokenListItem({ token, isSelected, onSelect, onDelete })
           <DropdownMenu.Item onClick={handleCopyValue}>
             <Copy size={14} /> Copy Value
           </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item danger onClick={handleDelete}>
-            <Trash2 size={14} /> Delete Token
-          </DropdownMenu.Item>
+          {isDeletable && (
+            <>
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item danger onClick={handleDelete}>
+                <Trash2 size={14} /> Delete Token
+              </DropdownMenu.Item>
+            </>
+          )}
         </DropdownMenu>
       </div>
     </li>

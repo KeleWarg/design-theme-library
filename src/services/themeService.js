@@ -45,7 +45,7 @@ export const themeService = {
     const tokenPromises = themeIds.map(async (themeId) => {
       const { data, error } = await supabase
         .from('tokens')
-        .select('id, theme_id, name, category, value')
+        .select('id, theme_id, name, path, category, value, css_variable')
         .eq('theme_id', themeId)
         .eq('category', 'color')
         .limit(5);
@@ -203,10 +203,12 @@ export const themeService = {
    */
   async setDefaultTheme(id) {
     // First, unset all other defaults
-    await supabase
+    const { error: unsetError } = await supabase
       .from('themes')
       .update({ is_default: false })
       .neq('id', id);
+
+    if (unsetError) throw unsetError;
     
     // Then set the new default
     const { data, error } = await supabase

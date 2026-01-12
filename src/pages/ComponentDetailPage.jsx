@@ -33,12 +33,45 @@ export default function ComponentDetailPage() {
 
   const handlePublish = async () => {
     try {
-      await componentService.updateComponent(id, { status: 'published' });
+      await componentService.publishComponent(id);
       mutate();
       toast.success('Component published');
     } catch (error) {
       console.error('Failed to publish component:', error);
       toast.error('Failed to publish component');
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      await componentService.unpublishComponent(id);
+      mutate();
+      toast.success('Component unpublished');
+    } catch (error) {
+      console.error('Failed to unpublish component:', error);
+      toast.error('Failed to unpublish component');
+    }
+  };
+
+  const handleArchive = async () => {
+    try {
+      await componentService.archiveComponent(id);
+      mutate();
+      toast.success('Component archived');
+    } catch (error) {
+      console.error('Failed to archive component:', error);
+      toast.error('Failed to archive component');
+    }
+  };
+
+  const handleUnarchive = async () => {
+    try {
+      await componentService.unarchiveComponent(id);
+      mutate();
+      toast.success('Component unarchived');
+    } catch (error) {
+      console.error('Failed to unarchive component:', error);
+      toast.error('Failed to unarchive component');
     }
   };
 
@@ -105,6 +138,24 @@ export default function ComponentDetailPage() {
                 </Button>
               }
             >
+              {component.status === 'published' && (
+                <DropdownMenu.Item onClick={handleUnpublish}>
+                  Unpublish
+                </DropdownMenu.Item>
+              )}
+              {component.status !== 'archived' && (
+                <DropdownMenu.Item onClick={handleArchive}>
+                  Archive
+                </DropdownMenu.Item>
+              )}
+              {component.status === 'archived' && (
+                <DropdownMenu.Item onClick={handleUnarchive}>
+                  Unarchive
+                </DropdownMenu.Item>
+              )}
+              {(component.status === 'published' || component.status === 'archived') && (
+                <DropdownMenu.Separator />
+              )}
               <DropdownMenu.Item onClick={handleDuplicate}>
                 Duplicate
               </DropdownMenu.Item>
