@@ -3,13 +3,32 @@
  * Type definitions for the Visual QA feature
  */
 
+/**
+ * @chunk 7.09 - DOM Element from captured page
+ */
+export interface DOMElement {
+  selector: string;
+  bounds: { x: number; y: number; width: number; height: number };
+  styles: {
+    color: string;
+    backgroundColor: string;
+    fontFamily: string;
+    fontSize: string;
+    fontWeight: string;
+  };
+  textContent: string;
+}
+
 export interface CapturedAsset {
   id: string;
+  inputType?: 'url' | 'image' | 'figma';
   image: {
     url: string;
     width: number;
     height: number;
+    blob?: Blob;
   };
+  domElements?: DOMElement[];
   metadata?: {
     source?: string;
     capturedAt?: string;
