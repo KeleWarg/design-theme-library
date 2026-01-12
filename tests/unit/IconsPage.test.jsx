@@ -5,23 +5,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
-// Mock lucide-react icons used by IconsPage + modals
-vi.mock('lucide-react', () => ({
-  Plus: () => <span data-testid="icon-plus">Plus</span>,
-  Search: () => <span data-testid="icon-search">Search</span>,
-  Image: () => <span data-testid="icon-image">Image</span>,
-  Trash2: () => <span data-testid="icon-trash">Trash</span>,
-  Download: () => <span data-testid="icon-download">Download</span>,
-  Upload: () => <span data-testid="icon-upload">Upload</span>,
-  X: () => <span data-testid="icon-x">X</span>,
-  FileIcon: () => <span data-testid="icon-file">File</span>,
-  Link: () => <span data-testid="icon-link">Link</span>,
-  ExternalLink: () => <span data-testid="icon-external">External</span>,
-  AlertCircle: () => <span data-testid="icon-alert">Alert</span>,
-  Copy: () => <span data-testid="icon-copy">Copy</span>,
-  Check: () => <span data-testid="icon-check">Check</span>,
-}));
-
 vi.mock('../../src/services/iconService', () => ({
   iconService: {
     getIcons: vi.fn(),
