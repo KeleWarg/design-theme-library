@@ -1,60 +1,62 @@
 /**
- * @chunk 7.17 - QA Page Shell
- * Placeholder ComparisonWorkspace component
- * Full implementation in chunk 7.28
+ * @chunk 7.28 - ComparisonWorkspace
+ * Full comparison mode UI with synchronized side-by-side viewers.
+ * Features:
+ * - Two SplitImageViewers for source and target
+ * - Sync toggle to link/unlink zoom and pan
+ * - Uses useViewSync hook for state synchronization
  */
+import { useState } from 'react';
+import { SplitImageViewer } from './SplitImageViewer';
 import { useQAStore } from '../../../stores/qaStore';
-import { ImageIcon } from 'lucide-react';
+import { useViewSync } from '../../../hooks/useViewSync';
+import { Link2, Link2Off } from 'lucide-react';
 
 export function ComparisonWorkspace() {
   const { sourceAsset, targetAsset } = useQAStore();
+  const [syncEnabled, setSyncEnabled] = useState(true);
+  const {
+    leftView,
+    rightView,
+    setLeftScale,
+    setLeftPosition,
+    setRightScale,
+    setRightPosition,
+  } = useViewSync(syncEnabled);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="p-2 border-b bg-white flex items-center justify-center gap-2">
-        <span className="text-sm text-gray-500">Compare Mode</span>
+        <button
+          onClick={() => setSyncEnabled(!syncEnabled)}
+          className={`px-3 py-1.5 rounded flex items-center gap-2 text-sm
+            ${syncEnabled ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
+        >
+          {syncEnabled ? <Link2 size={16} /> : <Link2Off size={16} />}
+          {syncEnabled ? 'Sync On' : 'Sync Off'}
+        </button>
       </div>
 
       <div className="flex-1 flex gap-2 p-2">
-        <div className="flex-1 flex flex-col border rounded-lg overflow-hidden bg-gray-100">
-          <div className="px-3 py-2 bg-white border-b text-sm font-medium">
-            Source
-          </div>
-          <div className="flex-1 flex items-center justify-center">
-            {sourceAsset ? (
-              <img
-                src={sourceAsset.image.url}
-                alt="Source"
-                className="max-w-full max-h-full object-contain"
-              />
-            ) : (
-              <div className="text-gray-400 flex flex-col items-center gap-2">
-                <ImageIcon className="w-8 h-8" />
-                <span className="text-sm">No image selected</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <SplitImageViewer
+          asset={sourceAsset}
+          label="Source"
+          scale={leftView.scale}
+          position={leftView.position}
+          onScaleChange={setLeftScale}
+          onPositionChange={setLeftPosition}
+          syncEnabled={syncEnabled}
+        />
 
-        <div className="flex-1 flex flex-col border rounded-lg overflow-hidden bg-gray-100">
-          <div className="px-3 py-2 bg-white border-b text-sm font-medium">
-            Target
-          </div>
-          <div className="flex-1 flex items-center justify-center">
-            {targetAsset ? (
-              <img
-                src={targetAsset.image.url}
-                alt="Target"
-                className="max-w-full max-h-full object-contain"
-              />
-            ) : (
-              <div className="text-gray-400 flex flex-col items-center gap-2">
-                <ImageIcon className="w-8 h-8" />
-                <span className="text-sm">No image selected</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <SplitImageViewer
+          asset={targetAsset}
+          label="Target"
+          scale={rightView.scale}
+          position={rightView.position}
+          onScaleChange={setRightScale}
+          onPositionChange={setRightPosition}
+          syncEnabled={syncEnabled}
+        />
       </div>
     </div>
   );
