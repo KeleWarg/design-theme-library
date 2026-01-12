@@ -165,7 +165,7 @@ export default function IconsPage() {
               icons={icons}
               onDelete={handleDelete}
               onSelect={toggleSelect}
-              selectedId={null}
+              selectedIds={selectedIds}
             />
           </>
         )}

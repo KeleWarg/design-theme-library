@@ -15,17 +15,12 @@ import { toast } from 'sonner';
 import { iconService } from '../../services/iconService';
 
 export default function ImportIconModal({ open, onClose, onSuccess }) {
-  const [mode, setMode] = useState('url'); // 'url' | 'icons8'
+  const [mode, setMode] = useState('url'); // 'url' (icons8 is coming soon)
   const [url, setUrl] = useState('');
   const [name, setName] = useState('');
   const [tags, setTags] = useState('');
   const [style, setStyle] = useState('outline');
   const [isImporting, setIsImporting] = useState(false);
-
-  // Icons8 search state (for future MCP integration)
-  const [icons8Query, setIcons8Query] = useState('');
-  const [icons8Results, setIcons8Results] = useState([]);
-  const [icons8Loading, setIcons8Loading] = useState(false);
 
   const handleImportFromUrl = async (e) => {
     e.preventDefault();
@@ -78,45 +73,8 @@ export default function ImportIconModal({ open, onClose, onSuccess }) {
     setName('');
     setTags('');
     setStyle('outline');
-    setIcons8Query('');
-    setIcons8Results([]);
     setMode('url');
     onClose?.();
-  };
-
-  // Placeholder for Icons8 MCP search
-  // In practice, this would call an MCP tool through Cursor
-  const handleIcons8Search = async () => {
-    if (!icons8Query.trim()) return;
-    
-    setIcons8Loading(true);
-    
-    // Simulate search - in real implementation this would call MCP
-    setTimeout(() => {
-      setIcons8Results([]);
-      setIcons8Loading(false);
-      toast.info('Icons8 MCP integration requires Cursor tooling. Use URL import for now.');
-    }, 500);
-  };
-
-  const handleSelectIcons8Icon = async (icon) => {
-    // This would be called when user selects an icon from Icons8 results
-    // For now it's a placeholder
-    try {
-      await iconService.importFromIcons8({
-        name: icon.name,
-        svgUrl: icon.svgUrl,
-        style: icon.style || 'outline',
-        tags: icon.tags || []
-      });
-      
-      toast.success('Icon imported from Icons8');
-      onSuccess?.();
-      handleClose();
-    } catch (err) {
-      console.error('Failed to import from Icons8:', err);
-      toast.error(err.message || 'Failed to import icon');
-    }
   };
 
   return (
@@ -134,11 +92,13 @@ export default function ImportIconModal({ open, onClose, onSuccess }) {
           </button>
           <button
             type="button"
-            className={`import-tab ${mode === 'icons8' ? 'import-tab--active' : ''}`}
-            onClick={() => setMode('icons8')}
+            className="import-tab import-tab--disabled"
+            disabled
+            aria-disabled="true"
+            title="Coming soon"
           >
             <ExternalLink size={16} />
-            Icons8
+            Icons8 (Coming Soon)
           </button>
         </div>
 
@@ -196,69 +156,17 @@ export default function ImportIconModal({ open, onClose, onSuccess }) {
           </form>
         )}
 
-        {/* Icons8 Mode */}
-        {mode === 'icons8' && (
-          <div className="import-icons8">
-            <div className="import-icons8-notice">
-              <AlertCircle size={20} />
-              <div>
-                <strong>Icons8 MCP Integration</strong>
-                <p>
-                  Icons8 search requires the MCP server to be running via Cursor tooling.
-                  For now, you can copy an SVG URL from Icons8 and use the URL import.
-                </p>
-              </div>
-            </div>
-
-            <div className="import-icons8-search">
-              <Input
-                label="Search Icons8"
-                value={icons8Query}
-                onChange={(e) => setIcons8Query(e.target.value)}
-                placeholder="e.g. arrow, home, settings"
-              />
-              <Button 
-                variant="secondary" 
-                onClick={handleIcons8Search}
-                loading={icons8Loading}
-                disabled
-              >
-                Search (Coming Soon)
-              </Button>
-            </div>
-
-            {icons8Results.length > 0 && (
-              <div className="import-icons8-results">
-                {icons8Results.map(icon => (
-                  <button
-                    key={icon.id}
-                    className="import-icons8-result"
-                    onClick={() => handleSelectIcons8Icon(icon)}
-                  >
-                    <img src={icon.previewUrl} alt={icon.name} />
-                    <span>{icon.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="import-icons8-help">
-              <h4>How to import from Icons8:</h4>
-              <ol>
-                <li>Go to <a href="https://icons8.com" target="_blank" rel="noopener noreferrer">icons8.com</a></li>
-                <li>Find an icon you want</li>
-                <li>Right-click → "Copy SVG" or download as SVG</li>
-                <li>Switch to "From URL" tab and paste the URL, or upload the file</li>
-              </ol>
-            </div>
-
-            <div className="import-actions">
-              <Button variant="secondary" onClick={handleClose}>
-                Cancel
-              </Button>
-            </div>
+        {/* Icons8 Notice (Coming Soon) */}
+        <div className="import-icons8-notice">
+          <AlertCircle size={20} />
+          <div>
+            <strong>Icons8 integration is coming soon</strong>
+            <p>
+              For now, import Icons8 SVGs by copying an SVG URL (or downloading an SVG) and using
+              <strong> From URL</strong>.
+            </p>
           </div>
-        )}
+        </div>
       </div>
 
       <style>{`
@@ -300,6 +208,11 @@ export default function ImportIconModal({ open, onClose, onSuccess }) {
           background: var(--color-background, #ffffff);
           color: var(--color-foreground, #1a1a1a);
           box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+        }
+
+        .import-tab--disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
         }
 
         .import-form {
@@ -345,12 +258,6 @@ export default function ImportIconModal({ open, onClose, onSuccess }) {
           border-top: 1px solid var(--color-border, #e5e7eb);
         }
 
-        .import-icons8 {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-lg, 24px);
-        }
-
         .import-icons8-notice {
           display: flex;
           gap: var(--spacing-md, 16px);
@@ -371,82 +278,6 @@ export default function ImportIconModal({ open, onClose, onSuccess }) {
           font-size: var(--font-size-sm, 14px);
         }
 
-        .import-icons8-search {
-          display: flex;
-          gap: var(--spacing-sm, 8px);
-          align-items: flex-end;
-        }
-
-        .import-icons8-search .form-field {
-          flex: 1;
-        }
-
-        .import-icons8-results {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-          gap: var(--spacing-sm, 8px);
-          max-height: 200px;
-          overflow-y: auto;
-        }
-
-        .import-icons8-result {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: var(--spacing-xs, 4px);
-          padding: var(--spacing-sm, 8px);
-          background: var(--color-background, #ffffff);
-          border: 1px solid var(--color-border, #e5e7eb);
-          border-radius: var(--radius-md, 6px);
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-
-        .import-icons8-result:hover {
-          border-color: var(--color-primary, #3b82f6);
-        }
-
-        .import-icons8-result img {
-          width: 32px;
-          height: 32px;
-        }
-
-        .import-icons8-result span {
-          font-size: var(--font-size-xs, 12px);
-          color: var(--color-muted-foreground, #6b7280);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 100%;
-        }
-
-        .import-icons8-help {
-          padding: var(--spacing-md, 16px);
-          background: var(--color-muted, #f3f4f6);
-          border-radius: var(--radius-md, 6px);
-        }
-
-        .import-icons8-help h4 {
-          margin: 0 0 var(--spacing-sm, 8px) 0;
-          font-size: var(--font-size-sm, 14px);
-          font-weight: var(--font-weight-semibold, 600);
-          color: var(--color-foreground, #1a1a1a);
-        }
-
-        .import-icons8-help ol {
-          margin: 0;
-          padding-left: var(--spacing-lg, 24px);
-          font-size: var(--font-size-sm, 14px);
-          color: var(--color-muted-foreground, #6b7280);
-        }
-
-        .import-icons8-help li {
-          margin-bottom: var(--spacing-xs, 4px);
-        }
-
-        .import-icons8-help a {
-          color: var(--color-primary, #3b82f6);
-        }
       `}</style>
     </Modal>
   );

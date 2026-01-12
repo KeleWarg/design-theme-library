@@ -6,7 +6,7 @@
 
 import IconCard from './IconCard';
 
-export default function IconGrid({ icons, onDelete, onSelect, selectedId }) {
+export default function IconGrid({ icons, onDelete, onSelect, selectedIds }) {
   if (!icons || icons.length === 0) {
     return null;
   }
@@ -19,7 +19,7 @@ export default function IconGrid({ icons, onDelete, onSelect, selectedId }) {
           icon={icon}
           onDelete={onDelete}
           onSelect={onSelect}
-          selected={selectedId === icon.id}
+          selected={selectedIds?.has?.(icon.id) ?? false}
         />
       ))}
 
