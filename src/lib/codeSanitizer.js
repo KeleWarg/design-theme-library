@@ -19,6 +19,93 @@ export function stripTypeScriptForRenderer(code) {
 
   let out = code;
 
+  const stripParamTypesInSignature = (src) => {
+    if (!src) return src;
+    let s = src;
+
+    // Arrow functions without parens: x: string => ...  /  (x?: string) won't match; keep conservative
+    s = s.replace(
+      /\b([A-Za-z_$][\w$]*)\s*:\s*[A-Za-z0-9_.<>,\s\[\]]+\s*(?==>)/g,
+      '$1'
+    );
+
+    const stripTypesInsideParensAt = (startIdx, endIdx) => {
+      const before = s.slice(0, startIdx + 1);
+      const inside = s.slice(startIdx + 1, endIdx);
+      const after = s.slice(endIdx);
+
+      // Remove "param: Type" and "param?: Type" within a parameter list only.
+      // This avoids corrupting object literals like "{ backgroundColor: bg }".
+      const cleaned = inside.replace(
+        /([A-Za-z_$][\w$]*\??)\s*:\s*[A-Za-z0-9_.<>,\s\[\]]+(?=\s*[,)=])/g,
+        '$1'
+      );
+
+      s = before + cleaned + after;
+    };
+
+    const findMatchingParenBackward = (closeIdx) => {
+      let depth = 0;
+      for (let i = closeIdx; i >= 0; i--) {
+        const ch = s[i];
+        if (ch === ')') depth++;
+        else if (ch === '(') {
+          depth--;
+          if (depth === 0) return i;
+        }
+      }
+      return -1;
+    };
+
+    const findMatchingParenForward = (openIdx) => {
+      let depth = 0;
+      for (let i = openIdx; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '(') depth++;
+        else if (ch === ')') {
+          depth--;
+          if (depth === 0) return i;
+        }
+      }
+      return -1;
+    };
+
+    // Process classic functions: function ... ( ... )
+    let idx = 0;
+    while (idx < s.length) {
+      const fnIdx = s.indexOf('function', idx);
+      if (fnIdx === -1) break;
+      const parenIdx = s.indexOf('(', fnIdx);
+      if (parenIdx === -1) break;
+      const closeIdx = findMatchingParenForward(parenIdx);
+      if (closeIdx === -1) break;
+      stripTypesInsideParensAt(parenIdx, closeIdx);
+      idx = closeIdx + 1;
+    }
+
+    // Process arrow functions with parens: ( ... ) => ...
+    idx = 0;
+    while (idx < s.length) {
+      const arrowIdx = s.indexOf('=>', idx);
+      if (arrowIdx === -1) break;
+
+      // look left for a close paren right before arrow (allow whitespace)
+      let j = arrowIdx - 1;
+      while (j >= 0 && /\s/.test(s[j])) j--;
+      if (j >= 0 && s[j] === ')') {
+        const openIdx = findMatchingParenBackward(j);
+        if (openIdx !== -1) {
+          stripTypesInsideParensAt(openIdx, j);
+          idx = arrowIdx + 2;
+          continue;
+        }
+      }
+      idx = arrowIdx + 2;
+    }
+
+    return s;
+  };
+
   // Remove common prop interfaces/types (non-greedy within the block).
   // Example:
   // interface FooProps { ... }
@@ -37,10 +124,8 @@ export function stripTypeScriptForRenderer(code) {
   // Remove variable type annotations: "const x: Foo ="
   out = out.replace(/\b(const|let|var)\s+(\w+)\s*:\s*[^=;\n]+=/g, '$1 $2 =');
 
-  // Remove parameter type annotations: "(x: string, y: number)" → "(x, y)"
-  // This is intentionally scoped to patterns that end before ",", ")", or "="
-  // so we don't accidentally modify object literals like "gap: var(--space-sm)".
-  out = out.replace(/(\b\w+\b)\s*:\s*[A-Za-z0-9_.<>,\s\[\]]+(?=\s*[,)=])/g, '$1');
+  // Remove parameter type annotations only within function/arrow signatures.
+  out = stripParamTypesInSignature(out);
 
   // Remove destructured param type annotations: "({ a, b }: FooProps)" → "({ a, b })"
   out = out.replace(/\(\s*\{([\s\S]*?)\}\s*:\s*\w+Props\s*\)/g, '({$1})');

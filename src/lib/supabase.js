@@ -29,14 +29,33 @@ const supabaseAnonKey = allowOverrides
 
 const missingMsg = 'Missing Supabase configuration. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  if (import.meta.env.MODE === 'production') {
-    throw new Error(missingMsg);
-  } else {
-    console.error(missingMsg);
-  }
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export const supabaseConfigError = isSupabaseConfigured ? null : missingMsg;
+
+function createMissingSupabaseProxy(message) {
+  return new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        // Allow basic introspection without throwing.
+        if (prop === '__isMissingConfig') return true;
+        if (prop === '__missingConfigMessage') return message;
+
+        // Make failures explicit and actionable.
+        throw new Error(message);
+      },
+    },
+  );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!isSupabaseConfigured) {
+  // Never hard-crash the whole app at import-time — show a helpful UI instead.
+  // (App-level guard renders a config screen in production.)
+  console.error(missingMsg);
+}
+
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createMissingSupabaseProxy(missingMsg);
 
 

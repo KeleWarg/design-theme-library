@@ -15,6 +15,8 @@ import ComponentRenderer from './ComponentRenderer';
 import PropControl from './PropControl';
 import { Monitor, Tablet, Smartphone, Palette, ExternalLink } from 'lucide-react';
 import { isCompositeTypographyToken, expandCompositeTypographyToken, tokenToCssValue } from '../../../lib/cssVariableInjector';
+import { detectPropNamesFromCode } from '../../../lib/propGenerator';
+import { coercePropValues, computePreviewPropDiagnostics } from '../../../lib/previewPropUtils';
 
 function deriveSemanticColorAliases(vars) {
   const pick = (keys) => {
@@ -80,6 +82,15 @@ export default function PreviewTab({ component }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [viewMode, setViewMode] = useState('desktop');
   const [backgroundMode, setBackgroundMode] = useState('light');
+  const variantPropDef = useMemo(() => {
+    return (component?.props || []).find(
+      (p) =>
+        p?.name === 'variant' &&
+        p?.type === 'enum' &&
+        Array.isArray(p?.options) &&
+        p.options.length > 0
+    );
+  }, [component?.props]);
 
   // Persist preview theme selection to localStorage
   const handleThemeChange = (themeId) => {
@@ -101,6 +112,14 @@ export default function PreviewTab({ component }) {
     });
     setPropValues(defaults);
   }, [component.props]);
+
+  // Keep the selected preset in sync with the `variant` prop (when present)
+  // This avoids showing two "variant" controls in the Preview tab.
+  useEffect(() => {
+    if (!variantPropDef) return;
+    const current = propValues?.variant;
+    setSelectedVariant(current ? String(current) : null);
+  }, [variantPropDef, propValues?.variant]);
 
   // Apply variant props when variant is selected
   useEffect(() => {
@@ -138,6 +157,18 @@ export default function PreviewTab({ component }) {
 
   const themeForPreview = previewTheme || activeTheme;
 
+  const usedPropNames = useMemo(() => {
+    return new Set(detectPropNamesFromCode(component?.code || ''));
+  }, [component?.code]);
+
+  const diagnostics = useMemo(() => {
+    return computePreviewPropDiagnostics({
+      propDefs: component?.props || [],
+      usedPropNames,
+      code: component?.code || '',
+    });
+  }, [component?.props, usedPropNames, component?.code]);
+
   const scopedCssVariables = useMemo(() => {
     if (!themeForPreview?.tokens) return {};
 
@@ -166,17 +197,33 @@ export default function PreviewTab({ component }) {
     }
   }, [viewMode]);
 
+  // Coerce preview prop values to correct runtime types (booleans, numbers, etc.)
+  const coercedPropValues = useMemo(() => {
+    return coercePropValues(component?.props || [], propValues);
+  }, [component?.props, propValues]);
+
   return (
     <div className="preview-tab">
       <div className="preview-controls">
-        {component.variants && component.variants.length > 0 && (
+        {(variantPropDef || (component.variants && component.variants.length > 0)) && (
           <Select
             label="Variant"
             value={selectedVariant || ''}
-            onChange={(val) => setSelectedVariant(val || null)}
+            onChange={(val) => {
+              const next = val || null;
+              setSelectedVariant(next);
+              if (variantPropDef) {
+                setPropValues((prev) => ({
+                  ...prev,
+                  variant: next || undefined,
+                }));
+              }
+            }}
             options={[
               { value: '', label: 'Default' },
-              ...component.variants.map(v => ({ value: v.name, label: v.name }))
+              ...(variantPropDef
+                ? variantPropDef.options.map((o) => ({ value: o, label: o }))
+                : component.variants.map(v => ({ value: v.name, label: v.name })))
             ]}
           />
         )}
@@ -226,6 +273,37 @@ export default function PreviewTab({ component }) {
         />
       </div>
 
+      {/* Diagnostics: help explain why controls might not change output */}
+      {component?.props?.length > 0 && diagnostics.unusedPropNames.length > 0 && (
+        <div className="preview-diagnostics">
+          <div className="preview-diagnostics-title">
+            Preview inputs may not affect output
+          </div>
+          <div className="preview-diagnostics-body">
+            <div className="preview-diagnostics-text">
+              The component code does not appear to reference these props:
+              <span className="preview-diagnostics-props">
+                {diagnostics.unusedPropNames.slice(0, 8).join(', ')}
+                {diagnostics.unusedPropNames.length > 8 ? ` (+${diagnostics.unusedPropNames.length - 8} more)` : ''}
+              </span>
+              {diagnostics.hasPropsSpread && (
+                <span className="preview-diagnostics-note">
+                  Note: code spreads <code>{'{...props}'}</code>/<code>{'{...rest}'}</code>, so this list may be incomplete.
+                </span>
+              )}
+            </div>
+            <div className="preview-diagnostics-hints">
+              <div>
+                <strong>Icons:</strong> your component must render <code>{'<Icon name={icon} />'}</code> (or matching prop name).
+              </div>
+              <div>
+                <strong>Variants:</strong> selecting a variant only changes output if the component reads those props (e.g. <code>variant</code>, <code>size</code>).
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         className="preview-viewport" 
         data-mode={viewMode}
@@ -235,7 +313,7 @@ export default function PreviewTab({ component }) {
         <div className="preview-viewport-content">
           <ComponentRenderer
             code={component.code}
-            props={propValues}
+            props={coercedPropValues}
             icons={icons || []}
           />
         </div>
@@ -245,11 +323,13 @@ export default function PreviewTab({ component }) {
         <div className="prop-controls">
           <h4>Props</h4>
           <div className="prop-controls-grid">
-            {component.props.map(prop => (
+            {component.props
+              .filter((p) => !(variantPropDef && p?.name === 'variant'))
+              .map(prop => (
               <PropControl
                 key={prop.name}
                 prop={prop}
-                value={propValues[prop.name]}
+                value={coercedPropValues[prop.name]}
                 onChange={(value) => setPropValues(prev => ({
                   ...prev,
                   [prop.name]: value
@@ -276,6 +356,44 @@ export default function PreviewTab({ component }) {
           background: var(--color-background, #ffffff);
           border: 1px solid var(--color-border, #e5e7eb);
           border-radius: var(--radius-lg, 8px);
+        }
+
+        .preview-diagnostics {
+          padding: var(--spacing-md, 16px);
+          border: 1px solid var(--color-warning, #f59e0b);
+          background: var(--color-warning-light, #fffbeb);
+          border-radius: var(--radius-lg, 8px);
+          color: var(--color-warning-foreground, #92400e);
+        }
+
+        .preview-diagnostics-title {
+          font-weight: var(--font-weight-semibold, 600);
+          margin-bottom: var(--spacing-xs, 4px);
+        }
+
+        .preview-diagnostics-body {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm, 8px);
+          font-size: var(--font-size-sm, 14px);
+          line-height: 1.4;
+        }
+
+        .preview-diagnostics-props {
+          margin-left: var(--spacing-xs, 4px);
+          font-family: var(--font-family-mono);
+          font-size: var(--font-size-xs, 12px);
+        }
+
+        .preview-diagnostics-note {
+          display: block;
+          margin-top: var(--spacing-xs, 4px);
+          opacity: 0.9;
+        }
+
+        .preview-diagnostics-hints {
+          display: grid;
+          gap: var(--spacing-xs, 4px);
         }
 
         .preview-theme-control {

@@ -13,6 +13,7 @@
 export { default as PageHeader } from './PageHeader';
 export { FilterBar, FilterButton } from './FilterBar';
 export { default as EmptyState } from './EmptyState';
+export { default as MissingSupabaseConfig } from './MissingSupabaseConfig';
 export { Skeleton, ThemeCardSkeleton, ThemeGridSkeleton, ComponentCardSkeleton, ComponentGridSkeleton, DetailSkeleton, ImportSkeleton } from './Skeleton';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as StatusBadge } from './StatusBadge';

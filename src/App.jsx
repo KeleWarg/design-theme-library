@@ -9,6 +9,8 @@ import { Toaster } from 'sonner'
 import { ThemeProvider } from './contexts'
 import { Layout } from './components/layout'
 import { CssVariableDebugger } from './components/dev'
+import { MissingSupabaseConfig } from './components/ui'
+import { getSupabaseEnvStatus } from './lib/requiredEnv'
 import {
   Dashboard,
   ThemesPage,
@@ -21,9 +23,18 @@ import {
   FigmaImportPage,
   SettingsPage,
   IconsPage,
+  QAPage,
 } from './pages'
 
 export default function App() {
+  const { isMissing, missingKeys } = getSupabaseEnvStatus(import.meta.env)
+
+  // If Supabase isn't configured in production, the app can't function.
+  // Render a clear error screen instead of crashing at import-time.
+  if (import.meta.env.MODE === 'production' && isMissing) {
+    return <MissingSupabaseConfig missingKeys={missingKeys} />
+  }
+
   return (
     <ThemeProvider>
       <BrowserRouter>
@@ -63,6 +74,9 @@ export default function App() {
             
             {/* Settings */}
             <Route path="/settings" element={<SettingsPage />} />
+
+            {/* Visual QA */}
+            <Route path="/qa" element={<QAPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

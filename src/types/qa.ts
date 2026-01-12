@@ -14,11 +14,13 @@ export type InputType = 'image' | 'url' | 'figma';
  */
 export interface QAInput {
   type: InputType;
-  // For image
+  // For image and HTML
   file?: File;
   preview?: string;
   width?: number;
   height?: number;
+  // For HTML
+  viewport?: { width: number; height: number };
   // For URL
   url?: string;
   // For Figma

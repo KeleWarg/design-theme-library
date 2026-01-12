@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X } from 'lucide-react';
+import '../../../styles/qa.css';
 
 export function ImageDropzone({ onSelect }) {
   const [preview, setPreview] = useState(null);
@@ -35,14 +36,32 @@ export function ImageDropzone({ onSelect }) {
 
   if (preview) {
     return (
-      <div className="relative">
-        <img src={preview} alt="Preview" className="max-h-64 rounded-lg" />
-        <div className="text-sm text-gray-500 mt-2">
+      <div className="card">
+        <img
+          src={preview}
+          alt="Preview"
+          style={{
+            maxHeight: '16rem',
+            width: '100%',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border)',
+            objectFit: 'contain',
+            background: 'var(--color-muted)',
+          }}
+        />
+        <div className="qa-file-preview-dims">
           {dimensions?.width} × {dimensions?.height}
         </div>
-        <button onClick={handleClear} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow">
-          <X size={16} />
-        </button>
+        <div style={{ marginTop: 'var(--spacing-sm)' }}>
+          <button
+            onClick={handleClear}
+            className="qa-icon-button"
+            type="button"
+            aria-label="Clear selected image"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
     );
   }
@@ -50,13 +69,12 @@ export function ImageDropzone({ onSelect }) {
   return (
     <div
       {...getRootProps()}
-      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-        ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+      className={`qa-dropzone ${isDragActive ? 'qa-dropzone--active' : ''}`}
     >
       <input {...getInputProps()} />
-      <Upload className="mx-auto mb-4 text-gray-400" size={48} />
-      <p className="text-gray-600">Drop an image here, or click to select</p>
-      <p className="text-sm text-gray-400 mt-2">PNG, JPG, WebP up to 10MB</p>
+      <Upload className="qa-dropzone-icon" size={48} />
+      <p className="qa-dropzone-title">Drop an image here, or click to select</p>
+      <p className="qa-dropzone-subtitle">PNG, JPG, WebP up to 10MB</p>
     </div>
   );
 }

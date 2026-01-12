@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Globe, Loader2 } from 'lucide-react';
 
-export function UrlInput({ onSubmit, isLoading }) {
+export function UrlInput({ onCapture, isLoading }) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
 
@@ -20,7 +20,7 @@ export function UrlInput({ onSubmit, isLoading }) {
       return;
     }
     setError('');
-    onSubmit(url);
+    onCapture(url);
   };
 
   const handleKeyDown = (e) => {

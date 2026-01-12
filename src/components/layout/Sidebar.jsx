@@ -3,12 +3,13 @@
  * Navigation sidebar with links to main sections
  */
 import { NavLink } from 'react-router-dom'
-import { 
+import {
   LayoutDashboard,
-  Palette, 
+  Palette,
   Box,
   Image,
-  Settings 
+  ScanSearch,
+  Settings
 } from 'lucide-react'
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { to: '/themes', icon: Palette, label: 'Themes' },
   { to: '/components', icon: Box, label: 'Components' },
   { to: '/icons', icon: Image, label: 'Icons' },
+  { to: '/qa', icon: ScanSearch, label: 'Visual QA' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
