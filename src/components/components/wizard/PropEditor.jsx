@@ -16,6 +16,7 @@ const PROP_TYPES = [
   { value: 'number', label: 'Number' },
   { value: 'boolean', label: 'Boolean' },
   { value: 'enum', label: 'Enum' },
+  { value: 'icon', label: 'Icon' },
   { value: 'node', label: 'ReactNode' },
 ];
 

@@ -186,10 +186,17 @@ export default function TokenSelector({ selected = [], onChange, tokens = {} }) 
 
           return (
             <div key={category} className="token-selector-category">
-              <button
-                type="button"
+              <div
                 className="token-selector-category-header"
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleCategory(category)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleCategory(category);
+                  }
+                }}
               >
                 <div className="token-selector-category-left">
                   {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -209,7 +216,7 @@ export default function TokenSelector({ selected = [], onChange, tokens = {} }) 
                 >
                   {allSelected ? 'Deselect All' : 'Select All'}
                 </button>
-              </button>
+              </div>
 
               {isExpanded && (
                 <div className="token-selector-category-tokens">

@@ -10,6 +10,8 @@ import {
   buildRegenerationPrompt, 
   parseGeneratedComponent 
 } from '../lib/promptBuilder';
+import { prepareComponentCodeForEval } from '../lib/codeSanitizer';
+import * as Babel from '@babel/standalone';
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -229,6 +231,33 @@ export const aiService = {
     
     if (!code.includes('function') && !code.includes('=>')) {
       errors.push('No function component found');
+    }
+
+    // This app renders/evaluates code directly in the browser without TS transpilation.
+    // Reject obvious TypeScript constructs so we don't save components that can't preview.
+    const tsSignals = [
+      /\binterface\s+\w+Props\b/,
+      /\btype\s+\w+Props\s*=/,
+      /\}\s*:\s*\w+Props\b/,      // "} : FooProps" after params
+      /\)\s*:\s*[A-Za-z0-9_.<>,\s\[\]]+\s*\{/, // return type annotations
+      /\b(const|let|var)\s+\w+\s*:\s*[^=;\n]+=/, // "const x: T ="
+    ];
+    if (tsSignals.some((re) => re.test(code))) {
+      errors.push('TypeScript syntax detected. Generate plain JSX (no interface/type annotations) so Preview can render.');
+    }
+
+    // Syntax check: ensure Babel can parse/transpile the component (JSX -> JS)
+    try {
+      const prepared = prepareComponentCodeForEval(code);
+      Babel.transform(prepared, {
+        presets: [['react', { runtime: 'classic' }]],
+        sourceType: 'script',
+        babelrc: false,
+        configFile: false,
+      });
+    } catch (e) {
+      const msg = (e && typeof e.message === 'string') ? e.message : String(e);
+      errors.push(`Code has a syntax/transpile error (Preview will fail): ${msg}`);
     }
     
     // Check for hardcoded values (basic check)

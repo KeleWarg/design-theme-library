@@ -194,7 +194,7 @@ export default function ComponentDetailPage() {
           <Tabs.Content value="tokens">
             <TokensTab 
               component={component}
-              onSave={(linked_tokens) => handleSave({ linked_tokens })}
+              onUpdate={(updates) => handleSave(updates)}
             />
           </Tabs.Content>
           <Tabs.Content value="examples">

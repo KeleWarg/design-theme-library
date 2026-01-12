@@ -30,4 +30,5 @@ export { Popover, PopoverTrigger, PopoverContent } from './Popover';
 export { default as SegmentedControl } from './SegmentedControl';
 export { default as CodeEditor } from './CodeEditor';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
+export { default as IconPicker } from './IconPicker';
 

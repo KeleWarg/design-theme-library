@@ -50,10 +50,10 @@ ${imageReferences}
 ${formatTokensForPrompt(themeTokens, [])}
 
 ## Requirements
-1. Generate a React functional component using TypeScript
+1. Generate a React functional component using JavaScript (JSX) — NO TypeScript
 2. Match the Figma structure as closely as possible
 3. Use the exact CSS variables from token bindings
-4. Include all properties as typed props
+4. Include all properties as props (no TypeScript typing syntax)
 5. Export the component as default
 6. Use inline styles with CSS variables
 
@@ -273,6 +273,7 @@ function findTokenByName(name, allTokens) {
 }
 
 export { findTokenByName };
+
 
 
 

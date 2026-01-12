@@ -15,14 +15,17 @@
     "seed": "node scripts/seed.js"
   },
   "dependencies": {
+    "@babel/standalone": "^7.26.4",
     "@monaco-editor/react": "^4.7.0",
     "@supabase/supabase-js": "^2.47.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-dropzone": "^14.3.8",
     "react-router-dom": "^6.28.0",
-    "sonner": "^1.7.1"
+    "sonner": "^1.7.1",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

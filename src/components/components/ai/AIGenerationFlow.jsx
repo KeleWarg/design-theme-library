@@ -23,6 +23,7 @@ import TokenSelector from './TokenSelector';
 import { Sparkles, Settings, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import '../../../styles/ai-generation.css';
+import { stripTypeScriptForRenderer } from '../../../lib/codeSanitizer';
 
 /**
  * Extract component name from generated code
@@ -160,13 +161,21 @@ export default function AIGenerationFlow() {
    */
   const handleAccept = async () => {
     try {
+      const sanitizedCode = stripTypeScriptForRenderer(generatedCode);
+      const validation = aiService.validateCode(sanitizedCode);
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors);
+        toast.error('Fix validation issues before saving (see warnings).');
+        return;
+      }
+
       const componentName = extractComponentName(generatedCode);
       
       const component = await componentService.createComponent({
         name: componentName,
         description,
         category,
-        code: generatedCode,
+        code: sanitizedCode,
         props: generatedProps,
         linked_tokens: linkedTokens,
         status: 'draft'

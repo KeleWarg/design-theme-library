@@ -20,6 +20,7 @@ import {
   ComponentDetailPage,
   FigmaImportPage,
   SettingsPage,
+  IconsPage,
 } from './pages'
 
 export default function App() {
@@ -56,6 +57,9 @@ export default function App() {
             
             {/* Figma Import */}
             <Route path="/figma-import" element={<FigmaImportPage />} />
+            
+            {/* Icons */}
+            <Route path="/icons" element={<IconsPage />} />
             
             {/* Settings */}
             <Route path="/settings" element={<SettingsPage />} />

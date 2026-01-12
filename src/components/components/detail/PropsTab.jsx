@@ -145,6 +145,11 @@ export default function PropsTab({ component, onSave }) {
             <strong>Tip:</strong> Common props include <code>children</code> (ReactNode), 
             <code>className</code> (string), <code>variant</code> (enum), and <code>disabled</code> (boolean).
           </div>
+          <div className="props-empty-hint props-empty-hint--secondary">
+            <strong>Best Practice:</strong> Use <code>enum</code> type for props like 
+            <code>size</code>, <code>variant</code>, and <code>icon</code> to show a dropdown in the preview.
+            Free text fields should only be used for truly open-ended values.
+          </div>
         </div>
       ) : (
         <div className="props-list">
@@ -297,6 +302,12 @@ export default function PropsTab({ component, onSave }) {
           font-family: var(--font-family-mono);
           font-size: var(--font-size-xs);
           color: var(--color-primary);
+        }
+
+        .props-empty-hint--secondary {
+          margin-top: var(--spacing-sm);
+          background: var(--color-primary-light, #eff6ff);
+          border-left: 3px solid var(--color-primary, #3b82f6);
         }
 
         /* Props List */

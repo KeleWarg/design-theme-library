@@ -18,3 +18,4 @@ ALTER TABLE typography_roles
   ADD COLUMN IF NOT EXISTS font_size_mobile VARCHAR(20);
 
 
+

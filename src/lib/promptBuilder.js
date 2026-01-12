@@ -31,10 +31,10 @@ Category: ${category}
 Description: ${description}
 
 ## Requirements
-1. Generate a React functional component using TypeScript
+1. Generate a React functional component using JavaScript (JSX) — NO TypeScript
 2. Use CSS variables from the design tokens (e.g., var(--color-primary))
 3. Export the component as default
-4. Include TypeScript prop types
+4. Do NOT include interfaces/types or any TypeScript annotations (no \`interface\`, no \`type\`, no \`:\` type syntax)
 5. Include default prop values where appropriate
 6. Use inline styles with CSS variables
 7. The component should be self-contained in a single file
@@ -132,7 +132,7 @@ export function parseGeneratedComponent(content) {
     code = codeMatch[1];
   }
 
-  // Extract props from TypeScript interface/type
+  // Extract props (supports legacy TS interface and JS destructuring)
   const props = extractPropsFromCode(code);
 
   return { code, props };
@@ -165,8 +165,39 @@ function extractPropsFromCode(code) {
     }
   }
   
+  // Fallback: infer props from function signature destructuring
+  // Example: export default function Button({ children, disabled = false, onClick }) { ... }
+  if (props.length === 0) {
+    const fnMatch = code.match(/export\s+default\s+function\s+\w+\s*\(\s*\{([\s\S]*?)\}\s*\)/);
+    if (fnMatch) {
+      const inner = fnMatch[1]
+        .replace(/\s+/g, ' ')
+        .trim();
+      const parts = inner
+        .split(',')
+        .map(p => p.trim())
+        .filter(Boolean);
+
+      for (const part of parts) {
+        // Handle renames: foo: bar
+        const renamed = part.match(/^(\w+)\s*:\s*(\w+)/);
+        const assignment = part.match(/^(\w+)\s*=\s*(.+)$/);
+        const name = (renamed?.[1] || assignment?.[1] || part).trim();
+        if (!name) continue;
+
+        props.push({
+          name,
+          required: !assignment, // if there is a default, treat as optional
+          type: '',
+          description: ''
+        });
+      }
+    }
+  }
+
   return props;
 }
+
 
 
 

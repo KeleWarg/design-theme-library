@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useThemeContext } from '../../../contexts/ThemeContext';
+import { useThemes, useTheme } from '../../../hooks/useThemes';
 import { Input, Select, Checkbox, Button } from '../../ui';
 import TokenPreview from '../../themes/import/TokenPreview';
 import { SearchIcon, XIcon, AlertCircleIcon, RotateCcw, Save, LinkIcon } from 'lucide-react';
@@ -49,15 +50,68 @@ function getCategoryClass(category) {
   return categoryMap[category] || 'token-category--other';
 }
 
-export default function TokensTab({ component, onSave }) {
-  const { tokens, activeTheme } = useThemeContext();
+function escapeRegExp(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function isCompositeTypographyTokenShape(token) {
+  return token?.category === 'typography' && token?.type === 'typography-composite';
+}
+
+function tokenIsUsedInCode(code, token) {
+  const cssVar = token?.css_variable;
+  if (!cssVar) return false;
+  if (!code) return false;
+
+  // Composite typography tokens expand into multiple vars that start with the base var
+  // e.g. --typography-heading-lg-size contains "--typography-heading-lg"
+  if (isCompositeTypographyTokenShape(token)) {
+    return code.includes(cssVar);
+  }
+
+  // Exact match for standard tokens (avoid accidental substring matches)
+  const re = new RegExp(`(^|[^-\\w])${escapeRegExp(cssVar)}(?![-\\w])`, 'g');
+  return re.test(code);
+}
+
+function replaceTokenUsageInCode(code, fromToken, toToken) {
+  const fromVar = fromToken?.css_variable;
+  const toVar = toToken?.css_variable;
+  if (!fromVar || !toVar) return code;
+
+  const src = String(code || '');
+
+  // Composite typography: prefix replace (preserves suffixes like -size/-weight)
+  if (isCompositeTypographyTokenShape(fromToken) && isCompositeTypographyTokenShape(toToken)) {
+    const re = new RegExp(`(^|[^-\\w])${escapeRegExp(fromVar)}(?=($|[^-\\w])|-)`, 'g');
+    return src.replace(re, `$1${toVar}`);
+  }
+
+  // Exact replace for all other tokens
+  const re = new RegExp(`(^|[^-\\w])${escapeRegExp(fromVar)}(?![-\\w])`, 'g');
+  return src.replace(re, `$1${toVar}`);
+}
+
+export default function TokensTab({ component, onUpdate }) {
+  const { activeTheme } = useThemeContext();
+  const { data: themes } = useThemes('all');
+  const [catalogThemeId, setCatalogThemeId] = useState(activeTheme?.id || '');
+  const { data: catalogTheme } = useTheme(catalogThemeId);
+
   const [linkedTokens, setLinkedTokens] = useState(component?.linked_tokens || []);
   const originalTokensRef = useRef(component?.linked_tokens || []);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const didAutoLinkRef = useRef(false);
 
+  // Keep catalog selection in sync when activeTheme changes (e.g. first load)
+  useEffect(() => {
+    if (activeTheme?.id && !catalogThemeId) {
+      setCatalogThemeId(activeTheme.id);
+    }
+  }, [activeTheme?.id, catalogThemeId]);
 
   // Reset when component changes
   useEffect(() => {
@@ -65,6 +119,7 @@ export default function TokensTab({ component, onSave }) {
     setLinkedTokens(componentTokens);
     originalTokensRef.current = JSON.parse(JSON.stringify(componentTokens));
     setHasChanges(false);
+    didAutoLinkRef.current = false;
   }, [component?.id]);
 
   // Track changes
@@ -73,30 +128,47 @@ export default function TokensTab({ component, onSave }) {
     setHasChanges(hasChangesNow);
   }, [linkedTokens]);
 
-  // Flatten all tokens from grouped structure
+  // Token catalog comes from the selected theme (theme-owned token universe)
   const allTokens = useMemo(() => {
-    if (!tokens) return [];
-    return Object.values(tokens).flat();
-  }, [tokens]);
+    return Array.isArray(catalogTheme?.tokens) ? catalogTheme.tokens : [];
+  }, [catalogTheme?.tokens]);
 
   // Detect tokens used in component code
-  const usedInCode = useMemo(() => {
-    const used = [];
+  const detectedTokens = useMemo(() => {
     const code = component?.code || '';
-    
-    allTokens.forEach(token => {
-      if (token.css_variable && code.includes(token.css_variable)) {
-        used.push(token.path);
-      }
-    });
-    
-    return used;
+    if (!code) return [];
+    return allTokens.filter(t => tokenIsUsedInCode(code, t));
   }, [component?.code, allTokens]);
+
+  const usedInCode = useMemo(() => {
+    return detectedTokens.map(t => t.path).filter(Boolean);
+  }, [detectedTokens]);
 
   // Find tokens used in code but not linked
   const unlinkedUsed = useMemo(() => {
     return usedInCode.filter(path => !linkedTokens.includes(path));
   }, [usedInCode, linkedTokens]);
+
+  // Auto-link detected tokens (persist) so "used == linked" stays true
+  useEffect(() => {
+    if (didAutoLinkRef.current) return;
+    if (!component?.id) return;
+    if (!unlinkedUsed.length) return;
+    if (typeof onUpdate !== 'function') return;
+
+    const next = [...new Set([...linkedTokens, ...usedInCode])];
+    didAutoLinkRef.current = true;
+    setLinkedTokens(next);
+    originalTokensRef.current = JSON.parse(JSON.stringify(next));
+    setHasChanges(false);
+
+    // Persist silently (no toast spam)
+    onUpdate({ linked_tokens: next }).catch(() => {
+      // If it fails, allow retry on next render
+      didAutoLinkRef.current = false;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [component?.id, unlinkedUsed.length]);
 
   // Filter tokens based on search and category
   const filteredTokens = useMemo(() => {
@@ -133,7 +205,7 @@ export default function TokensTab({ component, onSave }) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSave(linkedTokens);
+      await onUpdate({ linked_tokens: linkedTokens });
       originalTokensRef.current = JSON.parse(JSON.stringify(linkedTokens));
       setHasChanges(false);
       toast.success('Tokens saved');
@@ -152,9 +224,61 @@ export default function TokensTab({ component, onSave }) {
   };
 
   // Check if no tokens are available
-  const hasNoTokens = !tokens || Object.keys(tokens).every(
-    k => !tokens[k] || tokens[k].length === 0
-  );
+  const hasNoTokens = !allTokens || allTokens.length === 0;
+
+  const detectedByCategory = useMemo(() => {
+    const groups = {};
+    detectedTokens.forEach(t => {
+      const cat = t.category || 'other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(t);
+    });
+    return groups;
+  }, [detectedTokens]);
+
+  const getSwapCandidates = (fromToken) => {
+    const sameCatType = allTokens.filter(t =>
+      t.path !== fromToken.path &&
+      t.category === fromToken.category &&
+      t.type === fromToken.type
+    );
+    if (sameCatType.length) return sameCatType;
+
+    // Fallback to same category if type is inconsistent across imports
+    return allTokens.filter(t =>
+      t.path !== fromToken.path &&
+      t.category === fromToken.category
+    );
+  };
+
+  const [swapTargets, setSwapTargets] = useState({});
+
+  const applySwap = async (fromTokenPath) => {
+    const fromToken = allTokens.find(t => t.path === fromTokenPath);
+    const toPath = swapTargets[fromTokenPath];
+    const toToken = allTokens.find(t => t.path === toPath);
+    if (!fromToken || !toToken) return;
+    if (typeof onUpdate !== 'function') return;
+
+    const nextCode = replaceTokenUsageInCode(component?.code || '', fromToken, toToken);
+    const nextLinked = [...new Set(
+      (linkedTokens || [])
+        .filter(p => p !== fromToken.path)
+        .concat([toToken.path])
+        .filter(Boolean)
+    )];
+
+    try {
+      await onUpdate({ code: nextCode, linked_tokens: nextLinked });
+      setLinkedTokens(nextLinked);
+      originalTokensRef.current = JSON.parse(JSON.stringify(nextLinked));
+      setHasChanges(false);
+      toast.success('Token usage updated');
+    } catch (err) {
+      console.error('Failed to swap token usage:', err);
+      toast.error('Failed to update token usage');
+    }
+  };
 
   return (
     <div className="tokens-tab">
@@ -173,6 +297,19 @@ export default function TokensTab({ component, onSave }) {
         )}
       </div>
 
+      {/* Token catalog theme selector (does not change app theme) */}
+      <div className="tokens-tab-catalog">
+        <Select
+          label="Token Catalog Theme"
+          value={catalogThemeId || ''}
+          onChange={(val) => setCatalogThemeId(val)}
+          options={(themes || []).map(t => ({ value: t.id, label: t.name }))}
+        />
+        <p className="tokens-tab-catalog-hint">
+          This only controls which theme’s tokens you can browse/swap; it does not change the admin shell theme.
+        </p>
+      </div>
+
       {/* Warning if no tokens available */}
       {hasNoTokens && (
         <div className="tokens-tab-warning">
@@ -180,12 +317,68 @@ export default function TokensTab({ component, onSave }) {
           <div className="tokens-tab-warning-content">
             <strong>No tokens available</strong>
             <p>
-              {activeTheme 
-                ? `The theme "${activeTheme.name}" has no tokens. Import tokens in the Theme Editor first.`
-                : 'No theme selected. Select a theme with tokens to link them to this component.'
+              {catalogThemeId
+                ? 'The selected token catalog theme has no tokens. Import tokens in the Theme Editor first.'
+                : 'No token catalog theme selected. Select a theme with tokens.'
               }
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Token Usage (from code) */}
+      {!hasNoTokens && (
+        <div className="tokens-tab-usage">
+          <h4 className="tokens-tab-usage-title">Token Usage (Detected from Code)</h4>
+          {detectedTokens.length === 0 ? (
+            <div className="tokens-tab-usage-empty">
+              <p>No tokens detected in the current component code for this theme’s token catalog.</p>
+            </div>
+          ) : (
+            Object.entries(detectedByCategory).map(([category, list]) => (
+              <div key={category} className="tokens-tab-usage-group">
+                <div className="tokens-tab-usage-group-title">
+                  <span className={`token-list-item-category ${getCategoryClass(category)}`}>{category}</span>
+                </div>
+                <div className="tokens-tab-usage-rows">
+                  {list.map((fromToken) => {
+                    const candidates = getSwapCandidates(fromToken);
+                    const swapId = `swap-${String(fromToken.path || fromToken.css_variable).replace(/[^a-z0-9-_]/gi, '-')}`;
+                    return (
+                      <div key={fromToken.path || fromToken.css_variable} className="tokens-tab-usage-row">
+                        <div className="tokens-tab-usage-from">
+                          <div className="tokens-tab-usage-from-name">{fromToken.name || fromToken.path}</div>
+                          <code className="tokens-tab-usage-from-var">{fromToken.css_variable}</code>
+                        </div>
+                        <div className="tokens-tab-usage-swap">
+                          <Select
+                            id={swapId}
+                            label="Swap to"
+                            value={swapTargets[fromToken.path] || ''}
+                            onChange={(val) => setSwapTargets(prev => ({ ...prev, [fromToken.path]: val }))}
+                            options={candidates.map(t => ({
+                              value: t.path,
+                              label: `${t.name || t.path} (${t.css_variable})`,
+                            }))}
+                            placeholder="Select replacement…"
+                            size="sm"
+                          />
+                          <Button
+                            size="small"
+                            variant="secondary"
+                            disabled={!swapTargets[fromToken.path]}
+                            onClick={() => applySwap(fromToken.path)}
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -377,6 +570,86 @@ export default function TokensTab({ component, onSave }) {
           flex-direction: column;
           flex: 1;
           gap: var(--spacing-lg);
+        }
+
+        .tokens-tab-catalog {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-xs);
+        }
+
+        .tokens-tab-catalog-hint {
+          margin: 0;
+          font-size: var(--font-size-sm);
+          color: var(--color-muted-foreground);
+        }
+
+        .tokens-tab-usage {
+          padding: var(--spacing-md);
+          background: var(--color-muted);
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--color-border);
+        }
+
+        .tokens-tab-usage-title {
+          margin: 0 0 var(--spacing-sm);
+          font-size: var(--font-size-base);
+          font-weight: var(--font-weight-semibold);
+          color: var(--color-foreground);
+        }
+
+        .tokens-tab-usage-empty p {
+          margin: 0;
+          font-size: var(--font-size-sm);
+          color: var(--color-muted-foreground);
+        }
+
+        .tokens-tab-usage-group {
+          margin-top: var(--spacing-md);
+        }
+
+        .tokens-tab-usage-group-title {
+          margin-bottom: var(--spacing-sm);
+        }
+
+        .tokens-tab-usage-rows {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+        }
+
+        .tokens-tab-usage-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: var(--spacing-md);
+          padding: var(--spacing-sm);
+          background: var(--color-background);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+        }
+
+        .tokens-tab-usage-from-name {
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-medium);
+          color: var(--color-foreground);
+        }
+
+        .tokens-tab-usage-from-var {
+          display: inline-block;
+          margin-top: var(--spacing-xs);
+          font-family: var(--font-family-mono);
+          font-size: var(--font-size-xs);
+          color: var(--color-muted-foreground);
+          background: var(--color-muted);
+          padding: var(--spacing-xs) var(--spacing-sm);
+          border-radius: var(--radius-sm);
+        }
+
+        .tokens-tab-usage-swap {
+          display: flex;
+          align-items: flex-end;
+          gap: var(--spacing-sm);
+          justify-content: flex-end;
         }
 
         .tokens-tab-header {
@@ -774,6 +1047,14 @@ export default function TokensTab({ component, onSave }) {
 
         /* Responsive */
         @media (max-width: 768px) {
+          .tokens-tab-usage-row {
+            grid-template-columns: 1fr;
+          }
+
+          .tokens-tab-usage-swap {
+            justify-content: stretch;
+          }
+
           .tokens-tab-header {
             flex-direction: column;
             gap: var(--spacing-md);

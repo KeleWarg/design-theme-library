@@ -6,20 +6,90 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useThemeContext } from '../../../contexts/ThemeContext';
-import { useThemes } from '../../../hooks/useThemes';
-import { Select, SegmentedControl } from '../../ui';
+import { useThemes, useTheme } from '../../../hooks/useThemes';
+import { useIcons } from '../../../hooks/useIcons';
+import { Select, SegmentedControl, Button } from '../../ui';
 import ComponentRenderer from './ComponentRenderer';
 import PropControl from './PropControl';
-import { Monitor, Tablet, Smartphone, Palette } from 'lucide-react';
+import { Monitor, Tablet, Smartphone, Palette, ExternalLink } from 'lucide-react';
+import { isCompositeTypographyToken, expandCompositeTypographyToken, tokenToCssValue } from '../../../lib/cssVariableInjector';
+
+function deriveSemanticColorAliases(vars) {
+  const pick = (keys) => {
+    for (const k of keys) {
+      const v = vars[k];
+      if (typeof v === 'string' && v.trim() !== '') return v;
+    }
+    return undefined;
+  };
+
+  const aliases = {};
+
+  // Backgrounds
+  aliases['--color-background'] = pick(['--color-background', '--background-white', '--background-default', '--background-neutral-subtle']);
+  aliases['--color-surface'] = pick(['--color-surface', '--background-white', '--background-default', '--color-background']);
+  aliases['--color-muted'] = pick(['--color-muted', '--background-neutral-subtle', '--background-neutral-light', '--background-neutral']);
+
+  // Foregrounds
+  aliases['--color-foreground'] = pick(['--color-foreground', '--foreground-heading', '--foreground-body']);
+  aliases['--color-muted-foreground'] = pick(['--color-muted-foreground', '--foreground-caption', '--foreground-body']);
+
+  // Borders
+  aliases['--color-border'] = pick(['--color-border', '--foreground-divider', '--foreground-stroke-default', '--foreground-table-border']);
+
+  // Primary/secondary (buttons/brand)
+  aliases['--color-primary'] = pick(['--color-primary', '--background-brand', '--button-primary-bg']);
+  aliases['--color-primary-hover'] = pick(['--color-primary-hover', '--button-primary-hover-bg', '--button-primary-pressed-bg']);
+  aliases['--color-secondary'] = pick(['--color-secondary', '--button-secondary-bg', '--background-secondary']);
+
+  // Status
+  aliases['--color-success'] = pick(['--color-success', '--foreground-feedback-success']);
+  aliases['--color-warning'] = pick(['--color-warning', '--foreground-feedback-warning']);
+  aliases['--color-error'] = pick(['--color-error', '--foreground-feedback-error']);
+
+  // Drop undefined entries
+  Object.keys(aliases).forEach((k) => {
+    if (aliases[k] === undefined) delete aliases[k];
+  });
+
+  return aliases;
+}
+
+/**
+ * Get localStorage key for persisting preview theme per component
+ */
+function getPreviewThemeKey(componentId) {
+  return `component-preview-theme-${componentId}`;
+}
 
 export default function PreviewTab({ component }) {
-  const { activeTheme, setActiveTheme } = useThemeContext();
+  const { activeTheme } = useThemeContext();
   const { data: themes } = useThemes('all');
+  const { data: icons } = useIcons();
+  
+  // Initialize preview theme from localStorage or active theme
+  const [previewThemeId, setPreviewThemeId] = useState(() => {
+    const saved = localStorage.getItem(getPreviewThemeKey(component.id));
+    return saved || activeTheme?.id || '';
+  });
+  
+  const { data: previewTheme } = useTheme(previewThemeId);
   const [propValues, setPropValues] = useState({});
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [viewMode, setViewMode] = useState('desktop');
   const [backgroundMode, setBackgroundMode] = useState('light');
+
+  // Persist preview theme selection to localStorage
+  const handleThemeChange = (themeId) => {
+    setPreviewThemeId(themeId);
+    if (themeId) {
+      localStorage.setItem(getPreviewThemeKey(component.id), themeId);
+    } else {
+      localStorage.removeItem(getPreviewThemeKey(component.id));
+    }
+  };
 
   // Initialize prop values from defaults
   useEffect(() => {
@@ -55,9 +125,35 @@ export default function PreviewTab({ component }) {
   const availableThemes = useMemo(() => {
     if (!themes) return [];
     return themes.filter(t => 
-      t.status === 'published' || t.id === activeTheme?.id
+      t.status === 'published' || t.id === activeTheme?.id || t.id === previewThemeId
     );
-  }, [themes, activeTheme]);
+  }, [themes, activeTheme, previewThemeId]);
+
+  // Keep local preview selection in sync when activeTheme changes (e.g. first load)
+  useEffect(() => {
+    if (activeTheme?.id && !previewThemeId) {
+      setPreviewThemeId(activeTheme.id);
+    }
+  }, [activeTheme?.id, previewThemeId]);
+
+  const themeForPreview = previewTheme || activeTheme;
+
+  const scopedCssVariables = useMemo(() => {
+    if (!themeForPreview?.tokens) return {};
+
+    const rawVars = themeForPreview.tokens.reduce((vars, token) => {
+      if (!token.css_variable) return vars;
+      if (isCompositeTypographyToken(token)) {
+        Object.assign(vars, expandCompositeTypographyToken(token));
+        return vars;
+      }
+      vars[token.css_variable] = tokenToCssValue(token);
+      return vars;
+    }, {});
+
+    const aliasVars = deriveSemanticColorAliases(rawVars);
+    return { ...aliasVars, ...rawVars };
+  }, [themeForPreview]);
 
   const viewportWidth = useMemo(() => {
     switch (viewMode) {
@@ -96,15 +192,27 @@ export default function PreviewTab({ component }) {
         />
 
         {availableThemes.length > 1 && (
-          <Select
-            label="Theme"
-            value={activeTheme?.id || ''}
-            onChange={(themeId) => setActiveTheme(themeId)}
-            options={availableThemes.map(t => ({ 
-              value: t.id, 
-              label: t.name 
-            }))}
-          />
+          <div className="preview-theme-control">
+            <Select
+              label="Theme"
+              value={previewThemeId || activeTheme?.id || ''}
+              onChange={handleThemeChange}
+              options={availableThemes.map(t => ({ 
+                value: t.id, 
+                label: t.name 
+              }))}
+            />
+            {previewThemeId && (
+              <Link 
+                to={`/themes/${previewThemeId}`} 
+                className="preview-edit-tokens-link"
+                title="Edit theme tokens"
+              >
+                <ExternalLink size={14} />
+                Edit Tokens
+              </Link>
+            )}
+          </div>
         )}
 
         <SegmentedControl
@@ -122,12 +230,13 @@ export default function PreviewTab({ component }) {
         className="preview-viewport" 
         data-mode={viewMode}
         data-background={backgroundMode}
-        style={{ maxWidth: viewportWidth }}
+        style={{ maxWidth: viewportWidth, ...scopedCssVariables }}
       >
         <div className="preview-viewport-content">
           <ComponentRenderer
             code={component.code}
             props={propValues}
+            icons={icons || []}
           />
         </div>
       </div>
@@ -167,6 +276,27 @@ export default function PreviewTab({ component }) {
           background: var(--color-background, #ffffff);
           border: 1px solid var(--color-border, #e5e7eb);
           border-radius: var(--radius-lg, 8px);
+        }
+
+        .preview-theme-control {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-xs, 4px);
+        }
+
+        .preview-edit-tokens-link {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--spacing-xs, 4px);
+          font-size: var(--font-size-xs, 12px);
+          color: var(--color-primary, #3b82f6);
+          text-decoration: none;
+          transition: color 0.15s;
+        }
+
+        .preview-edit-tokens-link:hover {
+          color: var(--color-primary-hover, #2563eb);
+          text-decoration: underline;
         }
 
         .preview-viewport {
@@ -269,6 +399,23 @@ export default function PreviewTab({ component }) {
           display: flex;
           flex-direction: column;
           gap: var(--spacing-xs, 4px);
+        }
+
+        .prop-control-description {
+          margin-top: var(--spacing-xs, 4px);
+          font-size: var(--font-size-xs, 12px);
+          color: var(--color-muted-foreground, #6b7280);
+          line-height: 1.4;
+        }
+
+        .prop-control-desc-text {
+          display: block;
+        }
+
+        .prop-control-type-hint {
+          display: block;
+          font-style: italic;
+          opacity: 0.8;
         }
       `}</style>
     </div>

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Palette, 
   Box,
+  Image,
   Settings 
 } from 'lucide-react'
 
@@ -14,6 +15,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/themes', icon: Palette, label: 'Themes' },
   { to: '/components', icon: Box, label: 'Components' },
+  { to: '/icons', icon: Image, label: 'Icons' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 

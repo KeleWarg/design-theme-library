@@ -13,4 +13,5 @@ export { default as CreateComponentPage } from './CreateComponentPage'
 export { default as ComponentDetailPage } from './ComponentDetailPage'
 export { default as FigmaImportPage } from './FigmaImportPage'
 export { default as SettingsPage } from './SettingsPage'
+export { default as IconsPage } from './IconsPage'
 
